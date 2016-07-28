@@ -1,0 +1,483 @@
+                          Crunch Change Log
+                          -----------------
+
+v1.00  09-Jul-1998  Marshall Buhl
+ Created from GenStats, GPP, and Z40Crunch.  The initial version
+ includes individual and aggregate statistics and histograms.  It also
+ includes summary statistics.
+
+v1.10  24-Jul-1998  M. Buhl
+ Added GPP's rainflow routines.
+
+v1.20  28-Jul-1998  M. Buhl
+ Modified to output azimuth averages and to do azimuth averages of aggregates.
+
+v1.21  28-Jul-1998  M. Buhl
+ Modified some of the status messages.
+
+v1.22  30-Jul-1988  M. Buhl
+ Modified Crunch to allow it to deal with files with no wind-speed channel.
+
+v1.23  04-Aug-1988  M. Buhl
+ Fixed bug by adding calculation of range bin widths for non-normalized
+ rainflow cycle counting.  Changed output for tab-delimited, 1-D rainflow
+ results so that zero counts come out as blanks to make plotting easier for
+ log plots.
+
+v1.30  05-Aug-1988  M. Buhl
+ Added calculated channels.  Fixed a bug in the creation of column
+ labels for 2-D rainflow cycle counting.  Modified the certification
+ test procedure some.
+
+v1.31  06-Aug-1988  M. Buhl
+ Change the value for the constant Gamma that is used for calculated
+ channels so that it is no longer incorrect.
+
+v1.32  07-Aug-1988  M. Buhl
+ Fixed the formatting of output for tab-delimited, rainflow files.
+
+v1.33  12-Aug-1998  M. Buhl
+ Fixed some of the header information for 1-D RF output.  I also redid
+ CertTest.bat and increased the number of tests to 6.
+
+v1.40  13-Aug-1998  M. Buhl
+ Added the ability to output RF cycles instead of binned cycles.  I had to
+ convert the statistics arrays to include the file number as a dimension.
+
+v1.41  22-Oct-1998  M. Buhl
+ Changed azimuth averaging so that the azimuth values are the mean values
+ instead of the bin centers.
+
+v1.42  29-Jan-1999  M. Buhl
+ When reading in the calculated-channels info, I was incrementing the number
+ of input columns instead of the total number of columns.  The AA column
+ counting had to be redone to account for calculated channels.  I fixed the
+ warning message for when the modified-output file couldn't be opened.  It
+ was appending the ".mod" to the file name instead of the root name.  I added
+ units to the modified-output file.
+
+v1.50  01-Apr-1999  D. Laino
+ Added code to extrapolate extreme values using method developed by Peter
+ Madsen of Riso.  Technique is not yet validated.  The input file format
+ has changed - each output column for which a separate summary statistic
+ file is desired is listed on a separate line.  (For 0 columns, there should
+ be zero lines used.)
+
+v1.51  06-Apr-1999  M. Buhl
+ I modified the output in the .ext files so that they were easier to read
+ and more consistent with other output files.
+
+v1.60  06-Apr-1999  M. Buhl
+ I moved the statistical-extrapolation information in the input file from
+ the summary-file section to its own section.
+
+v1.61  13-Apr-1999  D. Laino
+ Added check that time to extrapolate out to is longer than the data set
+ in order to avoid log of infinity error.
+
+v1.70  16-Apr-1999  D. Laino
+ Under suggestion from Kirk Pierce, the outputs of the extrapolation
+ routine were changed to include expected values during the base period,
+ and the equation for calculating the value for any quantile.  The input
+ file changed to include a request for one quantile for each column.
+ Calculation of the quantiles for the data table was corrected as well.
+
+v1.71  28-May-1999  M. Buhl, D. Laino
+ Changed AzimAver so that it generates a value for IB_Hi between 1 and
+ NumAABins.  It was failing before when IB_Lo was NumAABins-1.  I used
+ the technique from GenStats.  Changed extrapolation routines to use
+ method proposed by the team at Stanford University - taking the mean
+ of extrapolation values from each data set.  Changed the output accordingly.
+ Included standard error in the output.  Eliminated recurrence interval
+ calculation, and added "T"-extrapolation.
+
+v1.72  01-Jun-1999  D. Laino
+ Added calculation for the standard deviation in azimuth average routines.
+ Added Peter Madsen's azimuth binning method to extrapolation routines.
+
+v1.73  16-Jun-1999  M. Buhl
+ Modified the error message for when reading the time column.  If zero
+ was entered, then the message said it had to be between 0 and N inclusive.
+ I changed it so it said 1 and N.  I should probably modify the code so
+ that a zero signifies no time column.
+
+v1.74  26-Jun-1999  M. Buhl
+ I modified the ProgVer string so that it can handle alpha versions.  I
+ had to modify many routines to TRIM() it whenever we output it to account
+ to variable lengths.  I modified GetValue() in Parser.f90 so that it tests
+ only the second argument to see if it's zero.  I also fixed a minor bug in
+ StatOut, where we  were incorrectly outputting a "-aa" string for calculated
+ channels.
+
+v1.80  20-Jul-1999  M. Buhl
+ Besides celebrating the 30th anniversary of the first lunar landing, I
+ ported GPP's IIR filtering routine to Crunch.  This created a new file
+ called "filter.f90".  I added a new section to the input file to
+ accommodate it.  I updated the certification test suite to include the
+ changes.
+
+v1.81  25-Oct-1999  M. Buhl
+ After Gene Quandt reported that he got an error message when he set both
+ the mean and range bins to zero, I changed the test for the mean bins so
+ that the value was ignored when the number of range bins was set to zero.
+
+v1.90  30-Aug-2000  M. Buhl
+ I changes all occurences of "Wr_Scr1" in all files to "WrScr1".  I also
+ changed "Wr_Scr" to "WrScr".
+ I modified Modules.f90 to create the logical, allocatable arrays
+ AutoRange and AutoMeans.  I modified the input file and GetParams() in
+ Crunch.f90 to allow users to set the max range and/or the min mean and
+ max mean.  I modified RF_Init() in Rainflow.f90 to move the allocation
+ of the MaxRng, MaxMean, and MinMean arrays to GetParams() in Crunch.f90.
+ I also modified BinCount1() and BinCount2() in Rainflow.f90 to not
+ calculate the max range if it was user specified.  I modified
+ BinCount2() to not calculate the min and max means if they were user
+ specfied.  I moved the deallocation of the MaxRange, MaxMean, and MinMean
+ arrays from Rainflow() to the Crunch() in Crunch.f90.
+ I changed the verification tests to reflect the new input files.  I
+ changed Test06 so that it would not autocalculate the MaxRange for
+ channel 4 and the MinMean and MaxMean for channel 5.
+
+v2.00  20-Sep-2000  M. Buhl
+ I added a new feature that generates extreme events for a design-loads
+ document.  I made changes to Crunch(), Alloc(), and GetParams() in
+ Crunch.f90.  I added a new file, "ExtEvent.f90", to the project that
+ contains most of the new code.  I added some new parameters to Modules.f90
+ and a new section to the input file.  I added two runs to the certification
+ test.
+
+v2.10  05-Oct-2000  M. Buhl
+ I added a new feature that generates load roses.  I made changes to
+ Crunch() and GetParams() in Crunch.f90.  I added a new file,
+ "LoadRose.f90", to the project that contains most of the new code.  I
+ added some new parameters to Modules.f90 and a new section to the input
+ file.  I also had to change StatOut() in Stats.f90 so that the total
+ number of rose columns was added to the IF tests to see if the column
+ was a special azimuth-average column.
+ I added a new global variable, NonAACols, to make some stuff a little
+ easier and had to change crunch.f90, stats.f90, and modules.f90.
+ I moved the input of the time and wind-speed columns to be after the
+ input for the calculated channels so that they could be a calculated
+ channel if necessary.
+ I changed the certification-test input files and modified tests 9 and 10
+ so they included load roses.  Test 10 also includes a calculated channel.
+
+v2.20  06-Oct-2000  M. Buhl
+ I added the ability to specify fixed bins for the PDF (aka, histogram)
+ feature.  I renamed the PDF variables from something involving
+ histogramming to using PDF.  I also redid some of the logic.  I renamed
+ histgram.f90 to pdf.f90.  Files modified were crunch.f90, pdf.f90, and
+ modules.f90.  In crunch.f90, I modified Alloc() and GetParams().  This
+ new capability involved changing the input file slightly.  I updated all
+ the certification-test input files.
+ I discovered that algorithm was mispelled as algorith all over the code
+ and had to change many routines in many files to fix it.
+
+v2.30  13-Oct-2000  M. Buhl
+ With Craig Hansen's urging, I added the ability for Crunch to auto-detect
+ the format of the data files.  Now, you can ask Crunch to simply use all
+ the columns in the input file instead of telling it how many are in the
+ file and how many of them you want to use.
+
+ In addition to auto-detecting columns, Crunch can also auto-detect the
+ number of rows in the file.  If you specify a time column and a start
+ and end time, Crunch will use only the lines with times in that range.
+ For multiple-file runs, all files must have the same form.  If time is
+ used to limit the data, Crunch will assume the times are all on the same
+ rows for all files.  If a file comes up short or has a read error, Crunch
+ will skip that file and not use any of its data.
+
+ These changes required many changes to some of the fundamental way Crunch
+ works.  I had to change most of the routines in Crunch.f90.  I had to
+ change all routines that generated output data because not all runs have
+ units.  I added CountWords() and GetWords() to GenUse.f90.  I added
+ CheckInp(), DetectCols(), and DetectRecs() to Crunch.f90.  This is a
+ MAJOR revision of the code, so I may have introduced some new bugs.  To
+ find many of them, I added new versions of the 10 test cases that use
+ auto-detection of both (usually) columns and rows.  This uncovered two
+ days worth of bugs to fix.  I did not take time to make sure Crunch
+ still detects all input errors.  I'll leave that for the users.
+
+v2.31  06-Nov-2000  M. Buhl
+ In GetParams() of Crunch.f90, I added more validity testing for the units
+ and first-data rows.
+ Dave Laino found a problem with reading the units row.  I was skipping
+ one line too many after the titles row.
+ While debugging David's problem, I noticed that I was exceeding subscript
+ bounds in the Titles and Units arrays when I did azimuth averaging with
+ auto-column detection enabled.  I created a new routine call AzimInit()
+ in AzimAver.f90 to create the titles and units for the new columns created
+ by the azimuth-averaging feature.  I call it from GetParams() and from
+ the main program.
+ I had to do something similar for calculated channels.  I fixed up and
+ called (it wasn't called before) the AddCC() routine in CalcChan.f90.  I
+ called it from the main program.
+ I removed all calculations of TotCols and NonAACols for auto-columns
+ from everything but DetectCols() in Crunch.f90.
+
+v2.32  06-Nov-2000  M. Buhl
+ As I was preparing to notify the users of the v2.31 release, I noticed
+ that Crunch would crash in an inelegant fashion if I had an extra blank
+ line between sections of the input file.  I modified GetParams() in
+ Crunch.f90 so that I tested for an end of file whenever I read numbers
+ from a line of text that had been read from the input file.
+
+v2.33  08-Nov-2000  M. Buhl
+ Dave Laino spotted that when we had a read error on a data file, the
+ resulting error message always used the name of the first file.  It
+ seems I had hardwired it to file one, so I fixed it in Crunch.f90\ReadData().
+ While testing that, test12 bombed due to a SQRT() error in the code
+ for extrapolating extreme values.  Apparently, when reading in the files,
+ I never reset NumFiles to the value of GoodFiles.  I modified the main
+ program to update NumFiles to fix that problem.
+
+v2.34  27-Nov-2000  M. Buhl
+ I found that when Crunch ran across a short file, it stopped reading files
+ instead of simply skipping the bad file.  I had to change an "EXIT" to
+ a "CYCLE" in the main program to fix it.  I also had to change ReadData()
+ in Crunch.f90 so that it didn't call PremEOF() when skipping the header.
+ Now, it sets the error flag and returns.  Then, I found that I was using
+ the same index for both the file names and the data array.  I now call
+ ReadData() with both Fi and GoodFiles.
+
+v2.35  18-Dec-2000  M. Buhl
+ I discovered that I had unintentionally changed all the tabs in ExtEvent.f90
+ to spaces.  This messed up the format specifiers of tab-delimited output.
+ I put the tabs back in and it seems to be working now.
+
+v2.36  19-Dec-2000  M. Buhl
+ Craig found that some of the statistics were hosed when doing aggregate
+ analyses and some of the files were skipped.  I had to change an occurance
+ of "NumFiles" in Stats.f90\Stats() to "GoodFiles" to fix it.
+ I also found and changed an occurance of NumFiles in LoadRose.f90\LoadRose().
+ I found many occurances of "NumFiles" that I had to change throughout
+ ExtrValu.f90.
+ I fixed one occurance in CalcChan.f90\CalcChan().
+ I fixed two occurances in AzimAver.f90\AzimCalc().
+ I also modified the headers of aggregate files so that it told how many
+ of the requested input files were good.  This required changes to
+ Stats.f90\StatOpen(), Rainflow.f90\RF_Init(), ExtrValu.f90\ExtrapOpen(),
+ ExtEvent.f90\EE_Init(), and AzimAver.f90\Write_AA().
+ While I was at that, I converted all the I/O statements in those routines
+ to use format strings instead of FORMAT statements.
+ In Crunch.f90\Crunch(), I added logic to count the number of bad input
+ files (BadFiles) and to save their indices in an array (BadList).  I
+ output the file names at the ends of the analyses' output files if aggregate
+ analyses are done.
+
+v2.40  04-Jan-2001  M. Buhl
+ I added a moving-averages (MA) feature.  This entailed creating a new source
+ file called "MoveAver.f90."  To DataMod in Modules.f90, I added the following
+ variables: MAPeriod, MAChans, NumMA, MATitles, and MAUnits.  I modified
+ Crunch.f90\GetParams() to include the logic for reading the input parameters.
+ I modified Crunch.f90\Crunch() to initialize and calculate the MAs.  I
+ also had to modify LoadRose.f90 to change all occurances of "NumCols+NumCChan"
+ to "NumCols+NumCChan+NumMA".
+ I improved some of the error messages in LoadRose.f90\AddRoseChan().
+ I also eliminated all initialization and column checking in Crunch.f90\
+ GetParams() for the case when we manually enter the column information.
+ We now do it all in one place regardless of the case.  This also required
+ changes to Crunch.f90\Crunch().  I eliminated the ManCols variable in DataMod
+ and all references to it in Crunch.f90.
+ I'll probably get complaints, but I changed the default name of the parameter-
+ input file from "crunch.inp" to "param.cru".  This required changing the
+ Modules\GenMod module and Crunch.f90\CheckArgs().
+
+v2.41  05-Jan-2001  M. Buhl
+ I found that I was testing the wrong number of columns in Stats.f90\SumOpen(),
+ so I changed the occurances of NumCols to NonAACols.  It was messing up
+ the names of the summary files when summarizing moving-averages (and probably
+ calculated-channels and load roses).
+
+v2.42  12-Jan-2001  M. Buhl
+ I found that when I had a data error reading in the data, it printed out
+ the wrong line number.  I fixed it in Crunch.f90\DetectRecs().
+
+v2.50  01-Feb-2001  M. Buhl
+ I added user-specified output formats.  To do so, I modified Crunch()
+ and GetParams() in Crunch.f90.  I also modified the output-related
+ statements in AzimAver.f90, Stats.f90, ExtEvent.f90, ExtrValu.f90,
+ PDF.f90, and Rainflow.f90.
+ I added the function Conv2UC() to GenUse.f90 to convert strings to
+ upper case.  I added RealFmt and TextFmt strings to Modules.f90\GenMod().
+ In ExtrValu.f90\ExtrapOpen(), I changed the non-standard calls of FLOAT()
+ to REAL().
+ I fixed a bug in Crunch.f90\GetParams() that made sure that the number
+ of information columns in an extreme-event table was greater than 0.  I
+ changed it so that it tested it to be >= 0, instead.
+
+v2.51  09-Feb-2001  M. Buhl
+ Dave Laino found that Crunch crashed inelegantly when one left out the
+ format identifier line in the parameter file and was doing tab-delimited
+ output.  I changed Crunch.f90\GetParams() so that it validated the input
+ for tab-delimited output too.  I also modified that routine so that it
+ makes sure we have blank lines between the blocks of data in the
+ parameter file.  I also check all numerical reads in that routine so
+ that they test for invalid numerical input.  Hopefully, these last two
+ things will catch most errors in the parameter file.
+
+v2.52  02-Mar-2001  M. Buhl
+ Herb Sutherland found two errors in the Rainflow routines.  One is that
+ when doing tab-delimited output, the string holding the format of the
+ output was too short.  I increased the length of Fmt from 20 to 30
+ characters in Rainflow.f90\Rainflow().  The other was that when one
+ selects a rainflow counting period that was not a whole number of minutes,
+ hours, etc., and was not less than 60, the string holding the period
+ never got set.  Now, PerString is set to some number of seconds if it's
+ and oddball time > 60 seconds.  That fix occurred in Rainflow.f90\RF)Init().
+
+v2.60  29-Mar-2001  M. Buhl
+ I changed output for RF bins with zero counts so that users can choose
+ between zeros and spaces for tab-delimited files.  This required
+ creation of a new flag (RFZC_Blank) in Modules.f90\DataMod().  I had to
+ modify Crunch.f90\Get_Params() to read the new flag.  I also modified
+ Rainflow.f90\Rainflow() to use it.  While working on this, I discovered
+ a bug in Rainflow() that crops up when the RealFmt produces numbers
+ wider than 10 or 11 characters.  I increased the sizes of Fmt and CR_Str
+ to be 30 characters.  This made the output look very strange when seen
+ with an editor, so I put a TRIM() around CR_Str in the WRITE statements.
+ While at it, I also left-adjusted the numbers to reduce the output.  The
+ one file I checked was 14% smaller than the one produced by  the
+ previous version, while still looking exactly the same once imported
+ into Excel.
+ Being annoyed with the fact that the probability-density-function
+ output files had a .pdf extension, which happens to belong to Adobe
+ Printed Document Format files, I decided to look for a better name.
+ Upon reading one of my old probability books, I realized that what we
+ are generating are really discrete probability *mass* functions.
+ Density functions are continuous. So, I changed all references of PDF
+ to PMF throughout the program and documentation.
+
+v2.61  17-Apr-2001  M. Buhl
+ Garrett Bywaters informed me that Crunch crashed whenever he tried to
+ tabulate extreme events for aggregate analyses.  I tested it myself and
+ found an error in the format specifier for tab-delimited output for that
+ case.  I fixed the format in ExtEvent.f90\WriteEE() to solve the problem.
+ In order to avoid having to recompile all routines that use the modules
+ every time I modified the version number, I created a new routine called
+ SetVersion.f90\SetVersion() that just sets the version number with an
+ executable statement.  I put a call to the new routine in Crunch.f90\Crunch().
+
+v2.62  04-Jun-2001  M. Buhl
+ Jesse Stowell's keen eyes spotted a minor problem.  When generating tab-
+ delimited extreme-event files, the channel titles weren't shifted enough
+ to the right.  I modified ExtEvent.f90\WriteEE() to fix the problem.
+ While fixing that, I noticed that we didn't get the headings for the first
+ three columns (Parameter, Type, and File) when we didn't have units.  I
+ fixed that too.
+
+v2.70  14-Jun-2001  M. Buhl
+ I added a peak-listing feature to the code.  I created a new file (PeakList.f90)
+ to contain the main logic for it.  I also had to modify both DatMod and GenMod
+ in Modules.f90.  I also modified Crunch() and GetParams() in Crunch.f90.
+
+v2.71  21-Jun-2001  M. Buhl
+ Garrett Bywaters discovered that things like the rainflow max range got
+ used for the wrong columns when a constant channel was found in the
+ list of channels to be rainflow counted.  I modified Rainflow.f90\Rainflow()
+ so that it shifts that sort of information when a constant channel is found.
+
+v2.72  06-Aug-2001  M. Buhl
+ Dave Laino found that when files were skipped for having bad or insufficient
+ data, the output file names got screwed up.  I added two lines to the main
+ program to shift the names down when bad files were found.
+
+v2.73  06-Sep-2001  M. Buhl
+ Rick Santos found that when you don't use all the channels in an input file,
+ calculated channels messed up the titles and units.  I changed "NumInCols" to
+ "NumCols" in CalcChan.f90\AddCC() to fix the problem.
+
+v2.80  02-Oct-2001  M. Buhl
+ Rick asked me to add a random number generator to the calculated channels
+ feature.  I modified Parser.f90\GetValue() and Parser.f90\tokenize() to look
+ for the new function RAND().  I modified CalcChan.f90\CC_Init() to initialize
+ the seed.  I modified Crunch.f90\GetParams() to read the seed in the CC
+ section of the parameter input files.
+
+v2.81  05-Mar-2002  M. Buhl
+ I found that the program bombed when it was autocounting data records and
+ no valid records were found.  I added an ELSEIF so that Crunch would do a
+ tidy Abort() when it got an EOF on the first data record.
+
+v2.82  21-Apr-2003  M. Buhl
+ I eliminated all DATA statements.
+ In order to get Crunch to compile on the Sun, I had to restrict all lines
+  to 132 characters or less.
+ We were using the non-standard CVF IsNaN() function, so I created a new
+  logical function Is_NaN() and put it in the Sys*.f90 files.  For Sun, I
+  invoked the INTEGER ID_NaN() function and tested its value to decide
+  whether or not to return a true or false.
+ I also discovered that I had mis-declared PLC in PL_Slope() as a REAL
+  instead of an INTEGER when I tried to compile on the Sun.
+ I found a bunch of lines that broke strings over multiple lines and had
+  to fix them.
+
+v2.83  15-Jul-2003  M. Buhl
+ Jim Richmond had a problem when reading a file with no column titles.  It
+  seems that I had neglected to allocate the Titles array before loading
+  data into it.  I fixed that in Crunch.f90\DetectCols().
+ After Garrett Bywaters mentioned that the 100 character limits for
+  calculated-channel equations was an inconvenience, I upped it to 200.
+
+v2.90  15-Oct-2003  P. Moriarty
+ Pat added logic to allow users to set a weight to the unclosed (half) cycles.
+  Setting the weight to 1 makes Crunch count them as full cycles.  Setting it
+  to 0 makes Crunch discard the cycles.
+ In the Peak Lister he added logic to output the last maximum or minimum in
+  the time series.
+
+v2.91  11-Mar-2004  M. Buhl
+ I fixed a minor bug in an error message in Crunch.f90\GetParams().
+ In Rainflow.f90\BinCount2(), I modified the equations that compute the bin
+  indices so that the index would have a minimum value of 1.  This prevents
+  the program from crashing when the user does not choose a wide enough range
+  for the possible mean and range values.
+
+v3.00.00  2007-04-06  M. Buhl
+ I converted the program to use the NWTC Subroutine Library.
+ In Rainflow.f90\SRain(), I had to modify the logic for moving the aggregate data
+   into the Scratch() array.  I had been treating the multiple file data in the
+   ConvData array as one long array and was exceeding subscript bounds.  It worked
+   in the past because that was how things resided in memory, but when I turned on
+   subscript bounds checking in Debug mode, it caught the error.  The checking is
+   normally disabled in Release mode.
+ I changed the array BadList from an integer to a string because we modify the
+   FileName array by removing the names of bad files.  I have to modify
+   Modules.f90\DataMod(), Crunch.f90\Crunch(), and Crunch_Subs.f90\WrBadList() to
+   fix it.  Craig hansen discovered this bug.
+ I added the ability to echo input files.  To accomodate the Echo flag in the Job
+   Options section of the input file, I move the whole section above the Input-Data
+   Layout section.
+ Pat discovered a bug in the peak threshold stuff related to giving false error messages
+   when reading in the parameters.  I modified Crunch_IO.f90/GetParams() to fix it.
+ I discovered that when doing autocalculation of scales for PMFs, the min/max were't
+   being recomputed for each file.  I was reusing the min/max from the first file.  This
+   caused subscript out-of-bounds errors.  I created a new array called PMFAutoScl that
+   is tested to see if we need to recompute the min/max for each file.
+ I discovered that when the data files have different lengths, it causes the EEv tables to
+   be messed up in that the file names in the tables appear to be right justified.  I
+   modified ExtEvent.f90\WriteEE() to fix it.  I had forgotten that A format is right-
+   justified!
+
+v3.01.00b, 30-Nov-2012, M. Buhl
+o  I Added the ability to read FAST binary files.
+o  I changed the length of all paths, files, and roots to 1024 characters.
+o  Oops!  I discovered that limiting by time does not work for formatted files.  Fixed it!
+
+v3.01.00d, 19-Dec-2012, M. buhl
+o  I created a makefile for gfortran
+o  I fixed some stuff to get it to work with gfortran.
+
+v3.02.00a-mlb, 10-Jan-2013,  M. Buhl
+o  I created Crunch_RegTest.py so we could have a system-independent certification test.  I removed
+   CertTest.bat and associated files from the archive and Subversion.
+o  I made a few mods to the .cru files and the python regression test to make them Linux compatible.
+o  I removed the logic for testing the validity of RealFmt in Crunch_IO.f90\GetParams() and put it
+   in ChkRealFmtStr in the Library's NWTC_IO.f90\ChkRealFmtStr().
+o  I modified Crunch_IO to allow one to enter 0 for NumInCols and NumCols when using FAST binary
+   files and use the information in the binary files to provide the column information.
+o  I eliminated a bug that occurred when TEnd was zero.
+
+v3.02.00b-mlb, 18-Jan-2013,  M. Buhl
+o  I added error handling for having no readable input files or asking for the time in the
+   peak/valley listing if no time column was specified.

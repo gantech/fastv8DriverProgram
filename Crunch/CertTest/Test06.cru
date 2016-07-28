@@ -1,0 +1,92 @@
+-----  Crunch v3.01 Input File  -----------------------------------------------
+Input file for testing Crunch for individual analysis of unnormalized 2-D RF cycle counting.  Includes filtering.
+
+False          Echo:               The flag for echoing input to <root>.ech.
+False		Output statistics?
+False		Output modified data?
+False		Tab-delimited output?  (best for spreadsheets)
+"F11.4"	Numerical-output format specifier.  See manual for limitations.
+False		Output aggregate analysis files?  False for separate analysis files for each input file.
+"Aggregate" is the root name of the aggregate files, if aggregates were specified above.
+
+False       FASTbin:            The flag that indicates if the input files are in FAST binary form.  Considered traditionally formatted if FALSE.  All records will be processed.
+0           CTRow:              The row with the channel titles on it (zero if no titles are available of if titles are specified below, ignored if FASTbin is true).
+0           CURow:              The row with the channel units on it (zero if no units are available of if units are specified below, ignored if FASTbin is true).
+127         FDRow               The first row of data (ignored if FASTbin is true).
+15001       NumRecs:            The number of data records to read from each file (0 to automatically determine which rows to read and if TEnd>0, ignored if FASTbin is true).
+0.0, 0.0    TStart, TEnd:       The start and end times (enter zeros if you want to use all the data records in the file).
+
+9 columns in each input file.
+9 columns will be used.
+Format for column info is: Col_Title(10 char max), Orig_Col_#, Scale, Offset
+"Time"		"(sec)"		 1	 1.0		0.0
+"WindSpd"	"(m/s)"		 2	 1.0		0.0
+"Azimuth"	"(deg)"		 3	 1.0		0.0
+"B1_Moop" 	"(kN m)"		 4	 1.0		0.0
+"B1_Mip"  	"(kN m)"		 5	 1.0		0.0
+"YB_Fdw"  	"(kN)"		 6	 1.0		0.0
+"YB_Fcw"   	"(kN)"		 7	 1.0		0.0
+"YB_Mroll"  "(kN m)"		 8	 1.0		0.0
+"YB_Mpitch" "(kN m)"		 9	 1.0		0.0
+
+6 of the output columns are to be modified by the IIR filter.  Next four lines ignored if zero.
+4 5 6 7 8 9
+1 is the type of filter (1-LowPass, 2-HighPass, 3-BandPass)
+0.0 is the low cutoff frequency (ignored for low-pass filters)
+10.0 is the high cutoff frequency (ignored for high-pass filters)
+
+0 new calculated channels will be generated.
+1234567890 is the integer seed for the random number generator (-2,147,483,648 to 2,147,483,647)
+Format for column info is: Col_Title(10 char max), Units(10 char max), Equation.  Put each field in double quotes.
+
+0 channels will have moving averages generated for them.
+Format for moving-average info is: "Title" (10 char max), channel #, averaging period
+
+1 is the Time column.
+2 is the primary wind-speed column (used for mean wind speed and turbulence intensity, 0 for none)
+
+0 pair(s) of channels will have load roses generated for them.
+Format for column info is: Rose_Title(8 char max), 0 degree load, 90 degree load, # sectors
+
+0 columns are to be azimuth averaged.  Next four lines ignored if 0.
+0
+0 is the number of azimuth bins.
+0 is the azimuth column.
+True		Output azimuth averages to a file?
+
+0 pairs of columns will have their crosstalk removed.
+Format for crosstalk info is: OutCol #1, OutCol #2, XT(1,1), XT(1,2), XT(2,1), XT(2,2).
+
+0 of the output columns are to be modified by the peak finder.  Next line ignored if zero.
+0
+
+0 channels will have their peaks and/or valleys listed to a file.  Next three lines ignored if zero.
+2		Method of identifying peaks (1: slope change, 2: thresholds)
+False	Include the time in the peak-list file(s)?
+Format for peak-list info is: Channel, WriteTroughs?, Trough Thresh., WritePeaks?, Peak Thresh.
+
+0 of the output columns will have PDFs generated for them.  Next two lines ignored if zero.
+0 is the number of bins.
+Format for column info is: Column #, Minimum, Maximum.  If Min=Max=0, autocalculate them.
+
+2 of the output columns will have rainflow cycle counts generated for them.  Next six lines ignored if zero.
+1 second is the rainflow counting period.
+False		Normalize rainflow cycle counts by bin width?
+True		For bins with zero counts, output a space if we are using tab-delimited output?
+20 is the number of rainflow range bins.  Use "0" to output the actual cycles instead of binned cycles.
+10 is the number of rainflow means bins.  Use "1" to output ranges only.
+Format for column info is: Column #, Half-Cycle Multiplier, Max Range, Min Mean, Max Mean.
+4 1.0 6.0  0.0 0.0
+5 1.0 0.0 -1.0 3.0
+
+0 groups of parameters will have their extreme events recorded.  Next line ignored if zero.
+Format for column info is: Group_Title(100 char max), #ExtCols, ColList(#ExtCols long), #InfCols(may be 0), ColList(#InfCols long)
+
+0 of the output columns will have statistics put in separate summary files.  Next line ignored if zero.
+0
+
+0 of the output columns will have their statistics extrapolated.
+Format for statistics info is: Col_#,  Hours_to_extrapolate_to, Quantile desired
+
+1 input files to read:
+14u001.tim
