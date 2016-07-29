@@ -1,0 +1,3 @@
+gcc  -O2 -g  -fPIC -c ../Source/FAST_Prog.c -I../Source/dependencies/OpenFOAM/ -o Obj_lin64/FAST_Prog.o 
+gcc -I Obj_lin64 -o ../bin/FAST_cDriverProg_glin64 \
+	Obj_lin64/FAST_Prog.o -fPIC -L../bin -lFAST_glin64 -lmap-1.20.10

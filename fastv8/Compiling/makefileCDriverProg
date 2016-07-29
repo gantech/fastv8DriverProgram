@@ -1,0 +1,80 @@
+#================================================================================#
+# This makefile created by G. Vijayakumar on 28-July-2016                        #
+# adapted from FAST (B. Jonkman on 28-July-2016.                                 #
+# (c) 2016 National Renewable Energy Laboratory                                  #
+#                                                                                #
+# This makefile has been tested on Linux x64 with gfortran-4.8.                  #
+#                                                                                #
+# It was designed to be used with FAST_Prog.c for a C driver program for FAST    #
+#================================================================================#
+
+   # 32-bit or 64-bit?
+#BITS = 32
+BITS = 64
+
+   # Location of source files for the DLL.
+   # You may need to change these for your DLL.
+
+SOURCE_DIR  = ../Source
+SOURCE_FILE = FAST_Prog.c
+
+
+   # Name of compiler to use and flags to use.
+CC      = gcc
+CFLAGS  = -O2 -g 
+
+   # Destination and RootName for executable
+
+OUTPUT_NAME = FAST_cDriverProg
+FASTLIB_DIR = ../bin
+DEST_DIR    = ../bin
+
+   #==========================================================#
+   # You should not need to change anything beyond this point #
+   #==========================================================#
+
+#Currently only supports Linux
+# System-specific settings.
+DEL_CMD   = rm -f
+EXE_EXT   = _glin$(BITS)
+INTER_DIR = Obj_lin$(BITS)
+MD_CMD    = @mkdir -p
+OBJ_EXT   = .o
+PATH_SEP  = /
+SYS_FILE  = SysGnuLinux
+
+UNAME := $(shell uname -s)
+
+CFLAGS     := $(CFLAGS) -fPIC
+LDFLAGS    = -fPIC -L$(FASTLIB_DIR) -lFAST_glin$(BITS) -lmap-1.20.10
+
+_ALL_OBJS  = $(SOURCE_FILE:.c=$(OBJ_EXT))
+ALL_OBJS   = $(patsubst %,$(INTER_DIR)/%,$(_ALL_OBJS))
+
+# Rule to do everything.
+
+all:     default
+default:  $(INTER_DIR) $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT)
+
+   # General rules for compliling the files.
+
+$(INTER_DIR)/%$(OBJ_EXT): $(SOURCE_DIR)/%.c $(SOURCE_DIR)/dependencies/OpenFOAM/OpenFOAM_Types.h
+	$(CC)  $(CFLAGS) -c $< -I$(SOURCE_DIR)/dependencies/OpenFOAM/ -o $@ 
+
+   # Make sure the destination directory for the intermediate files exist.
+
+$(INTER_DIR):
+	$(MD_CMD) $(INTER_DIR)
+
+   # For linking 
+
+$(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT): $(ALL_OBJS) 
+	$(CC) -I $(INTER_DIR) -o $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT) \
+	$(ALL_OBJS) $(LDFLAGS)
+
+   # Cleanup afterwards.
+
+clean:
+	$(DEL_CMD) $(INTER_DIR)$(PATH_SEP)*$(OBJ_EXT) $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT)
+
+
