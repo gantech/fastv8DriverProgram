@@ -10,8 +10,8 @@
 #================================================================================#
 
    # 32-bit or 64-bit?
-BITS = 32
-#BITS = 64
+#BITS = 32
+BITS = 64
 
 
    # Location of source files for the DLL.
@@ -24,8 +24,8 @@ SOURCE_FILE = DISCON.f90
 
    # Name of compiler to use and flags to use.
 FC      = gfortran
-FFLAGS  = -O2 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -C
-LDFLAGS = -shared -O2 -m$(BITS) -fbacktrace
+FFLAGS  = -O2 -g -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -C
+LDFLAGS = -shared -O2 -g -m$(BITS) -fbacktrace
 
 # other useful gfortran options:
 #  -fdefault-real-8 -fcheck=bounds -std=f2003 -O0 -v

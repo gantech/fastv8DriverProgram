@@ -12,22 +12,22 @@
 FC      = gfortran
 
 # 32-bit or 64-bit?
-BITS = 32
-#BITS = 64
+#BITS = 32
+BITS = 64
 
 #================================================================================#
 # if compiling FAST as a shared library, use
-# FAST_driver = FAST_Library
+FAST_driver = FAST_Library
 # to generate a stand-alone version of FAST, use
-FAST_driver = FAST_Prog
+#FAST_driver = FAST_Prog
 #================================================================================#
 
 
 
-FFLAGS  = -O2 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input
+FFLAGS  = -O2 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -DDOUBLE_PRECISION  -fdefault-real-8 -g -pg
 LDFLAGS = -O2 -m$(BITS) -fbacktrace
 
-#FFLAGS  = -O0 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -DDOUBLE_PRECISION  -fdefault-real-8 -g -pg
+#FFLAGS  = -O0 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input
 #FFLAGS  = -O0 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -g -pg
 #LDFLAGS = -O0 -m$(BITS) -fbacktrace  -g -pg
 
@@ -104,7 +104,7 @@ ifeq ($(OS),Windows_NT)
 else
 
    Registry     = $(FAST_DIR)/dependencies/registry.exe
-   MAP_lib      = $(BIN_DIR)/libmap-1.20.10.so
+   MAP_lib      = -L$(BIN_DIR) -lmap-1.20.10
 
      # skip the OrcaFlex interface, which seems to be causing issues with gfortran v5 on Mac (The OrcaFlex DLL is for Windows only, anyway)
    FFLAGS      := $(FFLAGS) -DNO_LibLoad
@@ -119,7 +119,7 @@ else
    else
         # ifeq ($(UNAME), Linux)
         # bjj verify this: # I've been told that the lapack linking needs to occur at the end of the line (after all the object files) on linux:
-      LAPACK_LINK  = -llapack -lblas
+      LAPACK_LINK  = -Wl,-rpath,/nopt/intel/13.0/composer_xe_2013.3.163/mkl/lib/intel64 -Wl,-rpath,/nopt/intel/13.0/composer_xe_2013.3.163/mkl/../compiler/lib/intel64 -L/nopt/intel/13.0/composer_xe_2013.3.163/mkl/lib/intel64 -L/nopt/intel/13.0/composer_xe_2013.3.163/mkl/../compiler/lib/intel64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm
       #DLL_EXT     := so
    endif
 
@@ -138,7 +138,7 @@ DEST_DIR    = $(BIN_DIR)
 ifeq ($(FAST_driver),FAST_Library)
    LDFLAGS := $(LDFLAGS) -shared
    FFLAGS := $(FFLAGS) -DIMPLICIT_DLLEXPORT
-   OUTPUT_NAME = FAST_Library
+   OUTPUT_NAME = libFAST
 
    ifneq ($(OS),Windows_NT)
       ifneq ($(UNAME), Darwin)

@@ -43,13 +43,14 @@ else
     LDFLAGS   = -g -dynamiclib
     LIB_FLAGS := -lm
   else ifeq ($(PLATFORM),Linux)
+    LAPACK_LIBS = -Wl,-rpath,/nopt/intel/13.0/composer_xe_2013.3.163/mkl/lib/intel64 -Wl,-rpath,/nopt/intel/13.0/composer_xe_2013.3.163/mkl/../compiler/lib/intel64 -L/nopt/intel/13.0/composer_xe_2013.3.163/mkl/lib/intel64 -L/nopt/intel/13.0/composer_xe_2013.3.163/mkl/../compiler/lib/intel64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm
     LIB_EXT   = so
     CC_TOOLS  = gcc
     #CFLAGS    = -g -O1 -fsanitize=address -fno-omit-frame-pointer -fPIC -D DEBUG -DGITVERSION=\"$(GIT_VERSION)\" -Icminpack -Isimclist
     #CFLAGS    = -g -fPIC -std=c99 -Wuninitialized -Wall -D DEBUG -DGITVERSION=\"$(GIT_VERSION)\"
     CFLAGS    = $(BITS) -g -fPIC -std=c99 -D DEBUG -DGITVERSION=\"$(GIT_VERSION)\" -D WITH_LAPACK
-    LDFLAGS   = $(BITS) -g -shared -llapacke
-    LIB_FLAGS := -lm -llapacke
+    LDFLAGS   = $(BITS) -g -shared ${LAPACK_LIBS}
+    LIB_FLAGS := -lm ${LAPACK_LIBS}
   endif
 endif
 
