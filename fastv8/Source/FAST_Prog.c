@@ -52,7 +52,7 @@ main(int argc, char *argv[], char *env[])
       restart
       ********************************* */
       /* note that this will set n_t_global inside the FAST library */
-      strcpy(CheckpointFileRoot, "../../../CertTest/Test18.1200");
+      strcpy(CheckpointFileRoot, "Test18.1200");
       FAST_OpFM_Restart(CheckpointFileRoot, &AbortErrLev, &dt, &NumBlades, &NumElementsPerBlade, &n_t_global_start, OpFM_Input_from_FAST, OpFM_Output_to_FAST, &ErrStat, ErrMsg);
       if (checkError(ErrStat, ErrMsg)) return 1;
 
@@ -63,7 +63,7 @@ main(int argc, char *argv[], char *env[])
       ********************************* */
 
       // this calls the Init() routines of each module
-      strcpy(InputFileName, "../../../CertTest/Test18.fst");
+      strcpy(InputFileName, "Test18.fst");
       TurbID = 1;
       TurbinePos[0] = 0.0;  // x location of turbine
       TurbinePos[1] = 0.0;  // y location of turbine

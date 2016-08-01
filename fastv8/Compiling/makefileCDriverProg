@@ -69,7 +69,7 @@ $(INTER_DIR):
    # For linking 
 
 $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT): $(ALL_OBJS) 
-	$(CC) -I $(INTER_DIR) -o $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT) \
+	$(CC) $(CFLAGS) -o $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT) \
 	$(ALL_OBJS) $(LDFLAGS)
 
    # Cleanup afterwards.
