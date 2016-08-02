@@ -1,3 +1,6 @@
-gcc  -O2 -g  -fPIC -c ../Source/FAST_Prog.c -I../Source/dependencies/OpenFOAM/ -o Obj_lin64/FAST_Prog.o 
-gcc -I Obj_lin64 -o ../bin/FAST_cDriverProg_glin64 \
+gcc  -O0 -g  -fPIC -c ../Source/FAST_Prog.c -I../Source/dependencies/OpenFOAM/ -o Obj_lin64/FAST_Prog.o 
+gcc -O0 -g  -fPIC -o ../bin/FAST_cDriverProg_glin64 \
 	Obj_lin64/FAST_Prog.o -fPIC -L../bin -lFAST_glin64 -lmap-1.20.10
+../bin/libFAST_glin64.so: undefined reference to `DISCON'
+collect2: error: ld returned 1 exit status
+make: *** [../bin/FAST_cDriverProg_glin64] Error 1

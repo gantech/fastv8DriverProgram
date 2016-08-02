@@ -1,3 +1,3 @@
-gfortran  -O2 -g -m64 -fbacktrace -ffree-line-length-none -x f95-cpp-input -C -DIMPLICIT_DLLEXPORT -fPIC -c ../CertTest/5MW_Baseline/ServoData/Source/DISCON.f90 -o Obj_lin64/DISCON.obj -J Obj_lin64 -B Obj_lin64
-gfortran -shared -O2 -g -m64 -fbacktrace -fPIC -I Obj_lin64 -o ../CertTest/5MW_Baseline/ServoData/DISCON_glin64.so \
+gfortran  -O0 -g -m64 -fbacktrace -ffree-line-length-none -x f95-cpp-input -C -DIMPLICIT_DLLEXPORT -fPIC -c ../CertTest/5MW_Baseline/ServoData/Source/DISCON.f90 -o Obj_lin64/DISCON.obj -J Obj_lin64 -B Obj_lin64
+gfortran -shared -O0 -g -m64 -fbacktrace -fPIC -I Obj_lin64 -o ../CertTest/5MW_Baseline/ServoData/DISCON_glin64.so \
 	 Obj_lin64/DISCON.obj

@@ -21,12 +21,13 @@ SOURCE_FILE = FAST_Prog.c
 
    # Name of compiler to use and flags to use.
 CC      = gcc
-CFLAGS  = -O2 -g 
+CFLAGS  = -O0 -g 
 
    # Destination and RootName for executable
 
 OUTPUT_NAME = FAST_cDriverProg
 FASTLIB_DIR = ../bin
+
 DEST_DIR    = ../bin
 
    #==========================================================#
@@ -46,7 +47,7 @@ SYS_FILE  = SysGnuLinux
 UNAME := $(shell uname -s)
 
 CFLAGS     := $(CFLAGS) -fPIC
-LDFLAGS    = -fPIC -L$(FASTLIB_DIR) -lFAST_glin$(BITS) -lmap-1.20.10
+LDFLAGS    = -fPIC -L$(FASTLIB_DIR) -lFAST_glin$(BITS) -lmap-1.20.10 -lDISCON_glin$(BITS)
 
 _ALL_OBJS  = $(SOURCE_FILE:.c=$(OBJ_EXT))
 ALL_OBJS   = $(patsubst %,$(INTER_DIR)/%,$(_ALL_OBJS))
