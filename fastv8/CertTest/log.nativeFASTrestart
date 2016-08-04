@@ -1,0 +1,78 @@
+
+ **************************************************************************************************
+ FAST (v8.16.00a-bjj, 27-Jul-2016)
+
+ Copyright (C) 2016 National Renewable Energy Laboratory
+
+ This program comes with ABSOLUTELY NO WARRANTY. See the "license.txt" file distributed with this
+ software for details.
+ **************************************************************************************************
+
+  Running FAST (v8.16.00a-bjj, 27-Jul-2016), compiled as a 64-bit application using double
+  precision
+  linked with NWTC Subroutine Library (v2.09.00, 23-Jul-2016)
+
+  Restarting simulation at 10 seconds.
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 5, Blade = 1
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 6, Blade = 1
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 7, Blade = 1
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 8, Blade = 1
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 9, Blade = 1
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 10, Blade = 1
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 11, Blade = 1
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 12, Blade = 1
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 13, Blade = 1
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 14, Blade = 1
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 15, Blade = 1
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 16, Blade = 1
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 17, Blade = 1
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 18, Blade = 1
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 19, Blade = 1
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 5, Blade = 2
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 6, Blade = 2
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 7, Blade = 2
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 8, Blade = 2
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 9, Blade = 2
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 10, Blade = 2
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 11, Blade = 2
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 12, Blade = 2
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 13, Blade = 2
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 14, Blade = 2
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 15, Blade = 2
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 16, Blade = 2
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 17, Blade = 2
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 18, Blade = 2
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 19, Blade = 2
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 5, Blade = 3
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 6, Blade = 3
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 7, Blade = 3
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 8, Blade = 3
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 9, Blade = 3
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 10, Blade = 3
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 11, Blade = 3
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 12, Blade = 3
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 13, Blade = 3
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 14, Blade = 3
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 15, Blade = 3
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 16, Blade = 3
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 17, Blade = 3
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 18, Blade = 3
+ Warning: Turning off Unsteady Aerodynamics due to high angle-of-attack. BladeNode = 19, Blade = 3
+
+ FAST_Solution:FAST_AdvanceStates:ED_ABM4:ED_CalcContStateDeriv:SetCoordSy:Small angle assumption
+ violated in SUBROUTINE SmllRotTrans() due to a large blade deflection (ElastoDyn SetCoordSy). The
+ solution may be inaccurate. Simulation continuing, but future warnings from SmllRotTrans() will
+ be suppressed.
+  Additional debugging message from SUBROUTINE SmllRotTrans(): 10.588 s
+
+
+                                                                                                   Timestep: 15 of 60 seconds. Estimated final completion at 17:32:02.                              
+ FAST_Solution:CalcOutputs_And_SolveForInputs:SolveOption2:InflowWind_CalcOutput:CalcOutput:IfW_TSF
+ FWind_CalcOutput [position=(-95.077, 75.368, 81.78) in wind-file coordinates]: FF wind array
+ boundaries violated: Grid too small in Y direction. Y=75.368; Y boundaries = [-72.5, 72.5]
+
+ FAST encountered an error at simulation time 15.581 of 60 seconds.
+  Simulation error level: FATAL ERROR
+
+  Aborting FAST.
+
