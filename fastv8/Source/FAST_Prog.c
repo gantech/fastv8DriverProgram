@@ -46,13 +46,13 @@ main(int argc, char *argv[], char *env[])
 
 
 
-   if (0){ // restart from checkpoint file
+   if (1){ // restart from checkpoint file
 
       /* ******************************
       restart
       ********************************* */
       /* note that this will set n_t_global inside the FAST library */
-      strcpy(CheckpointFileRoot, "Test18.1200");
+      strcpy(CheckpointFileRoot, "Test18.T1.10");
       FAST_OpFM_Restart(CheckpointFileRoot, &AbortErrLev, &dt, &NumBlades, &NumElementsPerBlade, &n_t_global_start, OpFM_Input_from_FAST, OpFM_Output_to_FAST, &ErrStat, ErrMsg);
       if (checkError(ErrStat, ErrMsg)) return 1;
 
