@@ -499,9 +499,39 @@ subroutine FAST_OpFM_Restart(CheckpointRootName_c, AbortErrLev_c, dt_c, n_t_glob
    
    ! local variables
    INTEGER(C_INT)                        :: NumOuts_c      
-
-   call FAST_Restart(CheckpointRootName_c, AbortErrLev_c, NumOuts_c, dt_c, n_t_global_c, ErrStat_c, ErrMsg_c)
+   CHARACTER(IntfStrLen)                 :: CheckpointRootName   
+   INTEGER(IntKi)                        :: I
+   INTEGER(IntKi)                        :: Unit
+   REAL(DbKi)                            :: t_initial_out
+   INTEGER(IntKi)                        :: NumTurbines_out
+   CHARACTER(*),           PARAMETER     :: RoutineName = 'FAST_Restart' 
+             
+      ! transfer the character array from C to a Fortran string:   
+   CheckpointRootName = TRANSFER( CheckpointRootName_c, CheckpointRootName )
+   I = INDEX(CheckpointRootName,C_NULL_CHAR) - 1                 ! if this has a c null character at the end...
+   IF ( I > 0 ) CheckpointRootName = CheckpointRootName(1:I)     ! remove it
    
+   Unit = -1
+   CALL FAST_RestoreFromCheckpoint_T(t_initial_out, n_t_global, NumTurbines_out, Turbine, CheckpointRootName, ErrStat, ErrMsg, Unit )
+   
+      ! check that these are valid:
+      IF (t_initial_out /= t_initial) CALL SetErrStat(ErrID_Fatal, "invalid value of t_initial.", ErrStat, ErrMsg, RoutineName )
+      IF (NumTurbines_out /= 1) CALL SetErrStat(ErrID_Fatal, "invalid value of NumTurbines.", ErrStat, ErrMsg, RoutineName )
+   
+       ! transfer Fortran variables to C: 
+   n_t_global_c  = n_t_global
+   AbortErrLev_c = AbortErrLev   
+   NumOuts_c     = min(MAXOUTPUTS, 1 + SUM( Turbine%y_FAST%numOuts )) ! includes time
+   dt_c          = Turbine%p_FAST%dt      
+      
+   ErrStat_c     = ErrStat
+   ErrMsg        = TRIM(ErrMsg)//C_NULL_CHAR
+   ErrMsg_c      = TRANSFER( ErrMsg//C_NULL_CHAR, ErrMsg_c )
+
+#ifdef CONSOLE_FILE   
+   if (ErrStat /= ErrID_None) call wrscr1(trim(ErrMsg))
+#endif   
+
    call SetOpenFOAM_pointers(OpFM_Input_from_FAST, OpFM_Output_to_FAST)
 
 end subroutine FAST_OpFM_Restart
