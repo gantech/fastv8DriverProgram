@@ -481,7 +481,7 @@ subroutine FAST_OpFM_Solution0(ErrStat_c, ErrMsg_c) BIND (C, NAME='FAST_OpFM_Sol
                         
 end subroutine FAST_OpFM_Solution0
 !==================================================================================================================================
-subroutine FAST_OpFM_Restart(CheckpointRootName_c, AbortErrLev_c, dt_c, n_t_global_c, &
+subroutine FAST_OpFM_Restart(CheckpointRootName_c, AbortErrLev_c, dt_c, numblades_c, numElementsPerBlade_c, n_t_global_c, &
                       OpFM_Input_from_FAST, OpFM_Output_to_FAST, ErrStat_c, ErrMsg_c) BIND (C, NAME='FAST_OpFM_Restart')
 !DEC$ ATTRIBUTES DLLEXPORT::FAST_OpFM_Restart
    IMPLICIT NONE
@@ -490,6 +490,8 @@ subroutine FAST_OpFM_Restart(CheckpointRootName_c, AbortErrLev_c, dt_c, n_t_glob
 #endif
    CHARACTER(KIND=C_CHAR), INTENT(IN   ) :: CheckpointRootName_c(IntfStrLen)      
    INTEGER(C_INT),         INTENT(  OUT) :: AbortErrLev_c      
+   INTEGER(C_INT),         INTENT(  OUT) :: numblades_c
+   INTEGER(C_INT),         INTENT(  OUT) :: numElementsPerBlade_c
    REAL(C_DOUBLE),         INTENT(  OUT) :: dt_c      
    INTEGER(C_INT),         INTENT(  OUT) :: n_t_global_c      
    TYPE(OpFM_InputType_C), INTENT(  OUT) :: OpFM_Input_from_FAST
@@ -522,6 +524,8 @@ subroutine FAST_OpFM_Restart(CheckpointRootName_c, AbortErrLev_c, dt_c, n_t_glob
    n_t_global_c  = n_t_global
    AbortErrLev_c = AbortErrLev   
    NumOuts_c     = min(MAXOUTPUTS, 1 + SUM( Turbine%y_FAST%numOuts )) ! includes time
+   numBlades_c   = Turbine%ad%p%numblades
+   numElementsPerBlade_c = Turbine%ad%p%numblnds ! I'm not sure if FASTv8 can handle different number of blade nodes for each blade.
    dt_c          = Turbine%p_FAST%dt      
       
    ErrStat_c     = ErrStat
