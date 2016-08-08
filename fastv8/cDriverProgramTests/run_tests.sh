@@ -29,20 +29,19 @@ export FAST=FAST_glin64
 cp $Fv8cDPRtest_DIR/pass_fail.sh $FAST_DIR/runFv8cDPRtest
 
 #=============================================================================
-# Test 1
+# Test 01
 #=============================================================================
-if [ ! -d "$baseGitfHub_DIR/runFv8cDPRtest/testCases/test1" ]; then
-    mkdir $FAST_DIR/runFv8cDPRtest/testCases/test1
+if [ ! -d "$baseGitfHub_DIR/runFv8cDPRtest/testCases/test01" ]; then
+    mkdir $FAST_DIR/runFv8cDPRtest/testCases/test01
 fi
 
-cd $FAST_DIR/runFv8cDPRtest/testCases/test1
-cp $Fv8cDPRtest_DIR/testCases/test1/test1.fst $FAST_DIR/runFv8cDPRtest/testCases/test1/
-cp $Fv8cDPRtest_DIR/testCases/test1/5MW_Baseline $FAST_DIR/runFv8cDPRtest/testCases/test1/
-cp $Fv8cDPRtest_DIR/xml/milestone.xml $FAST_DIR/runFv8cDPRtest/testCases/test1/
-cp $Fv8cDPRtest_DIR/testCases/test1/test1.sh $FAST_DIR/runFv8cDPRtest/testCases/test1/
-cp $Fv8cDPRtest_DIR/testCases/test1/test1.norm.gold* $FAST_DIR/runFv8cDPRtest/testCases/test1
+cd $FAST_DIR/runFv8cDPRtest/testCases/test01
+cp $Fv8cDPRtest_DIR/testCases/test01/test01.fst $FAST_DIR/runFv8cDPRtest/testCases/test01/
+cp $Fv8cDPRtest_DIR/testCases/test01/5MW_Baseline $FAST_DIR/runFv8cDPRtest/testCases/test01/
+cp $Fv8cDPRtest_DIR/testCases/test01/test01.sh $FAST_DIR/runFv8cDPRtest/testCases/test01/
+cp $Fv8cDPRtest_DIR/testCases/test01/Test01.nativeFortran.out $FAST_DIR/runFv8cDPRtest/testCases/test01/
 # run it...  
-./test1.sh
+./test01.sh
 
 
 echo "Rtest End"
