@@ -8,7 +8,7 @@ if [ -f $CWD/PASS ]; then
     # already ran this test
     didSimulationDiffAnywhere=0
 else
-    $(FAST) Test01.fst
+    $FAST Test01.fst
     determine_pass_fail Test01.T1.out Test01.nativeFortran.out
     didSimulationDiffAnywhere="$?"
 fi
