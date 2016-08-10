@@ -438,7 +438,6 @@ $(SrvD_DIR)/ServoDyn_Types.f90: $(SrvD_DIR)/ServoDyn_Registry.txt
 
 $(ED_DIR)/ElastoDyn_Types.f90: $(ED_DIR)/ElastoDyn_Registry.txt
 	$(Registry) $< -I $(NWTC_Lib_DIR)  -O $(ED_DIR)
-	patch $(ED_DIR)/ElastoDyn_Types.f90$(ED_DIR)/ElastoDyn_Types.f90.diffPatch
 
 $(BD_DIR)/BeamDyn_Types.f90: $(BD_DIR)/Registry_BeamDyn.txt
 	$(Registry) $< -I $(NWTC_Lib_DIR)  -O $(BD_DIR)
