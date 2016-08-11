@@ -1,4 +1,3 @@
-
 #include "FAST_Library.h"
 #include "stdio.h"
 #include <string.h>

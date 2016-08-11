@@ -1,21 +1,31 @@
 #include "FAST_cInterface.h"
 
+#include <iostream>
+
 int main()
 
 {
 
-  string cDriverInputFile="cDriver.inp";
+  std::string cDriverInputFile="cDriver.i";
+  
+  FAST_cInterface FAST;
 
-  FAST_cInterface FAST(cDriverInputFile);
+  try {
+    FAST.readInputFile(cDriverInputFile);
+  }
+  catch( const std::runtime_error & ex) {
+    std::cerr << ex.what() << std::endl ;
+    std::cerr << "Program quitting now" << std::endl ;
+    return 1;
+  }
 
   int nt=-1;
   
   for (nt = FAST.get_ntStart(); nt <= FAST.get_ntEnd(); nt++) {
-    
-    FAST.cDriverStep();
-
+    FAST.step();
   }
-
+  
+  return 0;
     
 }
 

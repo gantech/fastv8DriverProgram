@@ -2,39 +2,50 @@
 #define FAST_cInterface_h
 
 #include "FAST_Library.h"
+#include "sys/stat.h"
 #include "stdio.h"
-#include <string.h>
+#include <string>
+#include <cstring>
 #include <math.h>
 #include <stdlib.h> 
 #include <malloc.h>
+#include <stdexcept>
 
 class FAST_cInterface {
 
  private:
-  
+
+  bool   restart;
   double dtFAST;
   double TMax;
   float TurbinePos[3];
   int TurbID;
-  char FastInputFileName[INTERFACE_STRING_LENGTH];
+  char FASTInputFileName[INTERFACE_STRING_LENGTH];
   char CheckpointFileRoot[INTERFACE_STRING_LENGTH];
   double tStart, tEnd;
-  double ntStart, ntEnd; // The time step to start and end the FAST simulation
-  int nCheckPoint;
-  int NumScOutputs;  // # outputs from the supercontroller == # inputs to the controller == NumSC2Ctrl
-  int NumScInputs;   // # inputs to the supercontroller == # outputs from the controller == NumCtrl2SC
-
-  OpFM_InputType_t* cDriver_Input_from_FAST = NULL;
-  OpFM_OutputType_t* cDriver_Output_to_FAST = NULL;
+  int nt_global;           
+  int ntStart, ntEnd;      // The time step to start and end the FAST simulation
+  int nEveryCheckPoint;    // Check point files will be written every 'nEveryCheckPoint' time steps
+  int numBlades;           // Number of blades
+  int numElementsPerBlade;
+  int numTwrElements;
+  int numScOutputs;  // # outputs from the supercontroller == # inputs to the controller == NumSC2Ctrl
+  int numScInputs;   // # inputs to the supercontroller == # outputs from the controller == NumCtrl2SC
   
+
+  OpFM_InputType_t * cDriver_Input_from_FAST;
+  OpFM_OutputType_t * cDriver_Output_to_FAST;
+  
+  int ErrStat;
+  char ErrMsg[INTERFACE_STRING_LENGTH];  // make sure this is the same size as IntfStrLen in FAST_Library.f90
 
  public:
   
-  // Constructor
-  FAST_cInterface(string fastcInterfaceInputFile);
+  // Constructor 
+  FAST_cInterface() ;
   
   // Destructor
-  virtual ~FAST_cInterface() {
+  ~FAST_cInterface() {
     
     FAST_End();
 
@@ -50,17 +61,19 @@ class FAST_cInterface {
 
   }
 
-  int cDriverStep();
-  int get_ntStart() { return ntStart };
-  int get_ntEnd() { return ntEnd };
+  int readInputFile(std::string cInterfaceInputFile);  
+  int init();
+  int step();
+  int get_ntStart() { return ntStart; }
+  int get_ntEnd() { return ntEnd; }
 
  private:
+  void checkError(const int ErrStat, const char * ErrMsg);
+  void setOutputsToFAST(OpFM_InputType_t* cDriver_Input_from_FAST, OpFM_OutputType_t* cDriver_Output_to_FAST) ;
 
-  int cDriverReadInputFile();
-  int cDriverInit();
   int cDriverRestart();
+  inline bool checkFileExists(const std::string& name);
   
-  
-}
+};
 
 #endif
