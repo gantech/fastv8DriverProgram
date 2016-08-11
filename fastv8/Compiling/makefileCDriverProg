@@ -28,6 +28,7 @@ CFLAGS  = -O2 -g
 
 
 DISCONLIB_DIR = ../CertTest/5MW_Baseline/ServoData/
+YAMLCPPLIB_DIR = ../Source/dependencies/yaml-cpp/lib/
 FASTLIB_DIR = ../bin
 DEST_DIR    = ../bin
 
@@ -48,7 +49,7 @@ SYS_FILE  = SysGnuLinux
 UNAME := $(shell uname -s)
 
 CFLAGS     := $(CFLAGS) -fPIC -fpermissive
-LDFLAGS    = -fPIC -L$(FASTLIB_DIR) -L$(DISCONLIB_DIR) -lFAST_glin$(BITS) -lmap-1.20.10 -lDISCON_glin64
+LDFLAGS    = -fPIC -L$(FASTLIB_DIR) -L$(DISCONLIB_DIR) -L$(YAMLCPPLIB_DIR) -lFAST_glin$(BITS) -lmap-1.20.10 -lDISCON_glin64 -lyaml-cpp
 
 _ALL_OBJS  = $(SOURCE_FILE:.c=$(OBJ_EXT))
 ALL_OBJS   = $(patsubst %,$(INTER_DIR)/%,$(_ALL_OBJS))
