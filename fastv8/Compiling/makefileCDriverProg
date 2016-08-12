@@ -48,7 +48,7 @@ SYS_FILE  = SysGnuLinux
 
 UNAME := $(shell uname -s)
 
-CFLAGS     := $(CFLAGS) -fPIC -fpermissive
+CFLAGS     := $(CFLAGS) -fPIC -fpermissive -std=c++11
 LDFLAGS    = -fPIC -L$(FASTLIB_DIR) -L$(DISCONLIB_DIR) -L$(YAMLCPPLIB_DIR) -lFAST_glin$(BITS) -lmap-1.20.10 -lDISCON_glin64 -lyaml-cpp
 
 _ALL_OBJS  = $(SOURCE_FILE:.c=$(OBJ_EXT))
@@ -68,7 +68,7 @@ $(INTER_DIR)/FAST_cInterface.o: $(SOURCE_DIR)/FAST_cInterface.c $(SOURCE_DIR)/FA
 	$(CPP)  $(CFLAGS) -c $< -I$(SOURCE_DIR)/dependencies/OpenFOAM/ -I$(SOURCE_DIR)/dependencies/yaml-cpp/include/ -o $@ 
 
 $(INTER_DIR)/FAST_Prog_cInterface.o: $(SOURCE_DIR)/FAST_Prog_cInterface.c $(SOURCE_DIR)/FAST_cInterface.h $(INTER_DIR)/FAST_cInterface.o $(SOURCE_DIR)/dependencies/OpenFOAM/OpenFOAM_Types.h
-	$(CPP)  $(CFLAGS) -c $< -I$(SOURCE_DIR) -I$(SOURCE_DIR)/dependencies/OpenFOAM/ -o $@
+	$(CPP)  $(CFLAGS) -c $< -I$(SOURCE_DIR) -I$(SOURCE_DIR)/dependencies/OpenFOAM/ -I$(SOURCE_DIR)/dependencies/yaml-cpp/include/ -o $@
 
    # Make sure the destination directory for the intermediate files exist.
 
