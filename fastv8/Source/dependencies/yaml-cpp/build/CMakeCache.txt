@@ -20,6 +20,12 @@ APPLE_UNIVERSAL_BIN:BOOL=OFF
 //Build shared libraries (DLLs).
 BUILD_SHARED_LIBS:BOOL=OFF
 
+//The directory containing a CMake configuration file for Boost.
+Boost_DIR:PATH=/usr/lib64/boost
+
+//Boost include directory
+Boost_INCLUDE_DIR:FILEPATH=/usr/include
+
 //Path to a program.
 CMAKE_AR:FILEPATH=/usr/bin/ar
 
@@ -30,7 +36,7 @@ CMAKE_BUILD_TYPE:STRING=
 //Enable/Disable color output during build.
 CMAKE_COLOR_MAKEFILE:BOOL=ON
 
-//CXX compiler.
+//CXX compiler
 CMAKE_CXX_COMPILER:FILEPATH=/nopt/nrel/apps/compiler/gcc/4.8.1/bin/g++
 
 //Flags used by the compiler during all build types.
@@ -39,18 +45,17 @@ CMAKE_CXX_FLAGS:STRING=
 //Flags used by the compiler during debug builds.
 CMAKE_CXX_FLAGS_DEBUG:STRING=-g
 
-//Flags used by the compiler during release minsize builds.
+//Flags used by the compiler during release builds for minimum
+// size.
 CMAKE_CXX_FLAGS_MINSIZEREL:STRING=-Os -DNDEBUG
 
-//Flags used by the compiler during release builds (/MD /Ob1 /Oi
-// /Ot /Oy /Gs will produce slightly less optimized but smaller
-// files).
+//Flags used by the compiler during release builds.
 CMAKE_CXX_FLAGS_RELEASE:STRING=-O3 -DNDEBUG
 
-//Flags used by the compiler during Release with Debug Info builds.
-CMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING=-O2 -g
+//Flags used by the compiler during release builds with debug info.
+CMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING=-O2 -g -DNDEBUG
 
-//C compiler.
+//C compiler
 CMAKE_C_COMPILER:FILEPATH=/nopt/nrel/apps/compiler/gcc/4.8.1/bin/gcc
 
 //Flags used by the compiler during all build types.
@@ -59,16 +64,15 @@ CMAKE_C_FLAGS:STRING=
 //Flags used by the compiler during debug builds.
 CMAKE_C_FLAGS_DEBUG:STRING=-g
 
-//Flags used by the compiler during release minsize builds.
+//Flags used by the compiler during release builds for minimum
+// size.
 CMAKE_C_FLAGS_MINSIZEREL:STRING=-Os -DNDEBUG
 
-//Flags used by the compiler during release builds (/MD /Ob1 /Oi
-// /Ot /Oy /Gs will produce slightly less optimized but smaller
-// files).
+//Flags used by the compiler during release builds.
 CMAKE_C_FLAGS_RELEASE:STRING=-O3 -DNDEBUG
 
-//Flags used by the compiler during Release with Debug Info builds.
-CMAKE_C_FLAGS_RELWITHDEBINFO:STRING=-O2 -g
+//Flags used by the compiler during release builds with debug info.
+CMAKE_C_FLAGS_RELWITHDEBINFO:STRING=-O2 -g -DNDEBUG
 
 //Flags used by the linker.
 CMAKE_EXE_LINKER_FLAGS:STRING=
@@ -184,7 +188,7 @@ MSVC_SHARED_RT:BOOL=ON
 MSVC_STHREADED_RT:BOOL=OFF
 
 //Path to a program.
-PYTHON_EXECUTABLE:FILEPATH=/usr/bin/python2.6
+PYTHON_EXECUTABLE:FILEPATH=/usr/bin/python
 
 //Value Computed by CMake
 YAML_CPP_BINARY_DIR:STATIC=/home/gvijayak/fastv8DriverProgram/fastv8/Source/dependencies/yaml-cpp/build
@@ -196,7 +200,7 @@ YAML_CPP_BUILD_CONTRIB:BOOL=ON
 YAML_CPP_BUILD_TOOLS:BOOL=ON
 
 //Value Computed by CMake
-YAML_CPP_SOURCE_DIR:STATIC=/home/gvijayak/fastv8DriverProgram/fastv8/Source/dependencies/yaml-cpp/yaml-cpp-master
+YAML_CPP_SOURCE_DIR:STATIC=/home/gvijayak/fastv8DriverProgram/fastv8/Source/dependencies/yaml-cpp/yaml-cpp-release-0.5.3
 
 //Value Computed by CMake
 gmock_BINARY_DIR:STATIC=/home/gvijayak/fastv8DriverProgram/fastv8/Source/dependencies/yaml-cpp/build/test/gmock-1.7.0
@@ -205,7 +209,7 @@ gmock_BINARY_DIR:STATIC=/home/gvijayak/fastv8DriverProgram/fastv8/Source/depende
 gmock_LIB_DEPENDS:STATIC=general;-lpthread;
 
 //Value Computed by CMake
-gmock_SOURCE_DIR:STATIC=/home/gvijayak/fastv8DriverProgram/fastv8/Source/dependencies/yaml-cpp/yaml-cpp-master/test/gmock-1.7.0
+gmock_SOURCE_DIR:STATIC=/home/gvijayak/fastv8DriverProgram/fastv8/Source/dependencies/yaml-cpp/yaml-cpp-release-0.5.3/test/gmock-1.7.0
 
 //Build all of Google Mock's own tests.
 gmock_build_tests:BOOL=OFF
@@ -220,7 +224,7 @@ gtest_BINARY_DIR:STATIC=/home/gvijayak/fastv8DriverProgram/fastv8/Source/depende
 gtest_LIB_DEPENDS:STATIC=general;-lpthread;
 
 //Value Computed by CMake
-gtest_SOURCE_DIR:STATIC=/home/gvijayak/fastv8DriverProgram/fastv8/Source/dependencies/yaml-cpp/yaml-cpp-master/test/gmock-1.7.0/gtest
+gtest_SOURCE_DIR:STATIC=/home/gvijayak/fastv8DriverProgram/fastv8/Source/dependencies/yaml-cpp/yaml-cpp-release-0.5.3/test/gmock-1.7.0/gtest
 
 //Build gtest's sample programs.
 gtest_build_samples:BOOL=OFF
@@ -246,10 +250,10 @@ yaml-cpp_LIB_DEPENDS:STATIC=
 # INTERNAL cache entries
 ########################
 
+//ADVANCED property for variable: Boost_DIR
+Boost_DIR-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_AR
 CMAKE_AR-ADVANCED:INTERNAL=1
-//What is the target build tool cmake is generating for.
-CMAKE_BUILD_TOOL:INTERNAL=/usr/bin/gmake
 //This is the directory where this CMakeCache.txt was created
 CMAKE_CACHEFILE_DIR:INTERNAL=/home/gvijayak/fastv8DriverProgram/fastv8/Source/dependencies/yaml-cpp/build
 //Major version of cmake used to create the current loaded cache
@@ -258,8 +262,6 @@ CMAKE_CACHE_MAJOR_VERSION:INTERNAL=3
 CMAKE_CACHE_MINOR_VERSION:INTERNAL=3
 //Patch version of cmake used to create the current loaded cache
 CMAKE_CACHE_PATCH_VERSION:INTERNAL=2
-//Major version of cmake used to create the current loaded cache
-CMAKE_CACHE_RELEASE_VERSION:INTERNAL=patch 4
 //ADVANCED property for variable: CMAKE_COLOR_MAKEFILE
 CMAKE_COLOR_MAKEFILE-ADVANCED:INTERNAL=1
 //Path to CMake executable.
@@ -292,10 +294,6 @@ CMAKE_C_FLAGS_MINSIZEREL-ADVANCED:INTERNAL=1
 CMAKE_C_FLAGS_RELEASE-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_C_FLAGS_RELWITHDEBINFO
 CMAKE_C_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
-//Result of TRY_COMPILE
-CMAKE_DETERMINE_CXX_ABI_COMPILED:INTERNAL=TRUE
-//Result of TRY_COMPILE
-CMAKE_DETERMINE_C_ABI_COMPILED:INTERNAL=TRUE
 //Path to cache edit program executable.
 CMAKE_EDIT_COMMAND:INTERNAL=/nopt/nrel/apps/cmake/cmake-3.3.2/bin/ccmake
 //Executable file format
@@ -312,6 +310,8 @@ CMAKE_EXE_LINKER_FLAGS_RELEASE-ADVANCED:INTERNAL=1
 CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_EXPORT_COMPILE_COMMANDS
 CMAKE_EXPORT_COMPILE_COMMANDS-ADVANCED:INTERNAL=1
+//Name of external makefile project generator.
+CMAKE_EXTRA_GENERATOR:INTERNAL=
 //Name of generator.
 CMAKE_GENERATOR:INTERNAL=Unix Makefiles
 //Name of generator platform.
@@ -324,13 +324,13 @@ CMAKE_HAVE_LIBC_CREATE:INTERNAL=
 CMAKE_HAVE_PTHREADS_CREATE:INTERNAL=
 //Have library pthread
 CMAKE_HAVE_PTHREAD_CREATE:INTERNAL=1
-//Have include CMAKE_HAVE_PTHREAD_H
+//Have include pthread.h
 CMAKE_HAVE_PTHREAD_H:INTERNAL=1
-//Start directory with the top level CMakeLists.txt file for this
+//Source directory with the top level CMakeLists.txt file for this
 // project
-CMAKE_HOME_DIRECTORY:INTERNAL=/home/gvijayak/fastv8DriverProgram/fastv8/Source/dependencies/yaml-cpp/yaml-cpp-master
+CMAKE_HOME_DIRECTORY:INTERNAL=/home/gvijayak/fastv8DriverProgram/fastv8/Source/dependencies/yaml-cpp/yaml-cpp-release-0.5.3
 //MODIFIED property for variable: CMAKE_INSTALL_PREFIX
-CMAKE_INSTALL_PREFIX-MODIFIED:INTERNAL=1
+CMAKE_INSTALL_PREFIX-MODIFIED:INTERNAL=ON
 //Install .so files without execute permission.
 CMAKE_INSTALL_SO_NO_EXE:INTERNAL=0
 //ADVANCED property for variable: CMAKE_LINKER
@@ -394,7 +394,7 @@ CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
 //export targets
 EXPORT_TARGETS:INTERNAL=yaml-cpp
 //Details about finding PythonInterp
-FIND_PACKAGE_MESSAGE_DETAILS_PythonInterp:INTERNAL=[/usr/bin/python2.6][v2.6.6()]
+FIND_PACKAGE_MESSAGE_DETAILS_PythonInterp:INTERNAL=[/usr/bin/python][v2.6.6()]
 //Details about finding Threads
 FIND_PACKAGE_MESSAGE_DETAILS_Threads:INTERNAL=[TRUE][v()]
 //Test FLAG_WEXTRA

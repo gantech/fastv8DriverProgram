@@ -3,13 +3,12 @@
 
 #include "FAST_Library.h"
 #include "sys/stat.h"
-#include "stdio.h"
+#include "math.h"
 #include <string>
 #include <cstring>
-#include <math.h>
-#include <stdlib.h> 
 #include <malloc.h>
 #include <stdexcept>
+#include "yaml-cpp/yaml.h"
 
 class FAST_cInterface {
 
