@@ -65,7 +65,7 @@ $(INTER_DIR)/FAST_Prog.o: $(SOURCE_DIR)/FAST_Prog.c $(SOURCE_DIR)/dependencies/O
 	$(CC)  $(CFLAGS) -c $< -I$(SOURCE_DIR)/dependencies/OpenFOAM/ -o $@ 
 
 $(INTER_DIR)/FAST_cInterface.o: $(SOURCE_DIR)/FAST_cInterface.c $(SOURCE_DIR)/FAST_cInterface.h $(SOURCE_DIR)/dependencies/OpenFOAM/OpenFOAM_Types.h
-	$(CPP)  $(CFLAGS) -c $< -I$(SOURCE_DIR)/dependencies/OpenFOAM/ -o $@ 
+	$(CPP)  $(CFLAGS) -c $< -I$(SOURCE_DIR)/dependencies/OpenFOAM/ -I$(SOURCE_DIR)/dependencies/yaml-cpp/include/ -o $@ 
 
 $(INTER_DIR)/FAST_Prog_cInterface.o: $(SOURCE_DIR)/FAST_Prog_cInterface.c $(SOURCE_DIR)/FAST_cInterface.h $(INTER_DIR)/FAST_cInterface.o $(SOURCE_DIR)/dependencies/OpenFOAM/OpenFOAM_Types.h
 	$(CPP)  $(CFLAGS) -c $< -I$(SOURCE_DIR) -I$(SOURCE_DIR)/dependencies/OpenFOAM/ -o $@
