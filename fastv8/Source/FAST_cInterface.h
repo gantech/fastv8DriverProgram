@@ -4,6 +4,7 @@
 #include "FAST_Library.h"
 #include "sys/stat.h"
 #include "math.h"
+#include <iostream>
 #include <string>
 #include <cstring>
 #include <malloc.h>
@@ -16,7 +17,7 @@ class FAST_cInterface {
 
   bool   restart;
   double dtFAST;
-  double TMax;
+  double tMax;
   float TurbinePos[3];
   int TurbID;
   char FASTInputFileName[INTERFACE_STRING_LENGTH];
@@ -38,8 +39,8 @@ class FAST_cInterface {
   int ErrStat;
   char ErrMsg[INTERFACE_STRING_LENGTH];  // make sure this is the same size as IntfStrLen in FAST_Library.f90
 
- public:
-  
+ public: 
+
   // Constructor 
   FAST_cInterface() ;
   
@@ -67,6 +68,7 @@ class FAST_cInterface {
   int get_ntEnd() { return ntEnd; }
 
  private:
+
   void checkError(const int ErrStat, const char * ErrMsg);
   void setOutputsToFAST(OpFM_InputType_t* cDriver_Input_from_FAST, OpFM_OutputType_t* cDriver_Output_to_FAST) ;
 

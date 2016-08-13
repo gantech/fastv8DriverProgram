@@ -45,7 +45,7 @@ main(int argc, char *argv[], char *env[])
 
 
 
-   if (1){ // restart from checkpoint file
+   if (0){ // restart from checkpoint file
 
       /* ******************************
       restart
@@ -89,7 +89,7 @@ main(int argc, char *argv[], char *env[])
    call FAST once per time step
    ********************************* */
 
-   for (n_t_global = n_t_global_start; n_t_global < 20; n_t_global++){
+   for (n_t_global = n_t_global_start; n_t_global < 1600; n_t_global++){
 
       /* ******************************
       if you want to create a checkpoint file:
