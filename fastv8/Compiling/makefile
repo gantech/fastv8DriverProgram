@@ -24,8 +24,8 @@ FAST_driver = FAST_Library
 
 
 
-FFLAGS  = -O0 -g -pg -DSTATIC_DLL_LOAD -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -DDOUBLE_PRECISION  -fdefault-real-8 
-LDFLAGS = -O0 -g -pg -m$(BITS) -fbacktrace
+FFLAGS  = -O2 -pg -DSTATIC_DLL_LOAD -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -DDOUBLE_PRECISION  -fdefault-real-8 
+LDFLAGS = -O2 -pg -m$(BITS) -fbacktrace
 
 #FFLAGS  = -O0 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input
 #FFLAGS  = -O0 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -g -pg

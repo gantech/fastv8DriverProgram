@@ -22,7 +22,7 @@ SOURCE_FILES = FAST_Prog.c FAST_cInterface.c FAST_Prog_cInterface.c
    # Name of compiler to use and flags to use.
 CC      = gcc
 CPP     = g++
-CFLAGS  = -O2 -g 
+CFLAGS  = -O2 
 
    # Destination and RootName for executable
 
