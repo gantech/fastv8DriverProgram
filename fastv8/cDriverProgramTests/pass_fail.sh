@@ -13,9 +13,10 @@ determine_pass_fail() {
     then
 	diffAnywhere=1
     else
-	diff <(tail -n +3 $logFileName) <(tail -n +3 $goldLogFileName)
+#	diff <(tail -n +3 $logFileName) <(tail -n +3 $goldLogFileName)
+	python compareTwoFASTruns.py $logFileName $goldLogFileName
 
-	if [$? -ne 0 ]
+	if [ $? -ne 0 ]
 	then
 	    diffAnywhere=1
 	fi
