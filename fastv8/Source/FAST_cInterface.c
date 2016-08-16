@@ -31,6 +31,8 @@ int FAST_cInterface::init() {
       /* note that this will set nt_global inside the FAST library */
       FAST_OpFM_Restart(CheckpointFileRoot, &AbortErrLev, &dtFAST, &numBlades, &numElementsPerBlade, &ntStart, cDriver_Input_from_FAST, cDriver_Output_to_FAST, &ErrStat, ErrMsg);
       checkError(ErrStat, ErrMsg);
+      nt_global = ntStart;
+      ntEnd = int((tEnd - tStart)/dtFAST) + ntStart;
 
    } else {
      
@@ -89,14 +91,15 @@ int FAST_cInterface::readInputFile(std::string cInterfaceInputFile ) {
     strcpy(FASTInputFileName, cDriverInp["FASTInputFileName"].as<std::string>().c_str() );
     strcpy(CheckpointFileRoot, cDriverInp["restartFileName"].as<std::string>().c_str() );
     restart = cDriverInp["restart"].as<bool>();
+    tStart = cDriverInp["tStart"].as<double>();
+    tEnd = cDriverInp["tEnd"].as<double>();
+    tMax = cDriverInp["tMax"].as<double>();
+    nEveryCheckPoint = cDriverInp["nEveryCheckPoint"].as<int>();
     if (restart == false) {
-      tStart = cDriverInp["tStart"].as<double>();
-      tEnd = cDriverInp["tEnd"].as<double>();
-      tMax = cDriverInp["tMax"].as<double>();
       ntStart = 0;
+      nt_global = ntStart;
       dtFAST = cDriverInp["dtFAST"].as<double>();
       ntEnd = int((tEnd - tStart)/dtFAST);
-      nEveryCheckPoint = cDriverInp["nEveryCheckPoint"].as<int>();
       if (cDriverInp["TurbinePos"].IsSequence() ) {
 	std::vector<double> tp = cDriverInp["TurbinePos"].as<std::vector<double> >() ;
 	for(int i=0;i<3;i++) {
