@@ -508,6 +508,7 @@ subroutine FAST_OpFM_Restart(CheckpointRootName_c, AbortErrLev_c, dt_c, numblade
    INTEGER(IntKi)                        :: NumTurbines_out
    CHARACTER(*),           PARAMETER     :: RoutineName = 'FAST_Restart' 
              
+   CALL NWTC_Init()
       ! transfer the character array from C to a Fortran string:   
    CheckpointRootName = TRANSFER( CheckpointRootName_c, CheckpointRootName )
    I = INDEX(CheckpointRootName,C_NULL_CHAR) - 1                 ! if this has a c null character at the end...
