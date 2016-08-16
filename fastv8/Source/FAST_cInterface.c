@@ -57,7 +57,7 @@ int FAST_cInterface::init() {
 
 int FAST_cInterface::step() {
 
-  if ( ((nt_global - ntStart + 1) % nEveryCheckPoint) == 0 ) {
+  if ( ((nt_global - ntStart) % nEveryCheckPoint) == 0 ) {
     //sprintf(CheckpointFileRoot, "../../CertTest/Test18.%d", nt_global);
     sprintf(CheckpointFileRoot, " "); // if blank, it will use FAST convention <RootName>.nt_global
     FAST_CreateCheckpoint(CheckpointFileRoot, &ErrStat, ErrMsg);
@@ -75,6 +75,8 @@ int FAST_cInterface::step() {
   // (note OpenFOAM could do subcycling around this step)
   FAST_OpFM_Step(&ErrStat, ErrMsg);
   checkError(ErrStat, ErrMsg);
+
+  nt_global = nt_global + 1;
   
   return 0;
 }
@@ -111,6 +113,7 @@ int FAST_cInterface::readInputFile(std::string cInterfaceInputFile ) {
     std::cout << "tStart = " << tStart << std::endl ;
     std::cout << "tEnd = " << tEnd << std::endl ;
     std::cout << "TubID = " << TurbID << std::endl ;
+    std::cout << "nEverycheckpoint = " << nEveryCheckPoint << std::endl ;
     std::cout << "TurbinePos = " << TurbinePos[0] << " " << TurbinePos[1] <<  " " << TurbinePos[2] << std::endl ;
 
     init();

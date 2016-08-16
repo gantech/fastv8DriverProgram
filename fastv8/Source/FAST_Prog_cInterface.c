@@ -1,15 +1,10 @@
 #include "FAST_cInterface.h"
-
 #include <iostream>
 
-int main()
-
-{
+int main() {
 
   std::string cDriverInputFile="cDriver.i";
-  
   FAST_cInterface FAST;
-
   try {
     FAST.readInputFile(cDriverInputFile);
   }
@@ -19,17 +14,12 @@ int main()
     return 1;
   }
 
-  int nt=-1;
-  
 
-  for (nt = FAST.get_ntStart(); nt <= FAST.get_ntEnd(); nt++) {
+  for (int nt = FAST.get_ntStart(); nt <= FAST.get_ntEnd(); nt++) {
     FAST.step();
   }
   
   return 0;
     
 }
-
-
-
 
