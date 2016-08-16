@@ -46,6 +46,22 @@ cp $Fv8cDPRtest_DIR/testCases/Test01/Test01.nativeFortran.out $FAST_DIR/runFv8cD
 # run it...  
 ./test01.sh
 
+#=============================================================================
+# Test 02
+#=============================================================================
+if [ ! -d "$FAST_DIR/runFv8cDPRtest/testCases/Test02" ]; then
+    mkdir $FAST_DIR/runFv8cDPRtest/testCases/Test02
+fi
+
+cd $FAST_DIR/runFv8cDPRtest/testCases/Test02
+cp $Fv8cDPRtest_DIR/testCases/Test02/Test02.fst $FAST_DIR/runFv8cDPRtest/testCases/Test02/
+cp $Fv8cDPRtest_DIR/testCases/Test02/cDriver.i* $FAST_DIR/runFv8cDPRtest/testCases/Test02/
+cp $Fv8cDPRtest_DIR/testCases/Test02/5MW_Baseline/ $FAST_DIR/runFv8cDPRtest/testCases/Test02/ -r
+cp $Fv8cDPRtest_DIR/testCases/Test02/test02.sh $FAST_DIR/runFv8cDPRtest/testCases/Test02/
+cp $Fv8cDPRtest_DIR/testCases/Test02/Test02.nativeFortran.outb $FAST_DIR/runFv8cDPRtest/testCases/Test02/
+# run it...  
+./test02.sh
+
 
 echo "Rtest End"
 

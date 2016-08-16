@@ -4,6 +4,8 @@ import sys, os
 
 if __name__=="__main__":
     
+    sys.path.append('../../')
+    
     maxTol = 1e-10;
     try:
         d1, i1 = fast_io.load_binary_output(sys.argv[1])
