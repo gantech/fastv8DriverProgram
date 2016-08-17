@@ -22,12 +22,11 @@ SOURCE_FILES = FAST_Prog.c FAST_cInterface.c FAST_Prog_cInterface.c
    # Name of compiler to use and flags to use.
 CC      = gcc
 CPP     = g++
-CFLAGS  = -O2 
+CFLAGS  = -O2
 
    # Destination and RootName for executable
 
 
-DISCONLIB_DIR = ../CertTest/5MW_Baseline/ServoData/
 YAMLCPPLIB_DIR = ../Source/dependencies/yaml-cpp/lib/
 FASTLIB_DIR = ../bin
 DEST_DIR    = ../bin
@@ -49,7 +48,7 @@ SYS_FILE  = SysGnuLinux
 UNAME := $(shell uname -s)
 
 CFLAGS     := $(CFLAGS) -fPIC -fpermissive -std=c++11
-LDFLAGS    = -fPIC -L$(FASTLIB_DIR) -L$(DISCONLIB_DIR) -L$(YAMLCPPLIB_DIR) -lFAST_glin$(BITS) -lmap-1.20.10 -lDISCON_glin64 -lyaml-cpp
+LDFLAGS    = -fPIC -L$(FASTLIB_DIR) -L$(YAMLCPPLIB_DIR) -lFAST_glin$(BITS) -lmap-1.20.10 -lyaml-cpp
 
 _ALL_OBJS  = $(SOURCE_FILE:.c=$(OBJ_EXT))
 ALL_OBJS   = $(patsubst %,$(INTER_DIR)/%,$(_ALL_OBJS))
@@ -88,6 +87,7 @@ $(DEST_DIR)/FAST_cDriverProg_cInterface$(EXE_EXT): $(INTER_DIR)/FAST_Prog_cInter
    # Cleanup afterwards.
 
 clean:
-	$(DEL_CMD) $(INTER_DIR)$(PATH_SEP)*$(OBJ_EXT) $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT)
+	$(DEL_CMD) $(INTER_DIR)$(PATH_SEP)FAST_Prog$(OBJ_EXT) $(INTER_DIR)$(PATH_SEP)FAST_cInterface$(OBJ_EXT) $(INTER_DIR)$(PATH_SEP)FAST_Prog_cInterface$(OBJ_EXT)
+#	$(DEL_CMD) $(INTER_DIR)$(PATH_SEP)*$(OBJ_EXT) $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT)
 
 
