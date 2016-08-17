@@ -5,8 +5,8 @@
 FAST_cInterface::FAST_cInterface():
 cDriver_Input_from_FAST(NULL),
 cDriver_Output_to_FAST(NULL),
-numScInputs(2),
-numScOutputs(4)
+numScInputs(0),
+numScOutputs(0)
 {
   
 }
@@ -109,6 +109,8 @@ int FAST_cInterface::readInputFile(std::string cInterfaceInputFile ) {
 	}
       }
     }
+    numScInputs = cDriverInp["numScInputs"].as<int>();
+    numScInputs = cDriverInp["numScOutputs"].as<int>();
 
     std::cout << "tStart = " << tStart << std::endl ;
     std::cout << "tEnd = " << tEnd << std::endl ;
