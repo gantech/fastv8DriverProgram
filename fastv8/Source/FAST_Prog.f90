@@ -42,7 +42,7 @@ IMPLICIT  NONE
    
    ! Local parameters:
 REAL(DbKi),             PARAMETER     :: t_initial = 0.0_DbKi                    ! Initial time
-INTEGER(IntKi),         PARAMETER     :: NumTurbines = 1
+INTEGER(IntKi),         PARAMETER     :: NumTurbines = 2
    
    ! Other/Misc variables
 TYPE(FAST_TurbineType)                :: Turbine(NumTurbines)                    ! Data for each turbine instance
@@ -56,6 +56,10 @@ CHARACTER(1024)                       :: ErrMsg                                 
 CHARACTER(1024)                       :: CheckpointRoot                          ! Rootname of the checkpoint file
 CHARACTER(20)                         :: FlagArg                                 ! flag argument from command line
 INTEGER(IntKi)                        :: Restart_step                            ! step to start on (for restart) 
+
+   ! data for input file name for two turbines
+CHARACTER(1024)                       :: t1InputFileName
+CHARACTER(1024)                       :: t2InputFileName                         
 
 
       !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -71,14 +75,19 @@ INTEGER(IntKi)                        :: Restart_step                           
          CALL CheckError( ErrStat, ErrMsg, 'during restore from checkpoint'  )            
    ELSE
       Restart_step = 0
-      
+
+      CALL CheckArgs(t1InputFileName, ErrStat, t2InputFileName) !Get the input file name for two turbines
       DO i_turb = 1,NumTurbines
          !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
          ! initialization
          !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-         
-         CALL FAST_InitializeAll_T( t_initial, i_turb, Turbine(i_turb), ErrStat, ErrMsg )     ! bjj: we need to get the input files for each turbine (not necessarially the same one)
-         CALL CheckError( ErrStat, ErrMsg, 'during module initialization' )
+         if (i_turb .eq. 1) then
+            CALL FAST_InitializeAll_T( t_initial, i_turb, Turbine(i_turb), ErrStat, ErrMsg, t1InputFileName )     ! Ganesh: Special case for two turbines
+            CALL CheckError( ErrStat, ErrMsg, 'during module initialization' )
+         else
+            CALL FAST_InitializeAll_T( t_initial, i_turb, Turbine(i_turb), ErrStat, ErrMsg, t2InputFileName )     ! Ganesh: Special case for two turbines
+            CALL CheckError( ErrStat, ErrMsg, 'during module initialization' )
+         end if
                         
       !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       ! loose coupling
@@ -116,7 +125,7 @@ INTEGER(IntKi)                        :: Restart_step                           
       ! write checkpoint file if requested
       IF (mod(n_t_global, Turbine(1)%p_FAST%n_ChkptTime) == 0 .AND. Restart_step /= n_t_global) then
          CheckpointRoot = TRIM(Turbine(1)%p_FAST%OutFileRoot)//'.'//TRIM(Num2LStr(n_t_global))
-         
+
          CALL FAST_CreateCheckpoint_Tary(t_initial, n_t_global, Turbine, CheckpointRoot, ErrStat, ErrMsg)
             IF(ErrStat >= AbortErrLev .and. AbortErrLev >= ErrID_Severe) THEN
                ErrStat = MIN(ErrStat,ErrID_Severe) ! We don't need to stop simulation execution on this error
