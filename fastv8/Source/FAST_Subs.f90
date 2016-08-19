@@ -6105,7 +6105,7 @@ SUBROUTINE FAST_RestoreFromCheckpoint_Tary(t_initial, n_t_global, Turbine, Check
    
    Unit = -1         
    DO i_turb = 1,NumTurbines
-      locCheckPointRoot = 't'//trim(Num2LStr(i_turb))//'_test18.8'
+      locCheckPointRoot = 't'//trim(Num2LStr(i_turb))//'_test18.1600'
       CALL FAST_RestoreFromCheckpoint_T(t_initial_out, n_t_global, NumTurbines_out, Turbine(i_turb), locCheckpointRoot, ErrStat2, ErrMsg2, Unit )
       Unit = -1
 
