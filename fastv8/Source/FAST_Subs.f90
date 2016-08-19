@@ -5420,6 +5420,35 @@ END SUBROUTINE FAST_Linearize_T
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ! PROGRAM EXIT ROUTINES
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+!> Routine that calls FAST_CreateCheckpoint_T for an array of Turbine data structures. 
+SUBROUTINE FAST_ExitThisProgram_Tary(Turbine, ErrLocMsg)
+
+   TYPE(FAST_TurbineType),   INTENT(INOUT) :: Turbine(:)          !< all data for all turbines
+   CHARACTER(*), OPTIONAL,   INTENT(IN)    :: ErrLocMsg           !< an optional message describing the location of the error
+
+      ! local variables
+   INTEGER(IntKi)                          :: i_turb, NumTurbines
+   CHARACTER(*),             PARAMETER     :: RoutineName = 'FAST_ExitThisProgram_Tary' 
+   
+   NumTurbines = SIZE(Turbine)   
+   
+   !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   !  Write simulation times and stop
+   !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   
+   DO i_turb = 1,NumTurbines
+      CALL ExitThisProgram_T( Turbine(i_turb), ErrID_None )
+   END DO
+   
+
+#if (defined COMPILE_SIMULINK || defined COMPILE_LABVIEW)
+   ! for Simulink, this may not be a normal stop. It might call this after an error in the model.
+   CALL WrScr( NewLine//' '//TRIM(FAST_Ver%Name)//' completed.'//NewLine )
+#else   
+   CALL NormStop( )
+#endif   
+
+END SUBROUTINE FAST_ExitThisProgram_Tary
 !> Routine that calls ExitThisProgram for one instance of a Turbine data structure. This is a separate subroutine so that the FAST
 !! driver programs do not need to change or operate on the individual module level. 
 !! This routine should be called from glue code only (e.g., FAST_Prog.f90). It should not be called in any of these driver routines.
@@ -5536,21 +5565,12 @@ SUBROUTINE ExitThisProgram( p_FAST, y_FAST, m_FAST, ED, BD, SrvD, AD14, AD, IfW,
       CALL ProgAbort( 'FAST encountered an error '//TRIM(SimMsg)//'.'//NewLine//' Simulation error level: '&
                         //TRIM(GetErrStr(ErrorLevel)), TrapErrors=.FALSE., TimeWait=3._ReKi )  ! wait 3 seconds (in case they double-clicked and got an error)
    END IF
-      
-   !............................................................................................................................
-   !  Write simulation times and stop
-   !............................................................................................................................
 
+   !............................................................................................................................
+   !  Write simulation times
+   !............................................................................................................................
    CALL RunTimes( m_FAST%StrtTime, m_FAST%UsrTime1, m_FAST%SimStrtTime, m_FAST%UsrTime2, m_FAST%t_global )
-
-#if (defined COMPILE_SIMULINK || defined COMPILE_LABVIEW)
-   ! for Simulink, this may not be a normal stop. It might call this after an error in the model.
-   CALL WrScr( NewLine//' '//TRIM(FAST_Ver%Name)//' completed.'//NewLine )
-#else   
-   CALL NormStop( )
-#endif   
-
-
+      
 END SUBROUTINE ExitThisProgram
 !----------------------------------------------------------------------------------------------------------------------------------
 !> This subroutine is called at program termination. It writes any additional output files,

@@ -161,14 +161,7 @@ INTEGER                                 :: Unit
       
    END DO ! n_t_global
   
-  
-   !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   !  Write simulation times and stop
-   !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   
-   DO i_turb = 1,NumTurbines
-      CALL ExitThisProgram_T( Turbine(i_turb), ErrID_None )
-   END DO
+   CALL FAST_ExitThisProgram_Tary(Turbine)
    
 
 CONTAINS
