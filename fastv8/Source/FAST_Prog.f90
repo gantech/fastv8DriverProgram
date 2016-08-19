@@ -61,6 +61,9 @@ INTEGER(IntKi)                        :: Restart_step                           
 CHARACTER(1024)                       :: t1InputFileName
 CHARACTER(1024)                       :: t2InputFileName                         
 
+   ! Unit to open checkpoint file
+INTEGER                                 :: Unit
+
 
       !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       ! determine if this is a restart from checkpoint
@@ -124,14 +127,19 @@ CHARACTER(1024)                       :: t2InputFileName
       
       ! write checkpoint file if requested
       IF (mod(n_t_global, Turbine(1)%p_FAST%n_ChkptTime) == 0 .AND. Restart_step /= n_t_global) then
-         CheckpointRoot = TRIM(Turbine(1)%p_FAST%OutFileRoot)//'.'//TRIM(Num2LStr(n_t_global))
 
-         CALL FAST_CreateCheckpoint_Tary(t_initial, n_t_global, Turbine, CheckpointRoot, ErrStat, ErrMsg)
-            IF(ErrStat >= AbortErrLev .and. AbortErrLev >= ErrID_Severe) THEN
-               ErrStat = MIN(ErrStat,ErrID_Severe) ! We don't need to stop simulation execution on this error
-               ErrMsg = TRIM(ErrMsg)//Newline//'WARNING: Checkpoint file could not be generated. Simulation continuing.'
-            END IF
-            CALL CheckError( ErrStat, ErrMsg  )
+         DO i_turb = 1,NumTurbines
+            Unit = -1 
+            CheckpointRoot = TRIM(Turbine(i_turb)%p_FAST%OutFileRoot)//'.'//TRIM(Num2LStr(n_t_global))
+            CALL FAST_CreateCheckpoint_T(t_initial, n_t_global, 1, Turbine(i_turb), CheckpointRoot, ErrStat, ErrMsg, Unit )
+            CALL CheckError(ErrStat, ErrMsg)
+            if (ErrStat >= AbortErrLev ) then
+               if (Unit > 0) close(Unit)
+               RETURN
+            end if
+            
+         END DO
+
       END IF
 
       
