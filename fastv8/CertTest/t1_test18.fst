@@ -3,7 +3,7 @@ FAST Certification Test #18: NREL 5.0 MW Baseline Wind Turbine (Onshore)
 ---------------------- SIMULATION CONTROL --------------------------------------
 false         Echo            - Echo input data to <RootName>.ech (flag)
 "FATAL"       AbortLevel      - Error level when simulation should abort (string) {"WARNING", "SEVERE", "FATAL"}
-         60   TMax            - Total run time (s)
+        0.1   TMax            - Total run time (s)
     0.00625   DT              - Recommended module time step (s)
           2   InterpOrder     - Interpolation order for input/output time history (-) {1=linear, 2=quadratic}
           0   NumCrctn        - Number of correction iterations (-) {0=explicit calculation, i.e., no corrections}
@@ -33,7 +33,7 @@ false         Echo            - Echo input data to <RootName>.ech (flag)
 ---------------------- OUTPUT --------------------------------------------------
 True          SumPrint        - Print summary data to "<RootName>.sum" (flag)
           5   SttsTime        - Amount of time between screen status messages (s)
-         10   ChkptTime       - Amount of time between creating checkpoint files for potential restart (s)
+          5   ChkptTime       - Amount of time between creating checkpoint files for potential restart (s)
 "default"     DT_Out          - Time step for tabular output (s) (or "default")
           0   TStart          - Time to begin tabular output (s)
           2   OutFileFmt      - Format for tabular (time-marching) output file (switch) {1: text file [<RootName>.out], 2: binary file [<RootName>.outb], 3: both}
