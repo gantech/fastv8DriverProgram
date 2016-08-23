@@ -37,7 +37,6 @@ class FAST_cInterface {
   OpFM_InputType_t ** cDriver_Input_from_FAST;
   OpFM_OutputType_t ** cDriver_Output_to_FAST;
 
-  int iTurbTmp=1; //Temporary variable to indicate iTurb
   int ErrStat;
   char ErrMsg[INTERFACE_STRING_LENGTH];  // make sure this is the same size as IntfStrLen in FAST_Library.f90
 
