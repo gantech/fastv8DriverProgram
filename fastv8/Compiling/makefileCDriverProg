@@ -56,6 +56,7 @@ ALL_OBJS   = $(patsubst %,$(INTER_DIR)/%,$(_ALL_OBJS))
 # Rule to do everything.
 
 all:     default
+cppOnly: $(INTER_DIR) $(DEST_DIR)/FAST_cDriverProg_cInterface$(EXE_EXT)
 default:  $(INTER_DIR) $(DEST_DIR)/FAST_cDriverProg$(EXE_EXT) $(DEST_DIR)/FAST_cDriverProg_cInterface$(EXE_EXT)
 
    # General rules for compliling the files.
