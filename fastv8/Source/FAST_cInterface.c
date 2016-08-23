@@ -20,7 +20,6 @@ int FAST_cInterface::init() {
 
   // Allocate memory for Turbine datastructure for all turbines
   FAST_AllocateTurbines(&nTurbines, &ErrStat, ErrMsg);
-  checkError(ErrStat, ErrMsg);
 
   // Allocate memory for OpFM Input types in FAST
    cDriver_Input_from_FAST = malloc(sizeof(OpFM_InputType_t));
