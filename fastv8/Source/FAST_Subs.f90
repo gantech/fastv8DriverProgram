@@ -6090,7 +6090,6 @@ SUBROUTINE FAST_RestoreFromCheckpoint_Tary(t_initial, n_t_global, Turbine, Check
    INTEGER(IntKi)                          :: ErrStat2            ! local error status
    CHARACTER(1024)                         :: ErrMsg2             ! local error message
    CHARACTER(*),             PARAMETER     :: RoutineName = 'FAST_RestoreFromCheckpoint_Tary' 
-   CHARACTER(1024)                         :: locCheckPointRoot   ! CheckPoinRoot local to this routine
    
    
    NumTurbines = SIZE(Turbine)   
@@ -6105,14 +6104,11 @@ SUBROUTINE FAST_RestoreFromCheckpoint_Tary(t_initial, n_t_global, Turbine, Check
    
    Unit = -1         
    DO i_turb = 1,NumTurbines
-      locCheckPointRoot = 't'//trim(Num2LStr(i_turb))//'_test18.1600'
-      CALL FAST_RestoreFromCheckpoint_T(t_initial_out, n_t_global, NumTurbines_out, Turbine(i_turb), locCheckpointRoot, ErrStat2, ErrMsg2, Unit )
-      Unit = -1
-
+      CALL FAST_RestoreFromCheckpoint_T(t_initial_out, n_t_global, NumTurbines_out, Turbine(i_turb), CheckpointRoot, ErrStat2, ErrMsg2, Unit )
          CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
 
          IF (t_initial_out /= t_initial) CALL SetErrStat(ErrID_Fatal, "invalid value of t_initial.", ErrStat, ErrMsg, RoutineName )
-!         IF (NumTurbines_out /= NumTurbines) CALL SetErrStat(ErrID_Fatal, "invalid value of NumTurbines.", ErrStat, ErrMsg, RoutineName )
+         IF (NumTurbines_out /= NumTurbines) CALL SetErrStat(ErrID_Fatal, "invalid value of NumTurbines.", ErrStat, ErrMsg, RoutineName )
          IF (ErrStat >= AbortErrLev) RETURN
    END DO
 
