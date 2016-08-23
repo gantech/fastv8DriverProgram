@@ -18,6 +18,10 @@ inline bool FAST_cInterface::checkFileExists(const std::string& name) {
 
 int FAST_cInterface::init() {
 
+  // Allocate memory for Turbine datastructure for all turbines
+  FAST_AllocateTurbines(&nTurbines, &ErrStat, ErrMsg);
+  checkError(ErrStat, ErrMsg);
+
   // Allocate memory for OpFM Input types in FAST
    cDriver_Input_from_FAST = malloc(sizeof(OpFM_InputType_t));
    cDriver_Output_to_FAST = malloc(sizeof(OpFM_OutputType_t));
@@ -29,7 +33,7 @@ int FAST_cInterface::init() {
    if (restart == true) {
 
       /* note that this will set nt_global inside the FAST library */
-      FAST_OpFM_Restart(CheckpointFileRoot, &AbortErrLev, &dtFAST, &numBlades, &numElementsPerBlade, &ntStart, cDriver_Input_from_FAST, cDriver_Output_to_FAST, &ErrStat, ErrMsg);
+      FAST_OpFM_Restart(&iTurbTmp, CheckpointFileRoot, &AbortErrLev, &dtFAST, &numBlades, &numElementsPerBlade, &ntStart, cDriver_Input_from_FAST, cDriver_Output_to_FAST, &ErrStat, ErrMsg);
       checkError(ErrStat, ErrMsg);
       nt_global = ntStart;
       ntEnd = int((tEnd - tStart)/dtFAST) + ntStart;
@@ -38,7 +42,7 @@ int FAST_cInterface::init() {
      
       // this calls the Init() routines of each module
 
-      FAST_OpFM_Init(&tMax, FASTInputFileName, &TurbID, &numScOutputs, &numScInputs, TurbinePos, &AbortErrLev, &dtFAST, &numBlades, &numElementsPerBlade, cDriver_Input_from_FAST, cDriver_Output_to_FAST, &ErrStat, ErrMsg);
+      FAST_OpFM_Init(&iTurbTmp, &tMax, FASTInputFileName, &TurbID, &numScOutputs, &numScInputs, TurbinePos, &AbortErrLev, &dtFAST, &numBlades, &numElementsPerBlade, cDriver_Input_from_FAST, cDriver_Output_to_FAST, &ErrStat, ErrMsg);
       checkError(ErrStat, ErrMsg);
 
       numTwrElements = cDriver_Output_to_FAST->u_Len - numBlades*numElementsPerBlade - 1;
@@ -46,7 +50,7 @@ int FAST_cInterface::init() {
       // set wind speeds at initial locations
       //      setOutputsToFAST(cDriver_Input_from_FAST, cDriver_Output_to_FAST);
 
-      FAST_OpFM_Solution0(&ErrStat, ErrMsg);
+      FAST_OpFM_Solution0(&iTurbTmp, &ErrStat, ErrMsg);
       checkError(ErrStat, ErrMsg);
      
    }
@@ -60,7 +64,7 @@ int FAST_cInterface::step() {
   if ( ((nt_global - ntStart) % nEveryCheckPoint) == 0 ) {
     //sprintf(CheckpointFileRoot, "../../CertTest/Test18.%d", nt_global);
     sprintf(CheckpointFileRoot, " "); // if blank, it will use FAST convention <RootName>.nt_global
-    FAST_CreateCheckpoint(CheckpointFileRoot, &ErrStat, ErrMsg);
+    FAST_CreateCheckpoint(&iTurbTmp, CheckpointFileRoot, &ErrStat, ErrMsg);
     checkError(ErrStat, ErrMsg);
   }
   /* ******************************
@@ -73,7 +77,7 @@ int FAST_cInterface::step() {
 
   // this advances the states, calls CalcOutput, and solves for next inputs. Predictor-corrector loop is imbeded here:
   // (note OpenFOAM could do subcycling around this step)
-  FAST_OpFM_Step(&ErrStat, ErrMsg);
+  FAST_OpFM_Step(&iTurbTmp, &ErrStat, ErrMsg);
   checkError(ErrStat, ErrMsg);
 
   nt_global = nt_global + 1;
@@ -87,7 +91,8 @@ int FAST_cInterface::readInputFile(std::string cInterfaceInputFile ) {
   if ( checkFileExists(cInterfaceInputFile) ) {
 
     YAML::Node cDriverInp = YAML::LoadFile(cInterfaceInputFile);
-
+    
+    nTurbines = cDriverInp["nTurbines"].as<int>();
     TurbID = cDriverInp["TurbID"].as<int>();
     std::cout << cDriverInp["FASTInputFileName"].as<std::string>() << std::endl ;
     strcpy(FASTInputFileName, cDriverInp["FASTInputFileName"].as<std::string>().c_str() );

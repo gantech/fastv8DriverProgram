@@ -1,3 +1,4 @@
+nTurbines: 1
 TurbID:  1
 FASTInputFileName: "Test18.fst"
 restart: False
