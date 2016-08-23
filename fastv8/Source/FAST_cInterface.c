@@ -36,27 +36,31 @@ int FAST_cInterface::init() {
    // If restart 
    if (restart == true) {
 
-      /* note that this will set nt_global inside the FAST library */
-      FAST_OpFM_Restart(&iTurbTmp, CheckpointFileRoot, &AbortErrLev, &dtFAST, &numBlades, &numElementsPerBlade, &ntStart, cDriver_Input_from_FAST[iTurbTmp], cDriver_Output_to_FAST[iTurbTmp], &ErrStat, ErrMsg);
-      checkError(ErrStat, ErrMsg);
-      nt_global = ntStart;
-      ntEnd = int((tEnd - tStart)/dtFAST) + ntStart;
+     for (int iTurb=0; iTurb < nTurbines; iTurb++) {
+       /* note that this will set nt_global inside the FAST library */
+       FAST_OpFM_Restart(&iTurb, CheckpointFileRoot, &AbortErrLev, &dtFAST, &numBlades, &numElementsPerBlade, &ntStart, cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb], &ErrStat, ErrMsg);
+       checkError(ErrStat, ErrMsg);
+       nt_global = ntStart;
+       ntEnd = int((tEnd - tStart)/dtFAST) + ntStart;
+     }
 
    } else {
      
       // this calls the Init() routines of each module
 
-      FAST_OpFM_Init(&iTurbTmp, &tMax, FASTInputFileName, &TurbID, &numScOutputs, &numScInputs, TurbinePos, &AbortErrLev, &dtFAST, &numBlades, &numElementsPerBlade, cDriver_Input_from_FAST[iTurbTmp], cDriver_Output_to_FAST[iTurbTmp], &ErrStat, ErrMsg);
-      checkError(ErrStat, ErrMsg);
+     for (int iTurb=0; iTurb < nTurbines; iTurb++) {
+       FAST_OpFM_Init(&iTurb, &tMax, FASTInputFileName, &TurbID, &numScOutputs, &numScInputs, TurbinePos, &AbortErrLev, &dtFAST, &numBlades, &numElementsPerBlade, cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb], &ErrStat, ErrMsg);
+       checkError(ErrStat, ErrMsg);
+       
+       numTwrElements = cDriver_Output_to_FAST[iTurb]->u_Len - numBlades*numElementsPerBlade - 1;
 
-      numTwrElements = cDriver_Output_to_FAST[iTurbTmp]->u_Len - numBlades*numElementsPerBlade - 1;
+       // set wind speeds at initial locations
+       //      setOutputsToFAST(cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb]);
 
-      // set wind speeds at initial locations
-      //      setOutputsToFAST(cDriver_Input_from_FAST[iTurbTmp], cDriver_Output_to_FAST[iTurbTmp]);
+       FAST_OpFM_Solution0(&iTurb, &ErrStat, ErrMsg);
+       checkError(ErrStat, ErrMsg);
+     }
 
-      FAST_OpFM_Solution0(&iTurbTmp, &ErrStat, ErrMsg);
-      checkError(ErrStat, ErrMsg);
-     
    }
    
    return 0;
@@ -68,21 +72,26 @@ int FAST_cInterface::step() {
   if ( ((nt_global - ntStart) % nEveryCheckPoint) == 0 ) {
     //sprintf(CheckpointFileRoot, "../../CertTest/Test18.%d", nt_global);
     sprintf(CheckpointFileRoot, " "); // if blank, it will use FAST convention <RootName>.nt_global
-    FAST_CreateCheckpoint(&iTurbTmp, CheckpointFileRoot, &ErrStat, ErrMsg);
-    checkError(ErrStat, ErrMsg);
+    for (int iTurb=0; iTurb < nTurbines; iTurb++) {
+      FAST_CreateCheckpoint(&iTurb, CheckpointFileRoot, &ErrStat, ErrMsg);
+      checkError(ErrStat, ErrMsg);
+    }
   }
   /* ******************************
      set inputs from this code and call FAST:
   ********************************* */
 
-  //  set wind speeds at original locations 
-  //  setOutputsToFAST(cDriver_Input_from_FAST[iTurbTmp], cDriver_Output_to_FAST[iTurbTmp]);
+   for (int iTurb=0; iTurb < nTurbines; iTurb++) {
+
+     //  set wind speeds at original locations 
+     //  setOutputsToFAST(cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb]);
 
 
-  // this advances the states, calls CalcOutput, and solves for next inputs. Predictor-corrector loop is imbeded here:
-  // (note OpenFOAM could do subcycling around this step)
-  FAST_OpFM_Step(&iTurbTmp, &ErrStat, ErrMsg);
-  checkError(ErrStat, ErrMsg);
+     // this advances the states, calls CalcOutput, and solves for next inputs. Predictor-corrector loop is imbeded here:
+     // (note OpenFOAM could do subcycling around this step)
+     FAST_OpFM_Step(&iTurb, &ErrStat, ErrMsg);
+     checkError(ErrStat, ErrMsg);
+   }
 
   nt_global = nt_global + 1;
   
