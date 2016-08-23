@@ -19,20 +19,25 @@ inline bool FAST_cInterface::checkFileExists(const std::string& name) {
 int FAST_cInterface::init() {
 
   // Allocate memory for Turbine datastructure for all turbines
-  FAST_AllocateTurbines(&nTurbines, &ErrStat, ErrMsg);
+   FAST_AllocateTurbines(&nTurbines, &ErrStat, ErrMsg);
 
   // Allocate memory for OpFM Input types in FAST
-   cDriver_Input_from_FAST = malloc(sizeof(OpFM_InputType_t));
-   cDriver_Output_to_FAST = malloc(sizeof(OpFM_OutputType_t));
-   if (cDriver_Input_from_FAST == NULL || cDriver_Output_to_FAST == NULL) {
-     throw std::runtime_error("Error allocating space for OpFM interface types.\n") ;
+
+   cDriver_Input_from_FAST = new OpFM_InputType_t* [nTurbines] ;
+   cDriver_Output_to_FAST = new OpFM_OutputType_t* [nTurbines] ;
+   for (int iTurb=0; iTurb < nTurbines; iTurb++) {
+     cDriver_Input_from_FAST[iTurb] = malloc(sizeof(OpFM_InputType_t));
+     cDriver_Output_to_FAST[iTurb] = malloc(sizeof(OpFM_OutputType_t));
+     if (cDriver_Input_from_FAST[iTurb] == NULL || cDriver_Output_to_FAST[iTurb] == NULL) {
+       throw std::runtime_error("Error allocating space for OpFM interface types.\n") ;
+     }
    }
   
    // If restart 
    if (restart == true) {
 
       /* note that this will set nt_global inside the FAST library */
-      FAST_OpFM_Restart(&iTurbTmp, CheckpointFileRoot, &AbortErrLev, &dtFAST, &numBlades, &numElementsPerBlade, &ntStart, cDriver_Input_from_FAST, cDriver_Output_to_FAST, &ErrStat, ErrMsg);
+      FAST_OpFM_Restart(&iTurbTmp, CheckpointFileRoot, &AbortErrLev, &dtFAST, &numBlades, &numElementsPerBlade, &ntStart, cDriver_Input_from_FAST[iTurbTmp], cDriver_Output_to_FAST[iTurbTmp], &ErrStat, ErrMsg);
       checkError(ErrStat, ErrMsg);
       nt_global = ntStart;
       ntEnd = int((tEnd - tStart)/dtFAST) + ntStart;
@@ -41,13 +46,13 @@ int FAST_cInterface::init() {
      
       // this calls the Init() routines of each module
 
-      FAST_OpFM_Init(&iTurbTmp, &tMax, FASTInputFileName, &TurbID, &numScOutputs, &numScInputs, TurbinePos, &AbortErrLev, &dtFAST, &numBlades, &numElementsPerBlade, cDriver_Input_from_FAST, cDriver_Output_to_FAST, &ErrStat, ErrMsg);
+      FAST_OpFM_Init(&iTurbTmp, &tMax, FASTInputFileName, &TurbID, &numScOutputs, &numScInputs, TurbinePos, &AbortErrLev, &dtFAST, &numBlades, &numElementsPerBlade, cDriver_Input_from_FAST[iTurbTmp], cDriver_Output_to_FAST[iTurbTmp], &ErrStat, ErrMsg);
       checkError(ErrStat, ErrMsg);
 
-      numTwrElements = cDriver_Output_to_FAST->u_Len - numBlades*numElementsPerBlade - 1;
+      numTwrElements = cDriver_Output_to_FAST[iTurbTmp]->u_Len - numBlades*numElementsPerBlade - 1;
 
       // set wind speeds at initial locations
-      //      setOutputsToFAST(cDriver_Input_from_FAST, cDriver_Output_to_FAST);
+      //      setOutputsToFAST(cDriver_Input_from_FAST[iTurbTmp], cDriver_Output_to_FAST[iTurbTmp]);
 
       FAST_OpFM_Solution0(&iTurbTmp, &ErrStat, ErrMsg);
       checkError(ErrStat, ErrMsg);
@@ -71,7 +76,7 @@ int FAST_cInterface::step() {
   ********************************* */
 
   //  set wind speeds at original locations 
-  //  setOutputsToFAST(cDriver_Input_from_FAST, cDriver_Output_to_FAST);
+  //  setOutputsToFAST(cDriver_Input_from_FAST[iTurbTmp], cDriver_Output_to_FAST[iTurbTmp]);
 
 
   // this advances the states, calls CalcOutput, and solves for next inputs. Predictor-corrector loop is imbeded here:

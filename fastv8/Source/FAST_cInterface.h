@@ -34,8 +34,8 @@ class FAST_cInterface {
   int numScInputs;   // # inputs to the supercontroller == # outputs from the controller == NumCtrl2SC
   
 
-  OpFM_InputType_t * cDriver_Input_from_FAST;
-  OpFM_OutputType_t * cDriver_Output_to_FAST;
+  OpFM_InputType_t ** cDriver_Input_from_FAST;
+  OpFM_OutputType_t ** cDriver_Output_to_FAST;
 
   int iTurbTmp=1; //Temporary variable to indicate iTurb
   int ErrStat;
@@ -52,15 +52,19 @@ class FAST_cInterface {
     FAST_End();
 
     // deallocate types we allocated earlier
-    if (cDriver_Input_from_FAST != NULL) {
-      free(cDriver_Input_from_FAST);
-      cDriver_Input_from_FAST = NULL;
+    for (int iTurb=0; iTurb < nTurbines; iTurb++) {
+      
+      if (cDriver_Input_from_FAST[iTurb] != NULL) {
+	free(cDriver_Input_from_FAST[iTurb]);
+	cDriver_Input_from_FAST[iTurb] = NULL;
+      }
+      if (cDriver_Output_to_FAST[iTurb] != NULL) {
+	free(cDriver_Output_to_FAST[iTurb]);
+	cDriver_Output_to_FAST[iTurb] = NULL;
+      }
     }
-    if (cDriver_Output_to_FAST != NULL) {
-      free(cDriver_Output_to_FAST);
-      cDriver_Output_to_FAST = NULL;
-    }
-
+    delete[] cDriver_Input_from_FAST;
+    delete[] cDriver_Output_to_FAST;
   }
 
   int readInputFile(std::string cInterfaceInputFile);  
