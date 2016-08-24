@@ -16,24 +16,23 @@ class FAST_cInterface {
  private:
   
   int nTurbines;
-  bool   restart;
+  bool restart;
   double dtFAST;
   double tMax;
-  float TurbinePos[3];
-  int TurbID;
-  char FASTInputFileName[INTERFACE_STRING_LENGTH];
-  char CheckpointFileRoot[INTERFACE_STRING_LENGTH];
+  float ** TurbinePos;
+  int * TurbID;
+  char ** FASTInputFileName;
+  char ** CheckpointFileRoot;
   double tStart, tEnd;
   int nt_global;           
   int ntStart, ntEnd;      // The time step to start and end the FAST simulation
   int nEveryCheckPoint;    // Check point files will be written every 'nEveryCheckPoint' time steps
-  int numBlades;           // Number of blades
-  int numElementsPerBlade;
-  int numTwrElements;
-  int numScOutputs;  // # outputs from the supercontroller == # inputs to the controller == NumSC2Ctrl
-  int numScInputs;   // # inputs to the supercontroller == # outputs from the controller == NumCtrl2SC
+  int * numBlades;           // Number of blades
+  int * numElementsPerBlade;
+  int * numTwrElements;
+  int * numScOutputs;  // # outputs from the supercontroller == # inputs to the controller == NumSC2Ctrl
+  int * numScInputs;   // # inputs to the supercontroller == # outputs from the controller == NumCtrl2SC
   
-
   OpFM_InputType_t ** cDriver_Input_from_FAST;
   OpFM_OutputType_t ** cDriver_Output_to_FAST;
 
@@ -48,9 +47,27 @@ class FAST_cInterface {
   // Destructor
   ~FAST_cInterface() {
     
-    FAST_End();
+    for (int iTurb=0; iTurb < nTurbines; iTurb++) {
+      FAST_End(&iTurb);
+    }
 
     // deallocate types we allocated earlier
+    for (int iTurb=0; iTurb < nTurbines; iTurb++) {
+      delete[] TurbinePos[iTurb];
+      delete[] FASTInputFileName[iTurb];
+      delete[] CheckpointFileRoot[iTurb];
+    }
+
+    delete[] TurbinePos;
+    delete[] FASTInputFileName;
+    delete[] CheckpointFileRoot;
+    delete[] TurbID;
+    delete[] numBlades;
+    delete[] numElementsPerBlade;
+    delete[] numTwrElements;
+    delete[] numScOutputs;
+    delete[] numScInputs;
+    
     for (int iTurb=0; iTurb < nTurbines; iTurb++) {
       
       if (cDriver_Input_from_FAST[iTurb] != NULL) {
@@ -79,7 +96,10 @@ class FAST_cInterface {
 
   int cDriverRestart();
   inline bool checkFileExists(const std::string& name);
-  
+
+  void readTurbineData(int iTurb, YAML::Node turbNode);
+  void allocateInputData();
+
 };
 
 #endif
