@@ -13,7 +13,7 @@ if __name__=="__main__":
         print "Problem reading file ", sys.argv[1]
 
     try:
-        d2, i2 = fast_io.load_binary_output(sys.argv[1])
+        d2, i2 = fast_io.load_binary_output(sys.argv[2])
     except:
         print "Problem reading file ", sys.argv[2]
 
