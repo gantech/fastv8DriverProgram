@@ -20,7 +20,7 @@ EXTERNAL_ROUTINE void FAST_Restart(int * iTurb, char *CheckpointRootName, int *A
 EXTERNAL_ROUTINE void FAST_Sizes(int * iTurb, double *TMax, double *InitInputAry, char *InputFileName, int *AbortErrLev, int * NumOuts, double * dt, int *ErrStat, char *ErrMsg, char *ChannelNames);
 EXTERNAL_ROUTINE void FAST_Start(int * iTurb, int *NumInputs_c, int *NumOutputs_c, double *InputAry, double *OutputAry, int *ErrStat, char *ErrMsg);
 EXTERNAL_ROUTINE void FAST_Update(int * iTurb, int *NumInputs_c, int *NumOutputs_c, double *InputAry, double *OutputAry, int *ErrStat, char *ErrMsg);
-EXTERNAL_ROUTINE void FAST_End();
+EXTERNAL_ROUTINE void FAST_End(int * iTurb);
 EXTERNAL_ROUTINE void FAST_CreateCheckpoint(int * iTurb, char *CheckpointRootName, int *ErrStat, char *ErrMsg);
 
 // some constants (keep these synced with values in FAST's fortran code)
