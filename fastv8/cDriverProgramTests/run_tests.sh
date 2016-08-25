@@ -44,7 +44,7 @@ cp $Fv8cDPRtest_DIR/testCases/Test01/5MW_Baseline $FAST_DIR/runFv8cDPRtest/testC
 cp $Fv8cDPRtest_DIR/testCases/Test01/test01.sh $FAST_DIR/runFv8cDPRtest/testCases/Test01/
 cp $Fv8cDPRtest_DIR/testCases/Test01/Test01.nativeFortran.outb $FAST_DIR/runFv8cDPRtest/testCases/Test01/
 # run it...  
-#./test01.sh
+./test01.sh
 
 #=============================================================================
 # Test 02
