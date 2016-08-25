@@ -1,7 +1,5 @@
-TurbID:  1
-FASTInputFileName: "Test02.fst"
+nTurbines: 1
 restart: True
-restartFileName: "Test02.T1.4800"
 tStart:  30.0
 tEnd:    50.0
 tMax:    60.0
@@ -9,6 +7,11 @@ ntStart: 4800
 ntEnd:   8000
 dtFAST:  0.00625
 nEveryCheckPoint: 1600
-TurbinePos: [ 0.0, 0.0, 0.0 ]
 
-
+Turbine1:
+  TurbinePos: [ 0.0, 0.0, 0.0 ]
+  numScOutputs: 0
+  numScInputs: 0
+  restartFileName: "Test02.T1.4800"
+  FASTInputFileName: "banana"
+  TurbID:  1
