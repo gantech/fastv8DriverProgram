@@ -22,7 +22,7 @@ SOURCE_FILES = FAST_Prog.c FAST_cInterface.c FAST_Prog_cInterface.c
    # Name of compiler to use and flags to use.
 CC      = mpicc
 CPP     = mpic++
-CFLAGS  = -O0 -g -DHAVE_MPI
+CFLAGS  = -O2 -DHAVE_MPI
 
    # Destination and RootName for executable
 

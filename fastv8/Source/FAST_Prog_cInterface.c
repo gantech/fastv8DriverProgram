@@ -23,9 +23,10 @@ int main() {
   }
 
 
-  //  for (int nt = FAST.get_ntStart(); nt <= FAST.get_ntEnd(); nt++) {
-  //    FAST.step();
-  //  }
+   for (int nt = FAST.get_ntStart(); nt <= FAST.get_ntEnd(); nt++) {
+     FAST.step();
+   }
+
   FAST.end() ;
   MPI_Finalize() ;
 
