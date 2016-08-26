@@ -10,12 +10,16 @@
 #include <malloc.h>
 #include <stdexcept>
 #include "yaml-cpp/yaml.h"
-
+#ifdef HAVE_MPI
+  #include "mpi.h"
+#endif
 class FAST_cInterface {
 
  private:
-  
-  int nTurbines;
+
+  bool dryRun;        // If this is true, class will simply go through allocation and deallocation of turbine data
+  int nTurbinesProc;
+  int nTurbinesGlob;
   bool restart;
   double dtFAST;
   double tMax;
@@ -36,6 +40,22 @@ class FAST_cInterface {
   OpFM_InputType_t ** cDriver_Input_from_FAST;
   OpFM_OutputType_t ** cDriver_Output_to_FAST;
 
+  // Turbine Number is DIFFERENT from TurbID. Turbine Number simply runs from 0:n-1 locally and globally.
+  std::map<int, int> turbineMapGlobToProc; // Mapping global turbine number to processor
+  std::map<int, int> turbineMapProcToGlob; // Mapping local to global turbine number
+  std::set<int> turbineSetProcs; // Set of processors containing atleast one turbine 
+  int * turbineProcs; // Same as the turbineSetProcs, but as an integer array
+
+#ifdef HAVE_MPI
+  int fastMPIGroupSize;
+  MPI_Group fastMPIGroup;
+  MPI_Comm  fastMPIComm;
+  int fastMPIRank;
+
+  MPI_Group worldMPIGroup;
+  int worldMPIRank;
+#endif
+
   int ErrStat;
   char ErrMsg[INTERFACE_STRING_LENGTH];  // make sure this is the same size as IntfStrLen in FAST_Library.f90
 
@@ -45,49 +65,14 @@ class FAST_cInterface {
   FAST_cInterface() ;
   
   // Destructor
-  ~FAST_cInterface() {
-    
-    for (int iTurb=0; iTurb < nTurbines; iTurb++) {
-      FAST_End(&iTurb);
-    }
-
-    // deallocate types we allocated earlier
-    for (int iTurb=0; iTurb < nTurbines; iTurb++) {
-      delete[] TurbinePos[iTurb];
-      delete[] FASTInputFileName[iTurb];
-      delete[] CheckpointFileRoot[iTurb];
-    }
-
-    delete[] TurbinePos;
-    delete[] FASTInputFileName;
-    delete[] CheckpointFileRoot;
-    delete[] TurbID;
-    delete[] numBlades;
-    delete[] numElementsPerBlade;
-    delete[] numTwrElements;
-    delete[] numScOutputs;
-    delete[] numScInputs;
-    
-    for (int iTurb=0; iTurb < nTurbines; iTurb++) {
-      
-      if (cDriver_Input_from_FAST[iTurb] != NULL) {
-	free(cDriver_Input_from_FAST[iTurb]);
-	cDriver_Input_from_FAST[iTurb] = NULL;
-      }
-      if (cDriver_Output_to_FAST[iTurb] != NULL) {
-	free(cDriver_Output_to_FAST[iTurb]);
-	cDriver_Output_to_FAST[iTurb] = NULL;
-      }
-    }
-    delete[] cDriver_Input_from_FAST;
-    delete[] cDriver_Output_to_FAST;
-  }
-
+  ~FAST_cInterface() {} ;
+  
   int readInputFile(std::string cInterfaceInputFile);  
   int init();
   int step();
   int get_ntStart() { return ntStart; }
   int get_ntEnd() { return ntEnd; }
+  void end();
 
  private:
 
@@ -99,7 +84,7 @@ class FAST_cInterface {
 
   void readTurbineData(int iTurb, YAML::Node turbNode);
   void allocateInputData();
-
+  void allocateTurbinesToProcs(YAML::Node cDriverNode);
 };
 
 #endif
