@@ -1,0 +1,40 @@
+iTurb = 0 turbineMapGlobToProc[iTurb] = 0
+iTurb = 1 turbineMapGlobToProc[iTurb] = 1
+iTurb = 2 turbineMapGlobToProc[iTurb] = 2
+iTurb = 3 turbineMapGlobToProc[iTurb] = 2
+iTurb = 4 turbineMapGlobToProc[iTurb] = 0
+iTurb = 5 turbineMapGlobToProc[iTurb] = 1
+iTurb = 6 turbineMapGlobToProc[iTurb] = 2
+iTurb = 7 turbineMapGlobToProc[iTurb] = 2
+iTurb = 8 turbineMapGlobToProc[iTurb] = 0
+iTurb = 9 turbineMapGlobToProc[iTurb] = 1
+iTurb = 10 turbineMapGlobToProc[iTurb] = 2
+iTurb = 11 turbineMapGlobToProc[iTurb] = 2
+iTurb = 12 turbineMapGlobToProc[iTurb] = 0
+iTurb = 13 turbineMapGlobToProc[iTurb] = 1
+iTurb = 14 turbineMapGlobToProc[iTurb] = 0
+iTurb = 15 turbineMapGlobToProc[iTurb] = 1
+iTurb = 16 turbineMapGlobToProc[iTurb] = 0
+iTurb = 17 turbineMapGlobToProc[iTurb] = 1
+iTurb = 18 turbineMapGlobToProc[iTurb] = 0
+iTurb = 19 turbineMapGlobToProc[iTurb] = 1
+Proc 0 loc iTurb 0 glob iTurb 0
+Proc 0 loc iTurb 1 glob iTurb 4
+Proc 0 loc iTurb 2 glob iTurb 8
+Proc 0 loc iTurb 3 glob iTurb 12
+Proc 0 loc iTurb 4 glob iTurb 14
+Proc 0 loc iTurb 5 glob iTurb 16
+Proc 0 loc iTurb 6 glob iTurb 18
+Proc 1 loc iTurb 0 glob iTurb 1
+Proc 1 loc iTurb 1 glob iTurb 5
+Proc 1 loc iTurb 2 glob iTurb 9
+Proc 1 loc iTurb 3 glob iTurb 13
+Proc 1 loc iTurb 4 glob iTurb 15
+Proc 1 loc iTurb 5 glob iTurb 17
+Proc 1 loc iTurb 6 glob iTurb 19
+Proc 2 loc iTurb 0 glob iTurb 2
+Proc 2 loc iTurb 1 glob iTurb 3
+Proc 2 loc iTurb 2 glob iTurb 6
+Proc 2 loc iTurb 3 glob iTurb 7
+Proc 2 loc iTurb 4 glob iTurb 10
+Proc 2 loc iTurb 5 glob iTurb 11
