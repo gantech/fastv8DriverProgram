@@ -44,7 +44,7 @@ cp $Fv8cDPRtest_DIR/testCases/Test01/5MW_Baseline $FAST_DIR/runFv8cDPRtest/testC
 cp $Fv8cDPRtest_DIR/testCases/Test01/test01.sh $FAST_DIR/runFv8cDPRtest/testCases/Test01/
 cp $Fv8cDPRtest_DIR/testCases/Test01/Test01.nativeFortran.outb $FAST_DIR/runFv8cDPRtest/testCases/Test01/
 # run it...  
-#./test01.sh
+./test01.sh
 
 #=============================================================================
 # Test 02
@@ -60,7 +60,7 @@ cp $Fv8cDPRtest_DIR/testCases/Test02/5MW_Baseline/ $FAST_DIR/runFv8cDPRtest/test
 cp $Fv8cDPRtest_DIR/testCases/Test02/test02.sh $FAST_DIR/runFv8cDPRtest/testCases/Test02/
 cp $Fv8cDPRtest_DIR/testCases/Test02/Test02.nativeFortran.outb $FAST_DIR/runFv8cDPRtest/testCases/Test02/
 # run it...  
-#./test02.sh
+./test02.sh
 
 #=============================================================================
 # Test 03
@@ -76,7 +76,7 @@ cp $Fv8cDPRtest_DIR/testCases/Test03/5MW_Baseline/ $FAST_DIR/runFv8cDPRtest/test
 cp $Fv8cDPRtest_DIR/testCases/Test03/test03.sh $FAST_DIR/runFv8cDPRtest/testCases/Test03/
 cp $Fv8cDPRtest_DIR/testCases/Test03/t*Test03.nativeFortran.outb $FAST_DIR/runFv8cDPRtest/testCases/Test03/
 # run it...  
-#./test03.sh
+./test03.sh
 
 
 #=============================================================================

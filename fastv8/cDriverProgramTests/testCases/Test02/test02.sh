@@ -9,13 +9,13 @@ if [ -f $CWD/PASS ]; then
     didSimulationDiffAnywhere=0
 else
     cp cDriver.i.1 cDriver.i
-    $FAST &> log.Test02.1
+    mpirun -np 1 $FAST &> log.Test02.1
     cp cDriver.i.2 cDriver.i
-    $FAST &> log.Test02.2
+    mpirun -np 1 $FAST &> log.Test02.2
     cp cDriver.i.3 cDriver.i
-    $FAST &> log.Test02.3
+    mpirun -np 1 $FAST &> log.Test02.3
     cp cDriver.i.4 cDriver.i
-    $FAST &> log.Test02.4
+    mpirun -np 1 $FAST &> log.Test02.4
     determine_pass_fail Test02.T1.outb Test02.nativeFortran.outb
     didSimulationDiffAnywhere="$?"
 fi

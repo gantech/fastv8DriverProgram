@@ -1,4 +1,5 @@
-nTurbines: 1
+nTurbinesGlob: 1
+dryRun:  False
 restart: True
 tStart:  30.0
 tEnd:    50.0
@@ -8,10 +9,12 @@ ntEnd:   8000
 dtFAST:  0.00625
 nEveryCheckPoint: 1600
 
-Turbine1:
+Turbine0:
+  procNo: 0
   TurbinePos: [ 0.0, 0.0, 0.0 ]
   numScOutputs: 0
   numScInputs: 0
   restartFileName: "Test02.T1.4800"
   FASTInputFileName: "banana"
   TurbID:  1
+

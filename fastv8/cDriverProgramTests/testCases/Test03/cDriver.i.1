@@ -1,4 +1,5 @@
-nTurbines: 2
+nTurbinesGlob: 2
+dryRun:  False
 restart: False
 tStart:  0.0
 tEnd:    10.0
@@ -8,7 +9,8 @@ ntEnd:   1600
 dtFAST:  0.00625
 nEveryCheckPoint: 1600
 
-Turbine1:
+Turbine0:
+  procNo: 0
   TurbinePos: [ 0.0, 0.0, 0.0 ]
   numScOutputs: 0
   numScInputs: 0
@@ -16,7 +18,8 @@ Turbine1:
   FASTInputFileName: "t1_Test03.fst"
   TurbID:  1
 
-Turbine2:
+Turbine1:
+  procNo: 0
   TurbinePos: [ 0.0, 0.0, 0.0 ]
   numScOutputs: 0
   numScInputs: 0
