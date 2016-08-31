@@ -22,10 +22,11 @@ int main() {
     return 1;
   }
 
-
-   for (int nt = FAST.get_ntStart(); nt <= FAST.get_ntEnd(); nt++) {
-     FAST.step();
-   }
+  if( !FAST.isDryRun() ) {
+    for (int nt = FAST.get_ntStart(); nt <= FAST.get_ntEnd(); nt++) {
+      FAST.step();
+    }
+  }
 
   FAST.end() ;
   MPI_Finalize() ;

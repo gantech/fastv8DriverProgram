@@ -72,6 +72,7 @@ class FAST_cInterface {
   int step();
   int get_ntStart() { return ntStart; }
   int get_ntEnd() { return ntEnd; }
+  bool isDryRun() { return dryRun; }
   void end();
 
  private:
