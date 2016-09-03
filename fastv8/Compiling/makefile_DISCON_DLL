@@ -19,8 +19,7 @@ BITS = 64
 
 DLL_DIR     = ../CertTest/5MW_Baseline/ServoData/Source/
 
-SOURCE_FILES = DISCON.f90 DISCON2.f90 DISCON3.f90 DISCON4.f90
-
+SOURCE_FILES = DISCON.f90 DISCON2.f90 DISCON3.f90 DISCON4.f90 DISCON_SC.f90 DISCON_SC1.f90 DISCON_SC2.f90
 
    # Name of compiler to use and flags to use.
 FC      = gfortran
@@ -87,7 +86,7 @@ ALL_OBJS      = $(DLL_SOURCES:.f90=$(OBJ_EXT))
    # Rule to do everything.
 
 all:     default
-default:  $(INTER_DIR) $(DEST_DIR)/libDISCON$(SOBJ_EXT) $(DEST_DIR)/libDISCON2$(SOBJ_EXT) $(DEST_DIR)/libDISCON3$(SOBJ_EXT) $(DEST_DIR)/libDISCON4$(SOBJ_EXT) 
+default:  $(INTER_DIR) $(DEST_DIR)/libDISCON$(SOBJ_EXT) $(DEST_DIR)/libDISCON2$(SOBJ_EXT) $(DEST_DIR)/libDISCON3$(SOBJ_EXT) $(DEST_DIR)/libDISCON4$(SOBJ_EXT) $(DEST_DIR)/libDISCON_SC$(SOBJ_EXT) $(DEST_DIR)/libDISCON_SC1$(SOBJ_EXT) $(DEST_DIR)/libDISCON_SC2$(SOBJ_EXT)
 
    # General rules for compliling the files.
 
@@ -117,9 +116,17 @@ $(DEST_DIR)/libDISCON3$(SOBJ_EXT): DISCON3$(OBJ_EXT) | $(INTER_DIR)
 $(DEST_DIR)/libDISCON4$(SOBJ_EXT): DISCON4$(OBJ_EXT) | $(INTER_DIR)
 	$(FC) $(LDFLAGS) -I $(INTER_DIR) -o $(DEST_DIR)/libDISCON4$(SOBJ_EXT) $(INTER_DIR)/DISCON4$(OBJ_EXT)
 
+$(DEST_DIR)/libDISCON_SC$(SOBJ_EXT): DISCON_SC$(OBJ_EXT) | $(INTER_DIR)
+	$(FC) $(LDFLAGS) -I $(INTER_DIR) -o $(DEST_DIR)/libDISCON_SC$(SOBJ_EXT) $(INTER_DIR)/DISCON_SC$(OBJ_EXT)
+
+$(DEST_DIR)/libDISCON_SC1$(SOBJ_EXT): DISCON_SC1$(OBJ_EXT) | $(INTER_DIR)
+	$(FC) $(LDFLAGS) -I $(INTER_DIR) -o $(DEST_DIR)/libDISCON_SC1$(SOBJ_EXT) $(INTER_DIR)/DISCON_SC1$(OBJ_EXT)
+
+$(DEST_DIR)/libDISCON_SC2$(SOBJ_EXT): DISCON_SC2$(OBJ_EXT) | $(INTER_DIR)
+	$(FC) $(LDFLAGS) -I $(INTER_DIR) -o $(DEST_DIR)/libDISCON_SC2$(SOBJ_EXT) $(INTER_DIR)/DISCON_SC2$(OBJ_EXT)
+
    # Cleanup afterwards.
 
 clean:
 	$(DEL_CMD) $(ALL_OBJS)
 
-#gfortran -shared -O2 -m32 -fbacktrace -ffree-line-length-none -x f95-cpp-input -C ../CertTest/5MW_Baseline/ServoData/Source/DISCON.f90
