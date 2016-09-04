@@ -10,6 +10,7 @@
 #include <malloc.h>
 #include <stdexcept>
 #include "yaml-cpp/yaml.h"
+#include "dlfcn.h"
 #ifdef HAVE_MPI
   #include "mpi.h"
 #endif
@@ -45,6 +46,14 @@ class FAST_cInterface {
   std::map<int, int> turbineMapProcToGlob; // Mapping local to global turbine number
   std::set<int> turbineSetProcs; // Set of processors containing atleast one turbine 
   int * turbineProcs; // Same as the turbineSetProcs, but as an integer array
+
+  //Supercontroller stuff
+  bool scStatus;
+  std::string scLibFile;
+  // Dynamic load stuff copied from 'C++ dlopen mini HOWTO' on tldp.org
+  void *scLibHandle ;
+  typedef void (*DISCON_sc_t)(OpFM_InputType_t* , OpFM_OutputType_t*);
+  DISCON_sc_t DISCON_SuperController;
 
 #ifdef HAVE_MPI
   int fastMPIGroupSize;
@@ -86,6 +95,7 @@ class FAST_cInterface {
   void readTurbineData(int iTurb, YAML::Node turbNode);
   void allocateInputData();
   void allocateTurbinesToProcs(YAML::Node cDriverNode);
+  void loadSuperController(YAML::Node c);
 };
 
 #endif

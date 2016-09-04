@@ -6,7 +6,8 @@ FAST_cInterface::FAST_cInterface():
 cDriver_Input_from_FAST(NULL),
 cDriver_Output_to_FAST(NULL),
 nTurbinesGlob(0),
-nTurbinesProc(0)
+nTurbinesProc(0),
+scStatus(false)
 {
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &worldMPIRank);
@@ -89,11 +90,15 @@ int FAST_cInterface::step() {
      //  set wind speeds at original locations 
      //  setOutputsToFAST(cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb]);
 
-
      // this advances the states, calls CalcOutput, and solves for next inputs. Predictor-corrector loop is imbeded here:
      // (note OpenFOAM could do subcycling around this step)
      FAST_OpFM_Step(&iTurb, &ErrStat, ErrMsg);
      checkError(ErrStat, ErrMsg);
+
+     /* if(scStatus) { */
+     /*   DISCON_SuperController(cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb]); */
+     /* } */
+	
    }
 
   nt_global = nt_global + 1;
@@ -111,18 +116,25 @@ int FAST_cInterface::readInputFile(std::string cInterfaceInputFile ) {
     nTurbinesGlob = cDriverInp["nTurbinesGlob"].as<int>();
 
     if (nTurbinesGlob > 0) {
-
-      dryRun = cDriverInp["dryRun"].as<bool>();
-
+      
+      if(cDriverInp["dryRun"]) {
+	dryRun = cDriverInp["dryRun"].as<bool>();
+      } else {
+	dryRun = false;
+      }
+      
       allocateTurbinesToProcs(cDriverInp);
 
       allocateInputData(); // Allocate memory for all inputs that are dependent on the number of turbines
+
       
       restart = cDriverInp["restart"].as<bool>();
       tStart = cDriverInp["tStart"].as<double>();
       tEnd = cDriverInp["tEnd"].as<double>();
       tMax = cDriverInp["tMax"].as<double>();
       nEveryCheckPoint = cDriverInp["nEveryCheckPoint"].as<int>();
+      
+      loadSuperController(cDriverInp);
 
       if (restart == false) {
 	ntStart = 0;
@@ -327,4 +339,35 @@ void FAST_cInterface::end() {
     MPI_Group_free(&worldMPIGroup);
 #endif    
 
+    if(scStatus) {
+
+      if(scLibHandle != NULL) {
+	dlclose(scLibHandle);
+      }
+      
+    }
+
   }
+
+
+void FAST_cInterface::loadSuperController(YAML::Node c) {
+
+  if(c["superController"]) {
+    scStatus = c["superController"].as<bool>();
+    std::cout << "scStatus = " << scStatus << std::endl ;
+    scLibFile = c["scLibFile"].as<std::string>();
+    scLibHandle = dlopen("libScontroller.so", RTLD_LAZY);
+    DISCON_sc_t DISCON_SuperController = (DISCON_sc_t) dlsym(scLibHandle, "DISCON_SuperController");
+
+    const char *dlsym_error = dlerror();
+    if (dlsym_error) {
+      dlclose(scLibHandle);
+      throw std::runtime_error("Cannot load symbol 'DISCON_SuperController' from shared library\n") ;
+    }
+
+  } else {
+    scStatus = false;
+  }
+
+
+}
