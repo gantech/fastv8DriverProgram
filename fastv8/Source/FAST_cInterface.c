@@ -61,6 +61,10 @@ int FAST_cInterface::init() {
        // set wind speeds at initial locations
        //      setOutputsToFAST(cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb]);
 
+       /* if(scStatus) { */
+       /* 	 DISCON_SuperController(cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb]); */
+       /* } */
+
        FAST_OpFM_Solution0(&iTurb, &ErrStat, ErrMsg);
        checkError(ErrStat, ErrMsg);
      }
@@ -95,10 +99,10 @@ int FAST_cInterface::step() {
      FAST_OpFM_Step(&iTurb, &ErrStat, ErrMsg);
      checkError(ErrStat, ErrMsg);
 
-     /* if(scStatus) { */
-     /*   DISCON_SuperController(cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb]); */
-     /* } */
-	
+     if(scStatus) {
+       DISCON_SuperController(cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb]);
+     }
+
    }
 
   nt_global = nt_global + 1;
@@ -342,6 +346,8 @@ void FAST_cInterface::end() {
     if(scStatus) {
 
       if(scLibHandle != NULL) {
+	// close the library
+	std::cout << "Closing library...\n";
 	dlclose(scLibHandle);
       }
       
@@ -354,20 +360,25 @@ void FAST_cInterface::loadSuperController(YAML::Node c) {
 
   if(c["superController"]) {
     scStatus = c["superController"].as<bool>();
-    std::cout << "scStatus = " << scStatus << std::endl ;
     scLibFile = c["scLibFile"].as<std::string>();
-    scLibHandle = dlopen("libScontroller.so", RTLD_LAZY);
-    DISCON_sc_t DISCON_SuperController = (DISCON_sc_t) dlsym(scLibHandle, "DISCON_SuperController");
 
+    // open the library
+    scLibHandle = dlopen("libScontroller.so", RTLD_LAZY);
+    if (!scLibHandle) {
+      std::cerr << "Cannot open library: " << dlerror() << '\n';
+    }
+    
+    DISCON_SuperController = (DISCON_SuperController_t) dlsym(scLibHandle, "DISCON_SuperController");
+    // reset errors
+    dlerror();
     const char *dlsym_error = dlerror();
     if (dlsym_error) {
+      std::cerr << "Cannot load symbol 'DISCON_SuperController': " << dlsym_error << '\n';
       dlclose(scLibHandle);
-      throw std::runtime_error("Cannot load symbol 'DISCON_SuperController' from shared library\n") ;
     }
-
-  } else {
+    
+   } else {
     scStatus = false;
-  }
-
+   }
 
 }

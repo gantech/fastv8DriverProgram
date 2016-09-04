@@ -51,9 +51,9 @@ class FAST_cInterface {
   bool scStatus;
   std::string scLibFile;
   // Dynamic load stuff copied from 'C++ dlopen mini HOWTO' on tldp.org
-  void *scLibHandle ;
-  typedef void (*DISCON_sc_t)(OpFM_InputType_t* , OpFM_OutputType_t*);
-  DISCON_sc_t DISCON_SuperController;
+  void *scLibHandle ; 
+  typedef void (*DISCON_SuperController_t)(OpFM_InputType_t*, OpFM_OutputType_t*);
+  DISCON_SuperController_t DISCON_SuperController;
 
 #ifdef HAVE_MPI
   int fastMPIGroupSize;

@@ -48,7 +48,7 @@ SYS_FILE  = SysGnuLinux
 UNAME := $(shell uname -s)
 
 CFLAGS     := $(CFLAGS) -fPIC -fpermissive -std=c++11
-LDFLAGS    = -fPIC -L$(FASTLIB_DIR) -L$(YAMLCPPLIB_DIR) -lFAST_glin$(BITS) -lmap-1.20.10 -lyaml-cpp
+LDFLAGS    = -fPIC -L$(FASTLIB_DIR) -L$(YAMLCPPLIB_DIR) -lFAST_glin$(BITS) -lmap-1.20.10 -lyaml-cpp -ldl
 
 _ALL_OBJS  = $(SOURCE_FILE:.c=$(OBJ_EXT))
 ALL_OBJS   = $(patsubst %,$(INTER_DIR)/%,$(_ALL_OBJS))
@@ -70,9 +70,6 @@ $(INTER_DIR)/FAST_cInterface.o: $(SOURCE_DIR)/FAST_cInterface.c $(SOURCE_DIR)/FA
 $(INTER_DIR)/FAST_Prog_cInterface.o: $(SOURCE_DIR)/FAST_Prog_cInterface.c $(SOURCE_DIR)/FAST_cInterface.h $(INTER_DIR)/FAST_cInterface.o $(SOURCE_DIR)/dependencies/OpenFOAM/OpenFOAM_Types.h
 	$(CPP)  $(CFLAGS) -c $< -I$(SOURCE_DIR) -I$(SOURCE_DIR)/dependencies/OpenFOAM/ -I$(SOURCE_DIR)/dependencies/yaml-cpp/include/ -o $@
 
-$(INTER_DIR)/SC.o: $(SOURCE_DIR)/SC.c
-	$(CPP) $(CFLAGS) -c $< -I$(SOURCE_DIR) -I$(SOURCE_DIR)/dependencies/OpenFOAM/ -o $@
-
    # Make sure the destination directory for the intermediate files exist.
 
 $(INTER_DIR):
@@ -88,9 +85,9 @@ $(DEST_DIR)/FAST_cDriverProg_cInterface$(EXE_EXT): $(INTER_DIR)/FAST_Prog_cInter
 	$(CPP) $(CFLAGS) -o $(DEST_DIR)/FAST_cDriverProg_cInterface$(EXE_EXT) \
 	$(INTER_DIR)/FAST_Prog_cInterface.o $(INTER_DIR)/FAST_cInterface.o $(LDFLAGS)
 
-$(DEST_DIR)/libScontroller.so: $(INTER_DIR)/SC.o
-	$(CPP) $(CFLAGS) -shared -o $(DEST_DIR)/libScontroller.so \
-        $(INTER_DIR)/SC.o $(LDFLAGS)
+$(DEST_DIR)/libScontroller.so: $(SOURCE_DIR)/SC.c
+	$(CPP) -fPIC -shared -I$(SOURCE_DIR)/dependencies/OpenFOAM/ -o $(DEST_DIR)/libScontroller.so \
+        $(SOURCE_DIR)/SC.c
 
    # Cleanup afterwards.
 
