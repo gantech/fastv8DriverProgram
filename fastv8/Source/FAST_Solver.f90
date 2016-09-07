@@ -47,6 +47,7 @@ MODULE FAST_Solver
    USE ServoDyn
    USE SubDyn
    USE OpenFOAM
+   USE SuperController
    
 
    IMPLICIT NONE

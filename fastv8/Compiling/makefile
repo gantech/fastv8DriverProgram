@@ -24,8 +24,8 @@ FAST_driver = FAST_Library
 
 
 
-FFLAGS  = -O2 -pg -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -DDOUBLE_PRECISION  -fdefault-real-8 
-LDFLAGS = -O2 -pg -m$(BITS) -fbacktrace
+FFLAGS  = -O0 -g -pg -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -DDOUBLE_PRECISION  -fdefault-real-8 
+LDFLAGS = -O0 -g -pg -m$(BITS) -fbacktrace
 
 #FFLAGS  = -O0 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input
 #FFLAGS  = -O0 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -g -pg
@@ -66,6 +66,7 @@ AD14_DIR     = $(FAST_DIR)/dependencies/AeroDyn14
 AD_DIR       = $(FAST_DIR)/dependencies/AeroDyn
 IfW_DIR      = $(FAST_DIR)/dependencies/InflowWind
 OpFM_DIR     = $(FAST_DIR)/dependencies/OpenFOAM
+SC_DIR       = $(FAST_DIR)/dependencies/SuperController
 HD_DIR       = $(FAST_DIR)/dependencies/HydroDyn
 SD_DIR       = $(FAST_DIR)/dependencies/SubDyn
 MAP_DIR      = $(FAST_DIR)/dependencies/MAP
@@ -240,6 +241,10 @@ OpFM_SOURCES =                 \
 	OpenFOAM_Types.f90          \
 	OpenFOAM.f90
 
+SC_SOURCES =                 \
+	SuperController_Types.f90          \
+	SuperController.f90
+
 AD14_SOURCES =                 \
 	AeroDyn14_Types.f90         \
 	GenSubs.f90                 \
@@ -379,12 +384,13 @@ FAST_SOURCES =                 \
 
 vpath %.f90       $(NWTC_Lib_DIR) $(AD14_DIR) $(IfW_DIR) $(HD_DIR) $(ED_DIR) $(SrvD_DIR) $(TMD_DIR) $(SD_DIR) $(MAP_DIR) \
                   $(FAST_DIR) $(NETLIB_DIR) $(FEAM_DIR) $(MD_DIR) $(IceF_DIR) $(IceD_DIR) $(DWM_DIR) $(AFI_DIR) $(UA_DIR) \
-                  $(BEMT_DIR) $(AD_DIR) $(BD_DIR) $(OpFM_DIR) $(Orca_DIR)
+                  $(BEMT_DIR) $(AD_DIR) $(BD_DIR) $(OpFM_DIR) $(SC_DIR) $(Orca_DIR)
 vpath %.f         $(NETLIB_DIR)
 vpath %.mod       $(INTER_DIR)
 vpath %$(OBJ_EXT) $(INTER_DIR)
 vpath %.txt       $(FAST_DIR) $(AD14_DIR) $(IfW_DIR_Reg) $(HD_DIR_Reg) $(SD_DIR) $(ED_DIR) $(SrvD_DIR) $(TMD_DIR) $(IceD_DIR) \
-                  $(DWM_DIR) $(FEAM_DIR) $(MD_DIR) $(MAP_DIR) $(AFI_DIR) $(UA_DIR) $(BEMT_DIR) $(AD_DIR) $(BD_DIR) $(OpFM_DIR)
+                  $(DWM_DIR) $(FEAM_DIR) $(MD_DIR) $(MAP_DIR) $(AFI_DIR) $(UA_DIR) $(BEMT_DIR) $(AD_DIR) $(BD_DIR) $(OpFM_DIR) \
+                  $(SC_DIR)
 vpath %.inp       $(IceF_DIR) $(Orca_DIR_Reg)
 #apparently vpath doesn't work as expected if I use %.F90 (is it not case sensitive???)
 #.F90 extension is required for some preprocessor directives (can get around this when compiling, but apparently not when using Doxygen)
@@ -393,7 +399,7 @@ vpath %           $(IceF_DIR) $(SrvD_DIR) $(Orca_DIR)
 
 
 ALL_SOURCES = $(FAST_SOURCES) $(LIB_SOURCES) $(NETLIB_SOURCES) $(IfW_SOURCES) $(AD14_SOURCES) $(DWM_SOURCES) \
-              $(OpFM_SOURCES) $(SrvD_SOURCES) $(ED_SOURCES) $(HD_SOURCES)  $(SD_SOURCES) \
+              $(OpFM_SOURCES) $(SC_SOURCES) $(SrvD_SOURCES) $(ED_SOURCES) $(HD_SOURCES)  $(SD_SOURCES) \
               $(AFI_SOURCES) $(UA_SOURCES) $(BEMT_SOURCES) $(AD_SOURCES) \
               $(MAP_SOURCES) $(FEAM_SOURCES) $(MD_SOURCES) $(Orca_SOURCES) $(IceF_SOURCES) $(IceD_SOURCES) $(BD_SOURCES)
 ALL_OBJS    = $(ALL_SOURCES:.f90=$(OBJ_EXT))
@@ -428,7 +434,7 @@ default:  $(INTER_DIR) $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT)
 $(FAST_DIR)/FAST_Types.f90: $(FAST_DIR)/FAST_Registry.txt
 	$(Registry) $< -I $(NWTC_Lib_DIR) -I $(ED_DIR) -I $(SrvD_DIR) -I $(SD_DIR) -I $(TMD_DIR) -I $(AD14_DIR) -I $(AD_DIR) -I $(BD_DIR) \
 	-I $(HD_DIR_Reg) -I $(IceF_DIR) -I $(IceD_DIR) -I $(MAP_DIR) -I $(FEAM_DIR) -I $(MD_DIR) -I $(IfW_DIR_Reg) -I $(DWM_DIR) -I $(OpFM_DIR) \
-	-I $(Orca_DIR_Reg) -noextrap -O $(FAST_DIR)
+	-I $(SC_DIR) -I $(Orca_DIR_Reg) -noextrap -O $(FAST_DIR)
 
 $(TMD_DIR)/TMD_Types.f90: $(TMD_DIR)/TMD_Registry.txt
 	$(Registry) $< -I $(NWTC_Lib_DIR) -O $(TMD_DIR)
@@ -480,6 +486,9 @@ $(IceD_DIR)/IceDyn_Types.f90: $(IceD_DIR)/Registry_IceDyn.txt
 
 $(OpFM_DIR)/OpenFOAM_Types.f90: $(OpFM_DIR)/OpenFOAM_Registry.txt
 	$(Registry) $< -I $(NWTC_Lib_DIR) -ccode -O $(OpFM_DIR)
+
+$(SC_DIR)/SuperController_Types.f90: $(SC_DIR)/SuperController_Registry.txt
+	$(Registry) $< -I $(NWTC_Lib_DIR) -ccode -O $(SC_DIR)
 
 $(Orca_DIR)/OrcaFlexInterface_Types.f90: $(Orca_DIR_Reg)/OrcaFlexInterface.txt
 	$(Registry) $< -I $(NWTC_Lib_DIR) -I $(Orca_DIR_Reg)  -O $(Orca_DIR)
@@ -708,6 +717,10 @@ IceDyn$(OBJ_EXT):                 NWTC_Library$(OBJ_EXT) IceDyn_Types$(OBJ_EXT)
 OpenFOAM_Types$(OBJ_EXT):         NWTC_Library$(OBJ_EXT) $(OpFM_DIR)/OpenFOAM_Types.f90
 OpenFOAM$(OBJ_EXT):               NWTC_Library$(OBJ_EXT)  FAST_Types$(OBJ_EXT)
 
+#SuperController integration dependency rules:
+SuperController_Types$(OBJ_EXT):         NWTC_Library$(OBJ_EXT) $(SC_DIR)/SuperController_Types.f90
+SuperController$(OBJ_EXT):               NWTC_Library$(OBJ_EXT)  FAST_Types$(OBJ_EXT)
+
 
 # FAST dependency rules:
 FAST_Types$(OBJ_EXT):             NWTC_Library$(OBJ_EXT)  ElastoDyn_Types$(OBJ_EXT)  ServoDyn_Types$(OBJ_EXT)   \
@@ -715,12 +728,13 @@ FAST_Types$(OBJ_EXT):             NWTC_Library$(OBJ_EXT)  ElastoDyn_Types$(OBJ_E
                                      SubDyn_Types$(OBJ_EXT)  HydroDyn_Types$(OBJ_EXT)  BeamDyn_Types$(OBJ_EXT) \
                                      MAP_Types$(OBJ_EXT)  FEAMooring_Types$(OBJ_EXT)  MoorDyn_Types$(OBJ_EXT)   \
                                      IceFloe_Types$(OBJ_EXT)  IceDyn_Types$(OBJ_EXT) $(FAST_DIR)/FAST_Types.f90  \
-                                     OpenFOAM_Types$(OBJ_EXT) OrcaFlexInterface_Types$(OBJ_EXT)
+                                     OpenFOAM_Types$(OBJ_EXT) SuperController_Types$(OBJ_EXT) OrcaFlexInterface_Types$(OBJ_EXT)
 FAST_Mods$(OBJ_EXT):              NWTC_Library$(OBJ_EXT)  FAST_Types$(OBJ_EXT)
 FAST_Solver$(OBJ_EXT):            NWTC_Library$(OBJ_EXT)  FAST_Mods$(OBJ_EXT)  NWTC_LAPACK$(OBJ_EXT)  AeroDyn14$(OBJ_EXT) \
                                      InflowWind$(OBJ_EXT)  ServoDyn$(OBJ_EXT)  ElastoDyn$(OBJ_EXT) SubDyn$(OBJ_EXT)     \
                                      HydroDyn$(OBJ_EXT)  MAP$(OBJ_EXT)  FEAM$(OBJ_EXT)  MoorDyn$(OBJ_EXT)  OpenFOAM$(OBJ_EXT)  \
-                                     IceFloe$(OBJ_EXT) IceDyn$(OBJ_EXT)  AeroDyn$(OBJ_EXT)  BeamDyn$(OBJ_EXT) OrcaFlexInterface$(OBJ_EXT)
+                                     SuperController$(OBJ_EXT) IceFloe$(OBJ_EXT) IceDyn$(OBJ_EXT)  AeroDyn$(OBJ_EXT)  \
+                                     BeamDyn$(OBJ_EXT) OrcaFlexInterface$(OBJ_EXT)
 FAST_Lin$(OBJ_EXT):               FAST_Solver$(OBJ_EXT)
 FAST_Subs$(OBJ_EXT):              FAST_Lin$(OBJ_EXT)
 $(FAST_driver)$(OBJ_EXT):         NWTC_Library$(OBJ_EXT)  FAST_Subs$(OBJ_EXT)
@@ -760,6 +774,7 @@ superclean:
 	$(DEL_CMD) "$(IceF_DIR)$(PATH_SEP)IceFloe_Types.f90"
 	$(DEL_CMD) "$(IceD_DIR)$(PATH_SEP)IceDyn_Types.f90"
 	$(DEL_CMD) "$(OpFM_DIR)$(PATH_SEP)OpenFOAM_Types.f90"
+	$(DEL_CMD) "$(SC_DIR)$(PATH_SEP)SuperController_Types.f90"
 	$(DEL_CMD) "$(IfW_DIR)$(PATH_SEP)InflowWind_Types.f90"
 	$(DEL_CMD) "$(IfW_DIR)$(PATH_SEP)Lidar_Types.f90"
 	$(DEL_CMD) "$(IfW_DIR)$(PATH_SEP)"IfW_*_Types.f90
