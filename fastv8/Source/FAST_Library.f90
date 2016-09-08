@@ -422,7 +422,7 @@ subroutine FAST_Restart(iTurb, CheckpointRootName_c, AbortErrLev_c, NumOuts_c, d
 end subroutine FAST_Restart 
 !==================================================================================================================================
 subroutine FAST_OpFM_Init(iTurb, TMax, InputFileName_c, TurbID, NumSC2Ctrl, NumCtrl2SC, TurbPosn, AbortErrLev_c, dt_c, NumBl_c, NumBlElem_c, &
-                          OpFM_Input_from_FAST, OpFM_Output_to_FAST, ErrStat_c, ErrMsg_c) BIND (C, NAME='FAST_OpFM_Init')
+                          OpFM_Input_from_FAST, OpFM_Output_to_FAST, SC_Input_from_FAST, SC_Output_to_FAST, ErrStat_c, ErrMsg_c) BIND (C, NAME='FAST_OpFM_Init')
 !DEC$ ATTRIBUTES DLLEXPORT::FAST_OpFM_Init
    IMPLICIT NONE 
 #ifndef IMPLICIT_DLLEXPORT
@@ -441,6 +441,8 @@ subroutine FAST_OpFM_Init(iTurb, TMax, InputFileName_c, TurbID, NumSC2Ctrl, NumC
    INTEGER(C_INT),         INTENT(  OUT) :: NumBlElem_c      
    TYPE(OpFM_InputType_C), INTENT(  OUT) :: OpFM_Input_from_FAST
    TYPE(OpFM_OutputType_C),INTENT(  OUT) :: OpFM_Output_to_FAST
+   TYPE(SC_InputType_C),   INTENT(INOUT) :: SC_Input_from_FAST
+   TYPE(SC_OutputType_C),  INTENT(INOUT) :: SC_Output_to_FAST
    INTEGER(C_INT),         INTENT(  OUT) :: ErrStat_c      
    CHARACTER(KIND=C_CHAR), INTENT(  OUT) :: ErrMsg_c(IntfStrLen) 
       
@@ -475,7 +477,7 @@ subroutine FAST_OpFM_Init(iTurb, TMax, InputFileName_c, TurbID, NumSC2Ctrl, NumC
    ErrMsg        = TRIM(ErrMsg)//C_NULL_CHAR
    ErrMsg_c      = TRANSFER( ErrMsg//C_NULL_CHAR, ErrMsg_c )
    
-   call SetOpenFOAM_pointers(iTurb, OpFM_Input_from_FAST, OpFM_Output_to_FAST)
+   call SetOpenFOAM_pointers(iTurb, OpFM_Input_from_FAST, OpFM_Output_to_FAST, SC_Input_from_FAST, SC_Output_to_FAST)
                         
    ! 7-Sep-2015: Sang wants these integers for the OpenFOAM mapping, which is tied to the AeroDyn nodes. FAST doesn't restrict the number of nodes on each 
    ! blade mesh to be the same, so if this DOES ever change, we'll need to make OpenFOAM less tied to the AeroDyn mapping.
@@ -502,6 +504,9 @@ subroutine FAST_OpFM_Solution0(iTurb, ErrStat_c, ErrMsg_c) BIND (C, NAME='FAST_O
    INTEGER(C_INT),         INTENT(  OUT) :: ErrStat_c      
    CHARACTER(KIND=C_CHAR), INTENT(  OUT) :: ErrMsg_c(IntfStrLen) 
       
+   CALL SC_SetOutputs(Turbine(iTurb)%p_FAST, Turbine(iTurb)%SrvD%Input(1), Turbine(iTurb)%SC, ErrStat, ErrMsg)
+   CALL SC_SetOutputs(Turbine(iTurb)%p_FAST, Turbine(iTurb)%SrvD%Input(2), Turbine(iTurb)%SC, ErrStat, ErrMsg)
+   CALL SC_SetOutputs(Turbine(iTurb)%p_FAST, Turbine(iTurb)%SrvD%Input(3), Turbine(iTurb)%SC, ErrStat, ErrMsg)
    
    call FAST_Solution0_T(Turbine(iTurb), ErrStat, ErrMsg ) 
    
@@ -514,7 +519,7 @@ subroutine FAST_OpFM_Solution0(iTurb, ErrStat_c, ErrMsg_c) BIND (C, NAME='FAST_O
 end subroutine FAST_OpFM_Solution0
 !==================================================================================================================================
 subroutine FAST_OpFM_Restart(iTurb, CheckpointRootName_c, AbortErrLev_c, dt_c, numblades_c, numElementsPerBlade_c, n_t_global_c, &
-                      OpFM_Input_from_FAST, OpFM_Output_to_FAST, ErrStat_c, ErrMsg_c) BIND (C, NAME='FAST_OpFM_Restart')
+                      OpFM_Input_from_FAST, OpFM_Output_to_FAST, SC_Input_from_FAST, SC_Output_to_FAST, ErrStat_c, ErrMsg_c) BIND (C, NAME='FAST_OpFM_Restart')
 !DEC$ ATTRIBUTES DLLEXPORT::FAST_OpFM_Restart
    IMPLICIT NONE
 #ifndef IMPLICIT_DLLEXPORT
@@ -529,6 +534,8 @@ subroutine FAST_OpFM_Restart(iTurb, CheckpointRootName_c, AbortErrLev_c, dt_c, n
    INTEGER(C_INT),         INTENT(  OUT) :: n_t_global_c      
    TYPE(OpFM_InputType_C), INTENT(  OUT) :: OpFM_Input_from_FAST
    TYPE(OpFM_OutputType_C),INTENT(  OUT) :: OpFM_Output_to_FAST
+   TYPE(SC_InputType_C),   INTENT(INOUT) :: SC_Input_from_FAST
+   TYPE(SC_OutputType_C),  INTENT(INOUT) :: SC_Output_to_FAST
    INTEGER(C_INT),         INTENT(  OUT) :: ErrStat_c      
    CHARACTER(KIND=C_CHAR), INTENT(  OUT) :: ErrMsg_c(IntfStrLen) 
    
@@ -570,17 +577,18 @@ subroutine FAST_OpFM_Restart(iTurb, CheckpointRootName_c, AbortErrLev_c, dt_c, n
    if (ErrStat /= ErrID_None) call wrscr1(trim(ErrMsg))
 #endif   
 
-   call SetOpenFOAM_pointers(iTurb, OpFM_Input_from_FAST, OpFM_Output_to_FAST)
+   call SetOpenFOAM_pointers(iTurb, OpFM_Input_from_FAST, OpFM_Output_to_FAST, SC_Input_from_FAST, SC_Output_to_FAST)
 
 end subroutine FAST_OpFM_Restart
 !==================================================================================================================================
-subroutine SetOpenFOAM_pointers(iTurb, OpFM_Input_from_FAST, OpFM_Output_to_FAST)
+subroutine SetOpenFOAM_pointers(iTurb, OpFM_Input_from_FAST, OpFM_Output_to_FAST, SC_Input_from_FAST, SC_Output_to_FAST)
 
    IMPLICIT NONE
    INTEGER(C_INT),         INTENT(IN   ) :: iTurb            ! Turbine number 
    TYPE(OpFM_InputType_C), INTENT(INOUT) :: OpFM_Input_from_FAST
    TYPE(OpFM_OutputType_C),INTENT(INOUT) :: OpFM_Output_to_FAST
-
+   TYPE(SC_InputType_C),   INTENT(INOUT) :: SC_Input_from_FAST
+   TYPE(SC_OutputType_C),  INTENT(INOUT) :: SC_Output_to_FAST
 
    OpFM_Input_from_FAST%px_Len = Turbine(iTurb)%OpFM%u%c_obj%px_Len; OpFM_Input_from_FAST%px = Turbine(iTurb)%OpFM%u%c_obj%px
    OpFM_Input_from_FAST%py_Len = Turbine(iTurb)%OpFM%u%c_obj%py_Len; OpFM_Input_from_FAST%py = Turbine(iTurb)%OpFM%u%c_obj%py
@@ -590,12 +598,18 @@ subroutine SetOpenFOAM_pointers(iTurb, OpFM_Input_from_FAST, OpFM_Output_to_FAST
    OpFM_Input_from_FAST%fz_Len = Turbine(iTurb)%OpFM%u%c_obj%fz_Len; OpFM_Input_from_FAST%fz = Turbine(iTurb)%OpFM%u%c_obj%fz
    OpFM_Input_from_FAST%SuperController_Len = Turbine(iTurb)%OpFM%u%c_obj%SuperController_Len
    OpFM_Input_from_FAST%SuperController     = Turbine(iTurb)%OpFM%u%c_obj%SuperController
+
+   SC_Input_from_FAST%toSC_Len = Turbine(iTurb)%SC%u%c_obj%toSC_Len
+   SC_Input_from_FAST%toSC     = Turbine(iTurb)%SC%u%c_obj%toSC
    
    OpFM_Output_to_FAST%u_Len   = Turbine(iTurb)%OpFM%y%c_obj%u_Len;  OpFM_Output_to_FAST%u = Turbine(iTurb)%OpFM%y%c_obj%u 
    OpFM_Output_to_FAST%v_Len   = Turbine(iTurb)%OpFM%y%c_obj%v_Len;  OpFM_Output_to_FAST%v = Turbine(iTurb)%OpFM%y%c_obj%v 
    OpFM_Output_to_FAST%w_Len   = Turbine(iTurb)%OpFM%y%c_obj%w_Len;  OpFM_Output_to_FAST%w = Turbine(iTurb)%OpFM%y%c_obj%w 
    OpFM_Output_to_FAST%SuperController_Len = Turbine(iTurb)%OpFM%y%c_obj%SuperController_Len
    OpFM_Output_to_FAST%SuperController     = Turbine(iTurb)%OpFM%y%c_obj%SuperController
+
+   SC_Output_to_FAST%fromSC_Len = Turbine(iTurb)%SC%y%c_obj%fromSC_Len
+   SC_Output_to_FAST%fromSC     = Turbine(iTurb)%SC%y%c_obj%fromSC
       
 end subroutine SetOpenFOAM_pointers
 !==================================================================================================================================
@@ -629,7 +643,12 @@ subroutine FAST_OpFM_Step(iTurb, ErrStat_c, ErrMsg_c) BIND (C, NAME='FAST_OpFM_S
       
    ELSE
 
+      CALL SC_SetOutputs(Turbine(iTurb)%p_FAST, Turbine(iTurb)%SrvD%Input(1), Turbine(iTurb)%SC, ErrStat, ErrMsg)
+
       CALL FAST_Solution_T( t_initial, n_t_global, Turbine(iTurb), ErrStat, ErrMsg )                  
+
+      CALL SC_SetInputs(Turbine(iTurb)%p_FAST, Turbine(iTurb)%SrvD%y, Turbine(iTurb)%SC, ErrStat, ErrMsg)
+      
       if (iTurb .eq. (NumTurbines-1) ) then
          n_t_global = n_t_global + 1
       end if

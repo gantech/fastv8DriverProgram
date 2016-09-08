@@ -40,6 +40,7 @@ MODULE SuperController
 
    PUBLIC :: Init_SC                           ! Initialization routine
    PUBLIC :: SC_SetInputs                      ! Glue-code routine to update inputs for SuperController
+   PUBLIC :: SC_SetOutputs                     ! Glue-code routine to update inputs to turbine controller from SuperController
    
    
 CONTAINS
@@ -128,5 +129,36 @@ SUBROUTINE SC_SetInputs(p_FAST, y_SrvD, SC, ErrStat, ErrMsg )
       
 END SUBROUTINE SC_SetInputs
 !----------------------------------------------------------------------------------------------------------------------------------
+SUBROUTINE SC_SetOutputs(p_FAST, u_SrvD, SC, ErrStat, ErrMsg )
+!..................................................................................................................................
+
+   TYPE(FAST_ParameterType),       INTENT(IN    )  :: p_FAST      ! Parameters for the glue code
+   TYPE(SrvD_InputType),          INTENT(INOUT)      :: u_SrvD      ! The inputs of the ServoDyn module (control)
+   TYPE(SuperController_Data),            INTENT(IN)   :: SC        ! data for the SuperController integration module
+   INTEGER(IntKi),                 INTENT(  OUT)   :: ErrStat     ! Error status of the operation
+   CHARACTER(*),                   INTENT(  OUT)   :: ErrMsg      ! Error message if ErrStat /= ErrID_None
+
+   ! local variables
+   INTEGER(IntKi)                                  :: ErrStat2    ! temporary Error status of the operation
+   CHARACTER(ErrMsgLen)                            :: ErrMsg2     ! temporary Error message if ErrStat /= ErrID_None
+                                                   
+   CHARACTER(*),   PARAMETER                       :: RoutineName = 'SC_SetOutputs'
+   
+   
+   ErrStat = ErrID_None
+   ErrMsg  = ""
+   
+      ! set SuperController inputs
+   if (p_FAST%CompServo == Module_SrvD) then
+      if (allocated(u_SrvD%SuperController).and. associated(SC%y%fromSC)) u_SrvD%SuperController = SC%y%fromSC
+   end if
+   
+      
+END SUBROUTINE SC_SetOutputs
+!----------------------------------------------------------------------------------------------------------------------------------
 END MODULE SuperController
 !**********************************************************************************************************************************
+
+
+
+

@@ -2,30 +2,27 @@ nTurbinesGlob: 2
 dryRun:  False
 superController: True
 scLibFile: "libScontroller.so"
-restart: False
-tStart:  0.0
-tEnd:    5.0
+restart: True
+tStart:  10.0
+tEnd:    30.0
 tMax:    60.0
-ntStart: 0
-ntEnd:   1600
+ntStart: 1600
+ntEnd:   4800
 dtFAST:  0.00625
 nEveryCheckPoint: 1600
+numScOutputs: 2
+numScInputs: 4
 
 Turbine0:
   procNo: 0
   TurbinePos: [ 0.0, 0.0, 0.0 ]
-  numScOutputs: 2
-  numScInputs: 4
-  restartFileName: "banana"
-  FASTInputFileName: "t1_test06.fst"
+  restartFileName: "t1_Test06.T1.1600"
+  FASTInputFileName: "banana"
   TurbID:  1
 
 Turbine1:
   procNo: 1
   TurbinePos: [ 0.0, 0.0, 0.0 ]
-  numScOutputs: 2
-  numScInputs: 4
-  restartFileName: "banana"
-  FASTInputFileName: "t2_test06.fst"
+  restartFileName: "t2_Test06.T2.1600"
+  FASTInputFileName: "banana"
   TurbID:  2
-

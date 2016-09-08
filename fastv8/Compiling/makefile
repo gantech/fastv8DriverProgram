@@ -126,7 +126,7 @@ else
 
   # some options to dynamically load .so libraries (loaded when called in ServoDyn) for DLL control
   # the dl library (-ldl) is used for dynamic libraries; needs to be used in conjunction with preprocessor directive USE_DLL_INTERFACE
-  FFLAGS := $(FFLAGS) -DUSE_DLL_INTERFACE
+  FFLAGS := $(FFLAGS) -DUSE_DLL_INTERFACE -DLOAD_SUPERCONTROLLER
   LAPACK_LINK := $(LAPACK_LINK) -ldl
 
 endif

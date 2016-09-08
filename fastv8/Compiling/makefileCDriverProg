@@ -61,14 +61,14 @@ default:  $(INTER_DIR) $(DEST_DIR)/FAST_cDriverProg$(EXE_EXT) $(DEST_DIR)/FAST_c
 
    # General rules for compliling the files.
 
-$(INTER_DIR)/FAST_Prog.o: $(SOURCE_DIR)/FAST_Prog.c $(SOURCE_DIR)/dependencies/OpenFOAM/OpenFOAM_Types.h
-	$(CC)  $(CFLAGS) -c $< -I$(SOURCE_DIR)/dependencies/OpenFOAM/ -o $@ 
+$(INTER_DIR)/FAST_Prog.o: $(SOURCE_DIR)/FAST_Prog.c $(SOURCE_DIR)/dependencies/OpenFOAM/OpenFOAM_Types.h $(SOURCE_DIR)/dependencies/SuperController/SuperController_Types.h
+	$(CC)  $(CFLAGS) -c $< -I$(SOURCE_DIR)/dependencies/OpenFOAM/ -I$(SOURCE_DIR)/dependencies/SuperController -o $@ 
 
-$(INTER_DIR)/FAST_cInterface.o: $(SOURCE_DIR)/FAST_cInterface.c $(SOURCE_DIR)/FAST_cInterface.h $(SOURCE_DIR)/dependencies/OpenFOAM/OpenFOAM_Types.h
-	$(CPP)  $(CFLAGS) -c $< -I$(SOURCE_DIR)/dependencies/OpenFOAM/ -I$(SOURCE_DIR)/dependencies/yaml-cpp/include/ -o $@ 
+$(INTER_DIR)/FAST_cInterface.o: $(SOURCE_DIR)/FAST_cInterface.c $(SOURCE_DIR)/FAST_cInterface.h $(SOURCE_DIR)/dependencies/OpenFOAM/OpenFOAM_Types.h $(SOURCE_DIR)/dependencies/SuperController/SuperController_Types.h
+	$(CPP)  $(CFLAGS) -c $< -I$(SOURCE_DIR)/dependencies/OpenFOAM/ -I$(SOURCE_DIR)/dependencies/SuperController -I$(SOURCE_DIR)/dependencies/yaml-cpp/include/ -o $@ 
 
-$(INTER_DIR)/FAST_Prog_cInterface.o: $(SOURCE_DIR)/FAST_Prog_cInterface.c $(SOURCE_DIR)/FAST_cInterface.h $(INTER_DIR)/FAST_cInterface.o $(SOURCE_DIR)/dependencies/OpenFOAM/OpenFOAM_Types.h
-	$(CPP)  $(CFLAGS) -c $< -I$(SOURCE_DIR) -I$(SOURCE_DIR)/dependencies/OpenFOAM/ -I$(SOURCE_DIR)/dependencies/yaml-cpp/include/ -o $@
+$(INTER_DIR)/FAST_Prog_cInterface.o: $(SOURCE_DIR)/FAST_Prog_cInterface.c $(SOURCE_DIR)/FAST_cInterface.h $(INTER_DIR)/FAST_cInterface.o $(SOURCE_DIR)/dependencies/OpenFOAM/OpenFOAM_Types.h $(SOURCE_DIR)/dependencies/SuperController/SuperController_Types.h
+	$(CPP)  $(CFLAGS) -c $< -I$(SOURCE_DIR) -I$(SOURCE_DIR)/dependencies/OpenFOAM/ -I$(SOURCE_DIR)/dependencies/SuperController -I$(SOURCE_DIR)/dependencies/yaml-cpp/include/ -o $@
 
    # Make sure the destination directory for the intermediate files exist.
 
@@ -86,7 +86,7 @@ $(DEST_DIR)/FAST_cDriverProg_cInterface$(EXE_EXT): $(INTER_DIR)/FAST_Prog_cInter
 	$(INTER_DIR)/FAST_Prog_cInterface.o $(INTER_DIR)/FAST_cInterface.o $(LDFLAGS)
 
 $(DEST_DIR)/libScontroller.so: $(SOURCE_DIR)/SC.c
-	$(CPP) -fPIC -shared -I$(SOURCE_DIR)/dependencies/OpenFOAM/ -o $(DEST_DIR)/libScontroller.so \
+	$(CPP) -fPIC -shared -I$(SOURCE_DIR)/dependencies/SuperController -o $(DEST_DIR)/libScontroller.so \
         $(SOURCE_DIR)/SC.c
 
    # Cleanup afterwards.

@@ -5,6 +5,8 @@
 FAST_cInterface::FAST_cInterface():
 cDriver_Input_from_FAST(NULL),
 cDriver_Output_to_FAST(NULL),
+cDriverSC_Input_from_FAST(NULL),
+cDriverSC_Output_to_FAST(NULL),
 nTurbinesGlob(0),
 nTurbinesProc(0),
 scStatus(false)
@@ -37,23 +39,35 @@ int FAST_cInterface::init() {
      }
    }
 
+   cDriverSC_Input_from_FAST = new SC_InputType_t* [nTurbinesProc] ;
+   cDriverSC_Output_to_FAST = new SC_OutputType_t* [nTurbinesProc] ;
+   for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
+     cDriverSC_Input_from_FAST[iTurb] = malloc(sizeof(SC_InputType_t));
+     cDriverSC_Output_to_FAST[iTurb] = malloc(sizeof(SC_OutputType_t));
+     if (cDriverSC_Input_from_FAST[iTurb] == NULL || cDriverSC_Output_to_FAST[iTurb] == NULL) {
+       throw std::runtime_error("Error allocating space for SC interface types.\n") ;
+     }
+   }
+
    // If restart 
    if (restart == true) {
 
      for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
        /* note that this will set nt_global inside the FAST library */
-       FAST_OpFM_Restart(&iTurb, CheckpointFileRoot[iTurb], &AbortErrLev, &dtFAST, &numBlades[iTurb], &numElementsPerBlade[iTurb], &ntStart, cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb], &ErrStat, ErrMsg);
+       FAST_OpFM_Restart(&iTurb, CheckpointFileRoot[iTurb], &AbortErrLev, &dtFAST, &numBlades[iTurb], &numElementsPerBlade[iTurb], &ntStart, cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb], cDriverSC_Input_from_FAST[iTurb], cDriverSC_Output_to_FAST[iTurb], &ErrStat, ErrMsg);
        checkError(ErrStat, ErrMsg);
        nt_global = ntStart;
        ntEnd = int((tEnd - tStart)/dtFAST) + ntStart;
      }
 
+     fillScInputsGlob();
+     
    } else {
      
       // this calls the Init() routines of each module
 
      for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
-       FAST_OpFM_Init(&iTurb, &tMax, FASTInputFileName[iTurb], &TurbID[iTurb], &numScOutputs[iTurb], &numScInputs[iTurb], TurbinePos[iTurb], &AbortErrLev, &dtFAST, &numBlades[iTurb], &numElementsPerBlade[iTurb], cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb], &ErrStat, ErrMsg);
+       FAST_OpFM_Init(&iTurb, &tMax, FASTInputFileName[iTurb], &TurbID[iTurb], &numScOutputs, &numScInputs, TurbinePos[iTurb], &AbortErrLev, &dtFAST, &numBlades[iTurb], &numElementsPerBlade[iTurb], cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb], cDriverSC_Input_from_FAST[iTurb], cDriverSC_Output_to_FAST[iTurb], &ErrStat, ErrMsg);
        checkError(ErrStat, ErrMsg);
        
        numTwrElements[iTurb] = cDriver_Output_to_FAST[iTurb]->u_Len - numBlades[iTurb]*numElementsPerBlade[iTurb] - 1;
@@ -61,12 +75,25 @@ int FAST_cInterface::init() {
        // set wind speeds at initial locations
        //      setOutputsToFAST(cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb]);
 
-       /* if(scStatus) { */
-       /* 	 DISCON_SuperController(cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb]); */
-       /* } */
+     }
+
+     if(scStatus) {
+       DISCON_SuperController_CalcOutputs(scInputsGlob, scOutputsGlob, nTurbinesGlob, numScInputs, numScOutputs); // This should technically be calcOutputs for the super controller
+     }
+     
+     fillScOutputsLoc();
+
+     for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
 
        FAST_OpFM_Solution0(&iTurb, &ErrStat, ErrMsg);
        checkError(ErrStat, ErrMsg);
+
+     }
+
+     fillScInputsGlob();
+     
+     if(scStatus) {
+       DISCON_SuperController_UpdateStates(scInputsGlob, scOutputsGlob, nTurbinesGlob, numScInputs, numScOutputs); // This should technically be update states for the super controller
      }
 
    }
@@ -89,6 +116,12 @@ int FAST_cInterface::step() {
      set inputs from this code and call FAST:
   ********************************* */
 
+   if(scStatus) {
+     DISCON_SuperController_CalcOutputs(scInputsGlob, scOutputsGlob, nTurbinesGlob, numScInputs, numScOutputs); // This should technically be calcOutputs for the super controller
+   }
+
+   fillScOutputsLoc();
+
    for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
 
      //  set wind speeds at original locations 
@@ -99,11 +132,14 @@ int FAST_cInterface::step() {
      FAST_OpFM_Step(&iTurb, &ErrStat, ErrMsg);
      checkError(ErrStat, ErrMsg);
 
-     if(scStatus) {
-       DISCON_SuperController(cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb]);
-     }
-
    }
+
+   fillScInputsGlob();
+
+   if(scStatus) {
+     DISCON_SuperController_UpdateStates(scInputsGlob, scOutputsGlob, nTurbinesGlob, numScInputs, numScOutputs); // This should technically be update states for the super controller
+   }
+
 
   nt_global = nt_global + 1;
   
@@ -215,8 +251,6 @@ void FAST_cInterface::allocateInputData() {
   numBlades = new int[nTurbinesProc];
   numElementsPerBlade = new int[nTurbinesProc];
   numTwrElements = new int[nTurbinesProc];
-  numScOutputs = new int[nTurbinesProc];
-  numScInputs = new int[nTurbinesProc];
   
   for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
     TurbinePos[iTurb] = new float[3];
@@ -240,8 +274,6 @@ void FAST_cInterface::readTurbineData(int iTurb, YAML::Node turbNode) {
       TurbinePos[iTurb][i] = tp[i];
     }
   }
-  numScInputs[iTurb] = turbNode["numScInputs"].as<int>();
-  numScOutputs[iTurb] = turbNode["numScOutputs"].as<int>();
 
   return ;
 }
@@ -289,6 +321,10 @@ void FAST_cInterface::allocateTurbinesToProcs(YAML::Node cDriverNode) {
   // Construct a group containing all procs running atleast 1 turbine in FAST
   MPI_Group_incl(worldMPIGroup, nProcsWithTurbines, turbineProcs, &fastMPIGroup) ;
   int fastMPIcommTag = MPI_Comm_create(MPI_COMM_WORLD, fastMPIGroup, &fastMPIComm);
+  if(dryRun) {
+    std::cout << "fastMPIcommTag = " << fastMPIcommTag  << std::endl ;
+    std::cout << "fastMPIComm = " << fastMPIComm << std::endl;
+  }
 #endif
 
   return ;
@@ -317,8 +353,6 @@ void FAST_cInterface::end() {
     delete[] numBlades;
     delete[] numElementsPerBlade;
     delete[] numTwrElements;
-    delete[] numScOutputs;
-    delete[] numScInputs;
     
     if ( !dryRun ) {
       for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
@@ -333,6 +367,26 @@ void FAST_cInterface::end() {
       }
       delete[] cDriver_Input_from_FAST;
       delete[] cDriver_Output_to_FAST;
+
+      if (scStatus) {
+	for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
+	  if (cDriverSC_Input_from_FAST[iTurb] != NULL) {
+	    free(cDriverSC_Input_from_FAST[iTurb]);
+	    cDriverSC_Input_from_FAST[iTurb] = NULL;
+	  }
+	  if (cDriverSC_Output_to_FAST[iTurb] != NULL) {
+	    free(cDriverSC_Output_to_FAST[iTurb]);
+	    cDriverSC_Output_to_FAST[iTurb] = NULL;
+	  }
+	}
+	delete[] cDriverSC_Input_from_FAST;
+	delete[] cDriverSC_Output_to_FAST;
+	
+	delete2DArray(scInputsGlob);
+	delete2DArray(scOutputsGlob);
+	
+      }
+
     }
 
 #ifdef HAVE_MPI
@@ -368,13 +422,41 @@ void FAST_cInterface::loadSuperController(YAML::Node c) {
       std::cerr << "Cannot open library: " << dlerror() << '\n';
     }
     
-    DISCON_SuperController = (DISCON_SuperController_t) dlsym(scLibHandle, "DISCON_SuperController");
+    DISCON_SuperController_CalcOutputs = (DISCON_SuperController_CalcOutputs_t) dlsym(scLibHandle, "DISCON_SuperController_CalcOutputs");
     // reset errors
     dlerror();
     const char *dlsym_error = dlerror();
     if (dlsym_error) {
-      std::cerr << "Cannot load symbol 'DISCON_SuperController': " << dlsym_error << '\n';
+      std::cerr << "Cannot load symbol 'DISCON_SuperController_CalcOutputs': " << dlsym_error << '\n';
       dlclose(scLibHandle);
+    }
+
+    DISCON_SuperController_UpdateStates = (DISCON_SuperController_UpdateStates_t) dlsym(scLibHandle, "DISCON_SuperController_UpdateStates");
+    // reset errors
+    dlerror();
+    const char *dlsym_error_us = dlerror();
+    if (dlsym_error_us) {
+      std::cerr << "Cannot load symbol 'DISCON_SuperController_UpdateStates': " << dlsym_error_us << '\n';
+      dlclose(scLibHandle);
+    }
+
+    numScInputs = c["numScInputs"].as<int>();
+    numScOutputs = c["numScOutputs"].as<int>();
+
+    if ( (numScInputs > 0) && (numScOutputs > 0)) {
+      scOutputsGlob = create2DArray<double>(nTurbinesGlob, numScOutputs);
+      scInputsGlob = create2DArray<double>(nTurbinesGlob, numScInputs);
+      for (int iTurb=0; iTurb < nTurbinesGlob; iTurb++) {
+	for(int iInput=0; iInput < numScInputs; iInput++) {
+	  scInputsGlob[iTurb][iInput] = 0.0 ; // Initialize to zero
+	}
+	for(int iOutput=0; iOutput < numScOutputs; iOutput++) {
+	  scOutputsGlob[iTurb][iOutput] = 0.0 ; // Initialize to zero
+	}
+      }
+
+    } else {
+      std::cerr <<  "Make sure numScInputs and numScOutputs are greater than zero" << std::endl;
     }
     
    } else {
@@ -382,3 +464,67 @@ void FAST_cInterface::loadSuperController(YAML::Node c) {
    }
 
 }
+
+
+void FAST_cInterface::fillScInputsGlob() {
+  
+  // Fills the global array containing inputs to the supercontroller from all turbines
+
+  for(int iTurb=0; iTurb < nTurbinesGlob; iTurb++) {
+    for(int iInput=0; iInput < numScInputs; iInput++) {
+      scInputsGlob[iTurb][iInput] = 0.0; // Initialize to zero 
+    }
+  }
+  
+  for(int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
+    for(int iInput=0; iInput < numScInputs; iInput++) {
+      scInputsGlob[turbineMapProcToGlob[iTurb]][iInput] = cDriverSC_Input_from_FAST[iTurb]->toSC[iInput] ;
+    }
+  }
+  
+  
+#ifdef HAVE_MPI
+  if (MPI_COMM_NULL != fastMPIComm) {
+    MPI_Allreduce(MPI_IN_PLACE, scInputsGlob[0], numScInputs*nTurbinesGlob, MPI_DOUBLE, MPI_SUM, fastMPIComm) ;
+  }
+#endif
+  
+
+}
+
+
+void FAST_cInterface::fillScOutputsLoc() {
+  
+  // Fills the local array containing outputs from the supercontroller to each turbine
+  
+  for(int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
+    for(int iOutput=0; iOutput < numScOutputs; iOutput++) {
+      cDriverSC_Output_to_FAST[iTurb]->fromSC[iOutput] = scOutputsGlob[turbineMapProcToGlob[iTurb]][iOutput] ;
+    }
+  }
+
+}
+
+
+
+// Neat hack from http://stackoverflow.com/questions/21943621/how-to-create-a-contiguous-2d-array-in-c to allocate and deallocate contiguous 2D arrays in C++
+
+  /* double **dPtr = create2DArray<double>(10,10); */
+  /* dPtr[0][0] = 10;  // for example */
+  /* delete2DArray(dPtr);  // free the memory */
+
+template <typename T> T** FAST_cInterface::create2DArray(unsigned nrows, unsigned ncols) {
+
+  T** ptr = new T*[nrows];  // allocate pointers
+  T* pool = new T[nrows*ncols];  // allocate pool
+  for (unsigned i = 0; i < nrows; ++i, pool += ncols )
+    ptr[i] = pool;
+  return ptr;
+}
+
+template <typename T> void FAST_cInterface::delete2DArray(T** arr) {
+
+  delete [] arr[0];  // remove the pool
+  delete [] arr;     // remove the pointers
+}
+

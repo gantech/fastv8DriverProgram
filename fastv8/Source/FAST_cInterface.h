@@ -35,11 +35,16 @@ class FAST_cInterface {
   int * numBlades;           // Number of blades
   int * numElementsPerBlade;
   int * numTwrElements;
-  int * numScOutputs;  // # outputs from the supercontroller == # inputs to the controller == NumSC2Ctrl
-  int * numScInputs;   // # inputs to the supercontroller == # outputs from the controller == NumCtrl2SC
+  int numScOutputs;  // # outputs from the supercontroller == # inputs to the controller == NumSC2Ctrl
+  int numScInputs;   // # inputs to the supercontroller == # outputs from the controller == NumCtrl2SC
+  double ** scOutputsGlob;  // # outputs from the supercontroller for all turbines
+  double ** scInputsGlob;   // # inputs to the supercontroller for all turbines
   
   OpFM_InputType_t ** cDriver_Input_from_FAST;
   OpFM_OutputType_t ** cDriver_Output_to_FAST;
+
+  SC_InputType_t ** cDriverSC_Input_from_FAST;
+  SC_OutputType_t ** cDriverSC_Output_to_FAST;
 
   // Turbine Number is DIFFERENT from TurbID. Turbine Number simply runs from 0:n-1 locally and globally.
   std::map<int, int> turbineMapGlobToProc; // Mapping global turbine number to processor
@@ -52,8 +57,10 @@ class FAST_cInterface {
   std::string scLibFile;
   // Dynamic load stuff copied from 'C++ dlopen mini HOWTO' on tldp.org
   void *scLibHandle ; 
-  typedef void (*DISCON_SuperController_t)(OpFM_InputType_t*, OpFM_OutputType_t*);
-  DISCON_SuperController_t DISCON_SuperController;
+  typedef void (*DISCON_SuperController_CalcOutputs_t)(double **, double **, int, int, int);
+  DISCON_SuperController_CalcOutputs_t DISCON_SuperController_CalcOutputs;
+  typedef void (*DISCON_SuperController_UpdateStates_t)(double **, double **, int, int, int);
+  DISCON_SuperController_UpdateStates_t DISCON_SuperController_UpdateStates;
 
 #ifdef HAVE_MPI
   int fastMPIGroupSize;
@@ -96,6 +103,12 @@ class FAST_cInterface {
   void allocateInputData();
   void allocateTurbinesToProcs(YAML::Node cDriverNode);
   void loadSuperController(YAML::Node c);
+  
+  void fillScInputsGlob() ;
+  void fillScOutputsLoc() ;
+  template <typename T> T** FAST_cInterface::create2DArray(unsigned nrows, unsigned ncols);
+  template <typename T> void FAST_cInterface::delete2DArray(T** arr);
+
 };
 
 #endif
