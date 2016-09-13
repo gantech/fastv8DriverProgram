@@ -14,6 +14,8 @@
 #ifdef HAVE_MPI
   #include "mpi.h"
 #endif
+#include "SC.h"
+
 class FAST_cInterface {
 
  private:
@@ -57,10 +59,11 @@ class FAST_cInterface {
   std::string scLibFile;
   // Dynamic load stuff copied from 'C++ dlopen mini HOWTO' on tldp.org
   void *scLibHandle ; 
-  typedef void (*DISCON_SuperController_CalcOutputs_t)(double **, double **, int, int, int);
-  DISCON_SuperController_CalcOutputs_t DISCON_SuperController_CalcOutputs;
-  typedef void (*DISCON_SuperController_UpdateStates_t)(double **, double **, int, int, int);
-  DISCON_SuperController_UpdateStates_t DISCON_SuperController_UpdateStates;
+  typedef SuperController* create_sc_t(); 
+  create_sc_t * create_SuperController;
+  typedef void destroy_sc_t(SuperController *); 
+  destroy_sc_t * destroy_SuperController;
+  SuperController * sc;
 
 #ifdef HAVE_MPI
   int fastMPIGroupSize;

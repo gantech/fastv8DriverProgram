@@ -505,10 +505,10 @@ subroutine FAST_OpFM_Solution0(iTurb, ErrStat_c, ErrMsg_c) BIND (C, NAME='FAST_O
    CHARACTER(KIND=C_CHAR), INTENT(  OUT) :: ErrMsg_c(IntfStrLen) 
       
    CALL SC_SetOutputs(Turbine(iTurb)%p_FAST, Turbine(iTurb)%SrvD%Input(1), Turbine(iTurb)%SC, ErrStat, ErrMsg)
-   CALL SC_SetOutputs(Turbine(iTurb)%p_FAST, Turbine(iTurb)%SrvD%Input(2), Turbine(iTurb)%SC, ErrStat, ErrMsg)
-   CALL SC_SetOutputs(Turbine(iTurb)%p_FAST, Turbine(iTurb)%SrvD%Input(3), Turbine(iTurb)%SC, ErrStat, ErrMsg)
    
    call FAST_Solution0_T(Turbine(iTurb), ErrStat, ErrMsg ) 
+
+   CALL SC_SetInputs(Turbine(iTurb)%p_FAST, Turbine(iTurb)%SrvD%y, Turbine(iTurb)%SC, ErrStat, ErrMsg)
    
       ! set values for return to OpenFOAM
    ErrStat_c     = ErrStat

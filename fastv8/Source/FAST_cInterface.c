@@ -60,8 +60,11 @@ int FAST_cInterface::init() {
        ntEnd = int((tEnd - tStart)/dtFAST) + ntStart;
      }
 
-     fillScInputsGlob();
-     
+     if(scStatus) {
+	 sc->readRestartFile(nt_global);
+     }
+
+   
    } else {
      
       // this calls the Init() routines of each module
@@ -76,12 +79,13 @@ int FAST_cInterface::init() {
        //      setOutputsToFAST(cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb]);
 
      }
+     
+     sc->init(nTurbinesGlob, numScInputs, numScOutputs);
 
      if(scStatus) {
-       DISCON_SuperController_CalcOutputs(scInputsGlob, scOutputsGlob, nTurbinesGlob, numScInputs, numScOutputs); // This should technically be calcOutputs for the super controller
+       sc->calcOutputs(scOutputsGlob);
+       fillScOutputsLoc();
      }
-     
-     fillScOutputsLoc();
 
      for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
 
@@ -90,10 +94,8 @@ int FAST_cInterface::init() {
 
      }
 
-     fillScInputsGlob();
-     
-     if(scStatus) {
-       DISCON_SuperController_UpdateStates(scInputsGlob, scOutputsGlob, nTurbinesGlob, numScInputs, numScOutputs); // This should technically be update states for the super controller
+     if (scStatus) {
+       fillScInputsGlob(); // Update inputs to super controller
      }
 
    }
@@ -104,12 +106,21 @@ int FAST_cInterface::init() {
 
 int FAST_cInterface::step() {
 
-  if ( ((nt_global - ntStart) % nEveryCheckPoint) == 0 ) {
+  if ( (((nt_global - ntStart) % nEveryCheckPoint) == 0 )  && (nt_global != ntStart) ) {
     //sprintf(CheckpointFileRoot, "../../CertTest/Test18.%d", nt_global);
     for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
       sprintf(CheckpointFileRoot[iTurb], " "); // if blank, it will use FAST convention <RootName>.nt_global
       FAST_CreateCheckpoint(&iTurb, CheckpointFileRoot[iTurb], &ErrStat, ErrMsg);
       checkError(ErrStat, ErrMsg);
+    }
+    if(scStatus) {
+#ifdef HAVE_MPI
+      if (fastMPIRank == 0) {
+#endif
+      sc->writeRestartFile(nt_global);
+#ifdef HAVE_MPI
+      }
+#endif
     }
   }
   /* ******************************
@@ -117,10 +128,9 @@ int FAST_cInterface::step() {
   ********************************* */
 
    if(scStatus) {
-     DISCON_SuperController_CalcOutputs(scInputsGlob, scOutputsGlob, nTurbinesGlob, numScInputs, numScOutputs); // This should technically be calcOutputs for the super controller
+     sc->calcOutputs(scOutputsGlob);
+     fillScOutputsLoc();
    }
-
-   fillScOutputsLoc();
 
    for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
 
@@ -134,16 +144,14 @@ int FAST_cInterface::step() {
 
    }
 
-   fillScInputsGlob();
-
    if(scStatus) {
-     DISCON_SuperController_UpdateStates(scInputsGlob, scOutputsGlob, nTurbinesGlob, numScInputs, numScOutputs); // This should technically be update states for the super controller
+     sc->updateStates(scInputsGlob); // Go from 'n' to 'n+1' based on input at previous time step
+     fillScInputsGlob(); // Update inputs to super controller for 'n+1'
    }
 
-
-  nt_global = nt_global + 1;
+   nt_global = nt_global + 1;
   
-  return 0;
+   return 0;
 }
 
 int FAST_cInterface::readInputFile(std::string cInterfaceInputFile ) {
@@ -321,6 +329,7 @@ void FAST_cInterface::allocateTurbinesToProcs(YAML::Node cDriverNode) {
   // Construct a group containing all procs running atleast 1 turbine in FAST
   MPI_Group_incl(worldMPIGroup, nProcsWithTurbines, turbineProcs, &fastMPIGroup) ;
   int fastMPIcommTag = MPI_Comm_create(MPI_COMM_WORLD, fastMPIGroup, &fastMPIComm);
+  MPI_Comm_rank(fastMPIComm, &fastMPIRank);
   if(dryRun) {
     std::cout << "fastMPIcommTag = " << fastMPIcommTag  << std::endl ;
     std::cout << "fastMPIComm = " << fastMPIComm << std::endl;
@@ -399,6 +408,8 @@ void FAST_cInterface::end() {
 
     if(scStatus) {
 
+      destroy_SuperController(sc) ;
+
       if(scLibHandle != NULL) {
 	// close the library
 	std::cout << "Closing library...\n";
@@ -417,28 +428,30 @@ void FAST_cInterface::loadSuperController(YAML::Node c) {
     scLibFile = c["scLibFile"].as<std::string>();
 
     // open the library
-    scLibHandle = dlopen("libScontroller.so", RTLD_LAZY);
+    scLibHandle = dlopen(scLibFile.c_str(), RTLD_LAZY);
     if (!scLibHandle) {
       std::cerr << "Cannot open library: " << dlerror() << '\n';
     }
     
-    DISCON_SuperController_CalcOutputs = (DISCON_SuperController_CalcOutputs_t) dlsym(scLibHandle, "DISCON_SuperController_CalcOutputs");
+    create_SuperController = (create_sc_t*) dlsym(scLibHandle, "create_sc");
     // reset errors
     dlerror();
     const char *dlsym_error = dlerror();
     if (dlsym_error) {
-      std::cerr << "Cannot load symbol 'DISCON_SuperController_CalcOutputs': " << dlsym_error << '\n';
+      std::cerr << "Cannot load symbol 'create_sc': " << dlsym_error << '\n';
       dlclose(scLibHandle);
     }
 
-    DISCON_SuperController_UpdateStates = (DISCON_SuperController_UpdateStates_t) dlsym(scLibHandle, "DISCON_SuperController_UpdateStates");
+    destroy_SuperController = (destroy_sc_t*) dlsym(scLibHandle, "destroy_sc");
     // reset errors
     dlerror();
     const char *dlsym_error_us = dlerror();
     if (dlsym_error_us) {
-      std::cerr << "Cannot load symbol 'DISCON_SuperController_UpdateStates': " << dlsym_error_us << '\n';
+      std::cerr << "Cannot load symbol 'destroy_sc': " << dlsym_error_us << '\n';
       dlclose(scLibHandle);
     }
+
+    sc = create_SuperController() ;
 
     numScInputs = c["numScInputs"].as<int>();
     numScOutputs = c["numScOutputs"].as<int>();
