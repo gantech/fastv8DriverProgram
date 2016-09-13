@@ -106,14 +106,14 @@ CHARACTER(SIZE(avcOUTNAME)-1):: RootName                                        
 CHARACTER(SIZE(avcMSG)-1)    :: ErrMsg                                          ! a Fortran version of the C string argument (not considered an array here) [subtract 1 for the C null-character] 
 
 
+
+! Set inputs from the supercontroller
+PC_MinPit = from_SC(1)
+
    ! Load variables from calling program (See Appendix A of Bladed User's Guide):
 
 iStatus      = NINT( avrSWAP( 1) )
 NumBl        = NINT( avrSWAP(61) )
-
-!print *, 'from_sc: ', from_sc(1:4)
-!to_sc(1) = 5.0;
-!to_sc(2) = 2.0;
 
 
 !BlPitch  (1) =       MIN( MAX( avrSWAP( 4), PC_MinPit ), PC_MaxPit )    ! assume that blade pitch can't exceed limits
@@ -125,7 +125,8 @@ BlPitch  (3) =       avrSWAP(34)
 GenSpeed     =       avrSWAP(20)
 HorWindV     =       avrSWAP(27)
 Time         =       avrSWAP( 2)
-   
+
+
    ! Convert C character arrays to Fortran strings:
    
 RootName = TRANSFER( avcOUTNAME(1:LEN(RootName)), RootName )
@@ -570,6 +571,12 @@ ELSEIF( iStatus == -9 ) THEN
 ENDIF
 
 avcMSG = TRANSFER( TRIM(ErrMsg)//C_NULL_CHAR, avcMSG, SIZE(avcMSG) )
+
+
+! Set inputs to the super controller
+to_sc(1) = Time
+to_sc(2) = GenTrq
+to_sc(3) = PC_MinPit
 
 RETURN
 END SUBROUTINE DISCON
