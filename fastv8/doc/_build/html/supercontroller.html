@@ -1,0 +1,173 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>8. Supercontroller</title>
+    
+    <link rel="stylesheet" href="_static/better.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="" href="index.html" />
+    <link rel="next" title="9. References" href="zrefs.html" />
+    <link rel="prev" title="7. Running multiple turbines on multiple cores" href="multiTurbineMultiCore.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+      <link rel="stylesheet" href="_static/forWeb.css" type="text/css" />
+    <style type="text/css">
+    </style>
+  </head>
+  <body role="document">
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="multiTurbineMultiCore.html" title="Previous document">7. Running multiple turbines on multiple cores</a>
+        </li>
+        <li>
+          <a href="zrefs.html" title="Next document">9. References</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="index.html">Home</a></li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="supercontroller">
+<h1>8. Supercontroller<a class="headerlink" href="#supercontroller" title="Permalink to this headline">¶</a></h1>
+<p>The C++ glue code controls all the turbines in a given simulation through a super controller. A supercontroller cannot be a part of FAST because FAST modules are fundamentally designed to simulate individual turbines while a supercontroller is designed to act on a group of turbines. Hence the supercontroller is designed to be a part of the C++ glue code.</p>
+<div class="section" id="workflow">
+<h2>8.1. Workflow<a class="headerlink" href="#workflow" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div>The workflow of the supercontroller around the time advancement of turbines in FAST is shown in Figure <a class="reference internal" href="#supercontrollerconcept">8.1</a> and was arrived at after discussions with Paul Fleming and Jason Jonkman. The two main functions of the supercontroller <code class="docutils literal"><span class="pre">updateStates</span></code> and <code class="docutils literal"><span class="pre">calcOutputs</span></code> are based on the FAST framework <a class="reference internal" href="zrefs.html#fastprogrammershandbook" id="id1">[JMJ+13]</a> to separate time advancement of the internal states of the super controller and calculation of outputs to FAST.</div></blockquote>
+<div class="figure align-center" id="id3">
+<span id="supercontrollerconcept"></span><a class="reference internal image-reference" href="_images/superControllerConcept.pdf"><img alt="_images/superControllerConcept.pdf" src="_images/superControllerConcept.pdf" style="width: 100%;" /></a>
+<p class="caption"><span class="caption-text"><strong>Figure 8.1:</strong> Flow of data when using supercontroller in C++ glue code.</span></p>
+</div>
+<p>A brief description of each function of the supercontroller is given below:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">init</span></code> - Initializes the supercontroller</li>
+<li><code class="docutils literal"><span class="pre">updateStates(scInputs)</span></code> - Advances the internal states by one time step based on inputs and possibly existing states.</li>
+<li><code class="docutils literal"><span class="pre">calcOutputs(scOutputs)</span></code> - Calculates and writes the output into <code class="docutils literal"><span class="pre">scOutputs</span></code> based on existing states. <strong>No</strong> time advancement or modification of internal states.</li>
+<li><code class="docutils literal"><span class="pre">readRestart(nt_global)</span></code> - Reads the checkpoint file corresponding to time step <code class="docutils literal"><span class="pre">nt_global</span></code>.</li>
+<li><code class="docutils literal"><span class="pre">writeRestart(nt_global)</span></code> - Writes the checkpoint file corresponding to time step <code class="docutils literal"><span class="pre">nt_global</span></code>.</li>
+</ul>
+<p>The supercontroller can have internal states of any kind. The suggested internal states are:</p>
+<ul class="simple">
+<li>1D array of <code class="docutils literal"><span class="pre">globStates[nGlobStates]</span></code></li>
+<li>2D array of <code class="docutils literal"><span class="pre">turbineStates[nTurbines,</span> <span class="pre">nTurbineStates]</span></code></li>
+</ul>
+<p>The checkpoint files are written and read using the HDF5 interface <a class="reference internal" href="zrefs.html#hdf5" id="id2">[TheHGroup97]</a>.</p>
+</div>
+<div class="section" id="interface-with-glue-code">
+<h2>8.2. Interface with glue code<a class="headerlink" href="#interface-with-glue-code" title="Permalink to this headline">¶</a></h2>
+<p>The supercontroller functions are expected to act on all the global turbines. Hence, the turbine numbering system inside the supercontroller is the global turbine number. There are two additional helper functions in the C++ glue code to transfer the information to and from all the turbines on possibly different processors.</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">fillScInputsGlob</span></code> - Combines input from turbines on different processors into the correct order for the supercontroller.</li>
+<li><code class="docutils literal"><span class="pre">fillScOutputsLoc</span></code> - Copies the output from the supercontroller into the corresponding local turbines.</li>
+</ul>
+</div>
+<div class="section" id="interface-with-fast">
+<h2>8.3. Interface with FAST<a class="headerlink" href="#interface-with-fast" title="Permalink to this headline">¶</a></h2>
+<p>The supercontroller or the glue code does not directly interface with the individual turbine controllers. A separate <code class="docutils literal"><span class="pre">Supercontroller</span></code> module is created inside FAST for each turbine whose only purpose is to exchange data with the <code class="docutils literal"><span class="pre">ServoDyn</span></code> module before and after the time advancement as</p>
+<div class="highlight-fortran"><div class="highlight"><pre><span></span><span class="k">CALL </span><span class="n">SC_SetOutputs</span><span class="p">(</span><span class="n">Turbine</span><span class="p">(</span><span class="n">iTurb</span><span class="p">)%</span><span class="n">p_FAST</span><span class="p">,</span> <span class="n">Turbine</span><span class="p">(</span><span class="n">iTurb</span><span class="p">)%</span><span class="n">SrvD</span><span class="p">%</span><span class="n">Input</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">Turbine</span><span class="p">(</span><span class="n">iTurb</span><span class="p">)%</span><span class="n">SC</span><span class="p">,</span> <span class="n">ErrStat</span><span class="p">,</span> <span class="n">ErrMsg</span><span class="p">)</span>
+
+<span class="k">CALL </span><span class="n">FAST_Solution0_T</span><span class="p">(</span><span class="n">Turbine</span><span class="p">(</span><span class="n">iTurb</span><span class="p">),</span> <span class="n">ErrStat</span><span class="p">,</span> <span class="n">ErrMsg</span> <span class="p">)</span>
+
+<span class="k">CALL </span><span class="n">SC_SetInputs</span><span class="p">(</span><span class="n">Turbine</span><span class="p">(</span><span class="n">iTurb</span><span class="p">)%</span><span class="n">p_FAST</span><span class="p">,</span> <span class="n">Turbine</span><span class="p">(</span><span class="n">iTurb</span><span class="p">)%</span><span class="n">SrvD</span><span class="p">%</span><span class="n">y</span><span class="p">,</span> <span class="n">Turbine</span><span class="p">(</span><span class="n">iTurb</span><span class="p">)%</span><span class="n">SC</span><span class="p">,</span> <span class="n">Errstat</span><span class="p">,</span> <span class="n">ErrMsg</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>and</p>
+<div class="highlight-fortran"><div class="highlight"><pre><span></span><span class="k">CALL </span><span class="n">SC_SetOutputs</span><span class="p">(</span><span class="n">Turbine</span><span class="p">(</span><span class="n">iTurb</span><span class="p">)%</span><span class="n">p_FAST</span><span class="p">,</span> <span class="n">Turbine</span><span class="p">(</span><span class="n">iTurb</span><span class="p">)%</span><span class="n">SrvD</span><span class="p">%</span><span class="n">Input</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">Turbine</span><span class="p">(</span><span class="n">iTurb</span><span class="p">)%</span><span class="n">SC</span><span class="p">,</span> <span class="n">ErrStat</span><span class="p">,</span> <span class="n">ErrMsg</span><span class="p">)</span>
+
+<span class="k">CALL </span><span class="n">FAST_Solution_T</span><span class="p">(</span> <span class="n">t_initial</span><span class="p">,</span> <span class="n">n_t_global</span><span class="p">,</span> <span class="n">Turbine</span><span class="p">(</span><span class="n">iTurb</span><span class="p">),</span> <span class="n">ErrStat</span><span class="p">,</span> <span class="n">ErrMsg</span> <span class="p">)</span>
+
+<span class="k">CALL </span><span class="n">SC_SetInputs</span><span class="p">(</span><span class="n">Turbine</span><span class="p">(</span><span class="n">iTurb</span><span class="p">)%</span><span class="n">p_FAST</span><span class="p">,</span> <span class="n">Turbine</span><span class="p">(</span><span class="n">iTurb</span><span class="p">)%</span><span class="n">SrvD</span><span class="p">%</span><span class="n">y</span><span class="p">,</span> <span class="n">Turbine</span><span class="p">(</span><span class="n">iTurb</span><span class="p">)%</span><span class="n">SC</span><span class="p">,</span> <span class="n">ErrStat</span><span class="p">,</span> <span class="n">ErrMsg</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Thus, the supercontroller object in the C++ glue code interfaces only exchanges data with the supercontroller module for each turbine.</p>
+</div>
+<div class="section" id="software-details">
+<h2>8.4. Software details<a class="headerlink" href="#software-details" title="Permalink to this headline">¶</a></h2>
+<p>The supercontroller is designed to be a C++ class that is loaded dynamically following instructions from <a class="reference external" href="http://tldp.org/HOWTO/C++-dlopen/">http://tldp.org/HOWTO/C++-dlopen/</a>. This will allow the supercontroller to be compiled separately as well as distributed without the source code. The C++ glue code will however need to use a header file <code class="docutils literal"><span class="pre">SC.h</span></code> that describes the interface to the supercontroller functions.</p>
+</div>
+<div class="section" id="test06">
+<h2>8.5. Test06<a class="headerlink" href="#test06" title="Permalink to this headline">¶</a></h2>
+<p>Test06 changes the minimum pitch setting of two turbines as a function of time as:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">Turbine0</span></code><ul>
+<li>0-20s: 0 degrees</li>
+<li>20-40s: 1.5 degrees</li>
+<li>40-60s: 3 degrees</li>
+</ul>
+</li>
+<li><code class="docutils literal"><span class="pre">Turbine1</span></code><ul>
+<li>0-20s: 0.5 degrees</li>
+<li>20-40s: 1 degrees</li>
+<li>40-60s: 2.5 degrees</li>
+</ul>
+</li>
+</ul>
+<p>The correct answer is computed by running native FAST with modified individual turbine controllers. Test06 passes in commit <a class="reference external" href="https://github.com/gantech/fastv8DriverProgram/commit/df6b1e7fc9d7429b33c48f7157ca9f8a690e5b0a">df6b1e7fc9d74</a>.</p>
+</div>
+</div>
+
+
+          </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="multiTurbineMultiCore.html" title="Previous document">7. Running multiple turbines on multiple cores</a>
+        </li>
+        <li>
+          <a href="zrefs.html" title="Next document">9. References</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="index.html">Home</a></li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2016 National Renewable Energy Laboratory.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      1.4.1
+        with the <a href="http://github.com/irskep/sphinx-better-theme">
+          better</a> theme.
+
+  </footer>
+
+  
+  </body>
+</html>

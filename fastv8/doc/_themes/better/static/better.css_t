@@ -1,0 +1,172 @@
+@import url("better_basic.css");
+
+{% set theme_headtextcolor = theme_headtextcolor or theme_textcolor %}
+{% set theme_footertextcolor = theme_footertextcolor or theme_textcolor %}
+
+
+/* page-level layout of containers */
+
+header#pageheader, footer#pagefooter, .related {
+    width: 100%;
+    max-width: 60rem;
+    margin: auto;
+}
+
+footer#pagefooter, footer#pagefooter a {
+    color: {{ theme_footertextcolor }};
+}
+
+
+footer#pagefooter {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+    text-align: center;
+}
+
+footer#pagefooter a {
+    text-decoration: underline;
+}
+
+/* header styles */
+
+body > header h1 a, body > header h1 a:visited {
+    color: {{ theme_headtextcolor }};
+}
+
+a.headerlink {
+    font-size: 0.8em;
+    padding: 0 4px 0 4px;
+    text-decoration: none;
+}
+
+/* code styles */
+
+pre, tt {
+    background-color: #eee;
+    color: #333;
+}
+
+pre {
+    font-family: Monaco, Consolas, "Lucida Console", monospace;
+    margin: 1rem -5px;
+    padding: 5px;
+    border-left: none;
+    border-right: none;
+    font-size: 0.8rem;
+    line-height: 1rem;
+}
+
+tt {
+    padding: 0 1px 0 1px;
+    font-family: Consolas, Monaco, monospace;
+}
+
+/* API doc styles */
+
+dl.function,
+dl.class,
+dl.method,
+dl.attribute,
+dl.data,
+dl.classmethod {
+    margin-bottom: 2rem;
+}
+
+/* relbar */
+
+.related {
+    line-height: 30px;
+    width: 100%;
+    font-size: 0.9rem;
+}
+
+.related.top {
+    border-bottom: 1px solid #aaa;
+}
+
+.related.bottom {
+    border-top: 1px solid #aaa;
+}
+
+.related ul {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.related li {
+    display: inline;
+}
+
+nav#rellinks {
+    float: right;
+}
+
+nav#rellinks li+li:before {
+    content: "|";
+}
+
+nav#breadcrumbs li+li:before {
+    content: "\00BB";
+}
+
+/* paragraph-level markup */
+
+.admonition p.admonition-title + p {
+    display: inline;
+}
+
+.admonition p {
+    margin-bottom: 5px;
+}
+
+.admonition pre {
+    margin-bottom: 5px;
+}
+
+.admonition ul, .admonition ol {
+    margin-bottom: 5px;
+}
+
+p.admonition-title {
+    display: inline;
+    margin-right: 0;
+}
+
+p.admonition-title:after {
+    content: ":";
+}
+
+.note {
+    background-color: #eee;
+    border: 1px solid #ccc;
+}
+
+.seealso {
+    background-color: #ffc;
+    border: 1px solid #ff6;
+}
+
+.topic {
+    background-color: #eee;
+}
+
+.warning {
+    background-color: #ffe4e4;
+    border: 1px solid #f66;
+}
+
+.warning tt {
+    background: #efc2c2;
+}
+
+.note tt {
+    background: #d6d6d6;
+}
+
+.viewcode-block:target {
+    background-color: #f4debf;
+    border-top: 1px solid #ac9;
+    border-bottom: 1px solid #ac9;
+}
+

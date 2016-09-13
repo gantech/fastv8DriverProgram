@@ -1,0 +1,190 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>2. Work done so far</title>
+    
+    <link rel="stylesheet" href="_static/better.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="" href="index.html" />
+    <link rel="next" title="3. Development Process" href="developmentProcess.html" />
+    <link rel="prev" title="1. Requirements and Design" href="requirements.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+      <link rel="stylesheet" href="_static/forWeb.css" type="text/css" />
+    <style type="text/css">
+    </style>
+  </head>
+  <body role="document">
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="requirements.html" title="Previous document">1. Requirements and Design</a>
+        </li>
+        <li>
+          <a href="developmentProcess.html" title="Next document">3. Development Process</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="index.html">Home</a></li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="work-done-so-far">
+<h1>2. Work done so far<a class="headerlink" href="#work-done-so-far" title="Permalink to this headline">¶</a></h1>
+<p>Bonnie Jonkman has written an example program in C to call FASTv8 in/from SOWFA. Here are some notes from email exchanges between Mike and Bonnie Jonkman. There seems to be an (svn?) repository somewhere. I need to figure this out.</p>
+<div class="section" id="fast-prog-c">
+<h2>2.1. FAST_Prog.c<a class="headerlink" href="#fast-prog-c" title="Permalink to this headline">¶</a></h2>
+<p>I wrote that as an example for Avi and Sang on how to call FAST8 in SOWFA.  There is no documentation other than what is in the source code.</p>
+<p>Funding for the project ran out at the end of the end of September so we all stopped working on it.</p>
+<p>There seems to be a memory issue with the current implementation. I think it works for one turbine but when Avi ran it (along with the super-controller) for multiple turbines, it did one of three things (1) worked normally, (2) produced a segmentation fault, or (3) stopped responding (waiting for something?). At one point they said Sang had it working for multiple turbines without the super-controller, but then they decided he hadn't run it enough times to know if that was actually true.</p>
+<p>I think Avi is hoping he can figure out what the issue is when he works on Jason's LDRD project, FAST.Farm. It's not using OpenFOAM, but it's a similar setup with multiple turbines.</p>
+</div>
+<div class="section" id="more-email-exchanges-with-bonnie-jonkman">
+<h2>2.2. More email exchanges with Bonnie Jonkman<a class="headerlink" href="#more-email-exchanges-with-bonnie-jonkman" title="Permalink to this headline">¶</a></h2>
+<p>Avi and Sang tell me there is a memory leak when using more than one turbine. For a while they told me it worked without the supercontroller, but later they said they didn't know if they had run it enough without the supercontroller to know if it was actually working or if they were just getting lucky. I had suggested that we modify the Fortran-C++ interface if they can't figure out the issue, but Avi wanted to do more debugging first. Since there is no funding for that task anymore, I doubt they have done much on it since October.</p>
+<p>I have a C driver that I have tested calling the FAST-OpenFOAM interface with only one turbine and it works fine. That portion of the code is in the standard FAST 8 SVN repo.</p>
+<p>You'll have to ask Avi or Sang about where the latest SOWFA code is. No one appears to use <a class="reference external" href="https://github.com/NREL/SOWFA">https://github.com/NREL/SOWFA</a> for keeping track of branches. Avi tells me Matt Churchfield and Paul Fleming also have different versions, and Avi will only give me a tar file whenever I have asked to see code.</p>
+<p>Actually, I should clarify what I said about a memory leak: the word &quot;leak&quot; is not accurate. There is an issue with the memory management. Avi says there are times the simulation seems to hang (like getting into an infinite loop), times it gives a segmentation fault and dies, and other times it runs fine.</p>
+</div>
+<div class="section" id="understanding-fast-driver-programs-in-fortran-and-c">
+<h2>2.3. Understanding FAST driver programs in FORTRAN and C<a class="headerlink" href="#understanding-fast-driver-programs-in-fortran-and-c" title="Permalink to this headline">¶</a></h2>
+<p>The main program of the native version of FAST is FAST_Prog.f90. All the subroutines called in this program are defined in FAST_Subs.f90.</p>
+<div class="highlight-fortran"><div class="highlight"><pre><span></span><span class="k">PROGRAM </span><span class="n">FAST</span>
+   <span class="k">USE </span><span class="n">FAST_Subs</span>
+
+   <span class="k">CALL </span><span class="n">NWTC_Init</span><span class="p">()</span>
+   <span class="k">IF</span> <span class="p">(</span><span class="n">restart</span><span class="p">)</span> <span class="k">THEN</span>
+<span class="k">      CALL </span><span class="n">FAST_RestoreFromCheckpoint_Tary</span><span class="p">(</span><span class="n">t_initial</span><span class="p">,</span> <span class="n">Restart_step</span><span class="p">,</span> <span class="n">Turbine</span><span class="p">,</span> <span class="n">CheckpointRoot</span><span class="p">,</span> <span class="n">ErrStat</span><span class="p">,</span> <span class="n">ErrMsg</span>  <span class="p">)</span>
+   <span class="k">ELSE</span>
+<span class="k">      </span><span class="n">Restart_step</span> <span class="o">=</span> <span class="mi">0</span>
+      <span class="k">DO </span><span class="n">i_turb</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">NumTurbines</span>
+         <span class="k">CALL </span><span class="n">FAST_InitializeAll_T</span><span class="p">(</span> <span class="n">t_initial</span><span class="p">,</span> <span class="n">i_turb</span><span class="p">,</span> <span class="n">Turbine</span><span class="p">(</span><span class="n">i_turb</span><span class="p">),</span> <span class="n">ErrStat</span><span class="p">,</span> <span class="n">ErrMsg</span> <span class="p">)</span>
+         <span class="k">CALL </span><span class="n">FAST_Solution0_T</span><span class="p">(</span> <span class="n">Turbine</span><span class="p">(</span><span class="n">i_turb</span><span class="p">),</span> <span class="n">ErrStat</span><span class="p">,</span> <span class="n">ErrMsg</span> <span class="p">)</span>
+      <span class="k">END DO</span>
+<span class="k">   END IF</span>
+
+<span class="k">   DO </span><span class="n">n_t_global</span> <span class="o">=</span> <span class="n">Restart_step</span><span class="p">,</span> <span class="n">Last_timestep</span>
+
+     <span class="k">IF</span> <span class="p">(</span><span class="n">writeCheckPoint</span><span class="p">)</span>
+        <span class="k">CALL </span><span class="n">FAST_CreateCheckpoint_Tary</span><span class="p">(</span><span class="n">t_initial</span><span class="p">,</span> <span class="n">n_t_global</span><span class="p">,</span> <span class="n">Turbine</span><span class="p">,</span> <span class="n">CheckpointRoot</span><span class="p">,</span> <span class="n">ErrStat</span><span class="p">,</span> <span class="n">ErrMsg</span><span class="p">)</span>
+     <span class="k">END IF</span>
+
+<span class="k">     DO </span><span class="n">i_turb</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span><span class="n">NumTurbines</span>
+        <span class="k">CALL </span><span class="n">FAST_Solution_T</span><span class="p">(</span> <span class="n">t_initial</span><span class="p">,</span> <span class="n">n_t_global</span><span class="p">,</span> <span class="n">Turbine</span><span class="p">(</span><span class="n">i_turb</span><span class="p">),</span> <span class="n">ErrStat</span><span class="p">,</span> <span class="n">ErrMsg</span> <span class="p">)</span>
+     <span class="k">END DO</span>
+
+<span class="k">   END DO</span>
+
+<span class="k">   DO </span><span class="n">i_turb</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span><span class="n">NumTurbines</span>
+     <span class="k">CALL </span><span class="n">ExitThisProgram_T</span><span class="p">(</span> <span class="n">Turbine</span><span class="p">(</span><span class="n">i_turb</span><span class="p">),</span> <span class="n">ErrID_None</span> <span class="p">)</span>
+   <span class="k">END DO</span>
+
+<span class="k">END PROGRAM</span>
+</pre></div>
+</div>
+<p>FAST_Prog.C is intended to be the counterpart to FAST_Prog.f90 in C. All functions are subroutines defined in FAST_Library.f90 and called from C. The conversion of Fortran datatypes to C datatypes in the function input/output is defined in FAST_Library.h. The OpFM subroutines used in FAST_Prog.C instead call the corresponding high level subroutines that are used in FAST_Prog.f90.</p>
+<div class="highlight-c"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+
+
+   <span class="c1">// No equiv of CALL NWTC_Init()</span>
+   <span class="k">if</span> <span class="p">(</span><span class="n">restart</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">FAST_OpFM_Restart</span><span class="p">(</span><span class="n">CheckpointFileRoot</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">AbortErrLev</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">dt</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">NumBlades</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">NumElementsPerBlade</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">n_t_global_start</span><span class="p">,</span> <span class="n">OpFM_Input_from_FAST</span><span class="p">,</span> <span class="n">OpFM_Output_to_FAST</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">ErrStat</span><span class="p">,</span> <span class="n">ErrMsg</span><span class="p">);</span> <span class="p">}</span>
+   <span class="k">else</span> <span class="p">{</span>
+      <span class="n">n_t_global_start</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+      <span class="n">FAST_OpFM_Init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">TMax</span><span class="p">,</span> <span class="n">InputFileName</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">TurbID</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">NumScOutputs</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">NumScInputs</span><span class="p">,</span> <span class="n">TurbinePos</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">AbortErrLev</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">dt</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">NumBlades</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">NumElementsPerBlade</span><span class="p">,</span> <span class="n">OpFM_Input_from_FAST</span><span class="p">,</span> <span class="n">OpFM_Output_to_FAST</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">ErrStat</span><span class="p">,</span> <span class="n">ErrMsg</span><span class="p">);</span>
+      <span class="n">setOutputsToFAST</span><span class="p">(</span><span class="n">OpFM_Input_from_FAST</span><span class="p">,</span> <span class="n">OpFM_Output_to_FAST</span><span class="p">);</span>
+      <span class="n">FAST_OpFM_Solution0</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ErrStat</span><span class="p">,</span> <span class="n">ErrMsg</span><span class="p">);</span>
+   <span class="p">}</span>
+
+   <span class="k">for</span><span class="p">(</span><span class="n">n_t_global</span> <span class="o">=</span> <span class="n">n_t_global_start</span><span class="p">;</span> <span class="n">nt_global</span> <span class="o">&lt;</span> <span class="n">Last_timestep</span><span class="p">;</span> <span class="n">n_t_global</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+     <span class="k">if</span> <span class="p">(</span><span class="n">n_t_global</span> <span class="o">==</span> <span class="n">n_checkpoint</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">FAST_CreateCheckpoint</span><span class="p">(</span><span class="n">CheckpointFileRoot</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">ErrStat</span><span class="p">,</span> <span class="n">ErrMsg</span><span class="p">);</span>
+     <span class="p">}</span>
+     <span class="n">setOutputsToFAST</span><span class="p">(</span><span class="n">OpFM_Input_from_FAST</span><span class="p">,</span> <span class="n">OpFM_Output_to_FAST</span><span class="p">);</span>
+     <span class="n">FAST_OpFM_Step</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ErrStat</span><span class="p">,</span> <span class="n">ErrMsg</span><span class="p">);</span>
+   <span class="p">}</span>
+
+   <span class="n">FAST_End</span><span class="p">();</span>
+
+   <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="meeting-with-avi-purkayastha-07-28-2016">
+<h2>2.4. Meeting with Avi Purkayastha - 07/28/2016<a class="headerlink" href="#meeting-with-avi-purkayastha-07-28-2016" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>The driver program FAST_Prog.c used to work in the version of FAST they had last September.</li>
+<li>The super controller exists in the windPlantSolverFAST8 application/solvers folder. The super controller doesn't exist in the bladed style controller file within fast. FAST now just has a set of arrays and routines that pass info to the super controller and receive info back from it.</li>
+<li>The current fast coupling to C/C++ is still designed to have only one turbine per processor. However, the supercontroller is not on the <cite>n+1</cite> processor anymore. The supercontroller is desgined to operate in parallel and presumably uses global MPI commands to collect the controller info from all turbines and send signals back to them.</li>
+<li>The super controller would have to be written in the NALU framework for our project.</li>
+<li>The restart from checkpoint feature works natively in FAST, but not from OpenFOAM, atleast not consistently.</li>
+<li>Avi recommends using one processor per turbine because the core running multiple turbines with FAST may run out of memory.</li>
+<li>Digging into the code myself, I found that the current datastructure in FAST_Library.f90 doesn't support more than one turbine per core. Fortran modules are not C++ classes. The <cite>turbine</cite> datastructure in the module supports only one turbine. This would have to be replaced with an array of turbines to add the multiple turbine per core feature. This would need to be followed up with an extensive programming/rewriting of the data transfer routines between Fortran and C++.</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="requirements.html" title="Previous document">1. Requirements and Design</a>
+        </li>
+        <li>
+          <a href="developmentProcess.html" title="Next document">3. Development Process</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="index.html">Home</a></li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2016 National Renewable Energy Laboratory.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      1.4.1
+        with the <a href="http://github.com/irskep/sphinx-better-theme">
+          better</a> theme.
+
+  </footer>
+
+  
+  </body>
+</html>

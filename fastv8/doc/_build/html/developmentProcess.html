@@ -1,0 +1,113 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3. Development Process</title>
+    
+    <link rel="stylesheet" href="_static/better.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="" href="index.html" />
+    <link rel="next" title="4. Compiling FASTv8" href="compilingFASTv8.html" />
+    <link rel="prev" title="2. Work done so far" href="workDoneSoFar.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+      <link rel="stylesheet" href="_static/forWeb.css" type="text/css" />
+    <style type="text/css">
+    </style>
+  </head>
+  <body role="document">
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="workDoneSoFar.html" title="Previous document">2. Work done so far</a>
+        </li>
+        <li>
+          <a href="compilingFASTv8.html" title="Next document">4. Compiling FASTv8</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="index.html">Home</a></li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="development-process">
+<h1>3. Development Process<a class="headerlink" href="#development-process" title="Permalink to this headline">¶</a></h1>
+<p>I like the idea of test driven development, where the tests for the final version and the units are written before the development of the actual source code itself. I learnt that there are two kinds of tests in software development:</p>
+<ol class="arabic simple">
+<li>Unit tests: These tests are written to verify that each unit (module, function etc.) of the program functions as expected.</li>
+<li>Regression tests: These tests verify that the old features of the program function as expected after changes are made to the code base. These changes may include software enhancements, patch fixes, upgrading to newer versions of external libraries, using new compilers etc.</li>
+</ol>
+<p>So unit tests are more important during the development process and regression tests are more important after the first release. I propose that we use the same testing framework as in NALU [naluDoc].</p>
+<p>Considering the requirements for this project, the high level test for the new driver program for FAST should be</p>
+<ol class="arabic simple">
+<li>Run two different turbines with a prescribed velocity at each of the actuator points for a prescribed time, stop and dump state.</li>
+<li>Restart from the previous state and continue running for a precribed time and dump state again.</li>
+<li>Repeat step 2 for a prescribed number of times.</li>
+<li>Concatenate all output and compare against a similar native run of FAST v8.</li>
+<li>Declare test as &quot;passed&quot; if there are no differences between the multi-part new driver simulation and the native run of FAST v8.</li>
+</ol>
+<p>When running the native version of FAST v8, I have to make sure that it's run with WakeMod=0 in the AeroDyn module. The induction has to be ignored to compare against the run using the new driver.</p>
+</div>
+
+
+          </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="workDoneSoFar.html" title="Previous document">2. Work done so far</a>
+        </li>
+        <li>
+          <a href="compilingFASTv8.html" title="Next document">4. Compiling FASTv8</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="index.html">Home</a></li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2016 National Renewable Energy Laboratory.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      1.4.1
+        with the <a href="http://github.com/irskep/sphinx-better-theme">
+          better</a> theme.
+
+  </footer>
+
+  
+  </body>
+</html>

@@ -1,0 +1,166 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>6. Running multiple turbines on one core</title>
+    
+    <link rel="stylesheet" href="_static/better.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="" href="index.html" />
+    <link rel="next" title="7. Running multiple turbines on multiple cores" href="multiTurbineMultiCore.html" />
+    <link rel="prev" title="5. Current work - Overview" href="currentWork.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+      <link rel="stylesheet" href="_static/forWeb.css" type="text/css" />
+    <style type="text/css">
+    </style>
+  </head>
+  <body role="document">
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="currentWork.html" title="Previous document">5. Current work - Overview</a>
+        </li>
+        <li>
+          <a href="multiTurbineMultiCore.html" title="Next document">7. Running multiple turbines on multiple cores</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="index.html">Home</a></li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="running-multiple-turbines-on-one-core">
+<h1>6. Running multiple turbines on one core<a class="headerlink" href="#running-multiple-turbines-on-one-core" title="Permalink to this headline">¶</a></h1>
+<p>The native version of FAST is capable of handling several different turbines when running on one core. However, this capability breaks down when FAST is used with an external library like a externally defined bladed-style controller for ServoDyn or user defined routines in ServoDyn and ElastoDyn. All variables used in subroutines of externally defined libraries become global variables by default. This leads to a conflict when using the same external library for multiple turbines. In a private discussion, Bonnie suggested that FAST could work with multiple turbines if the external libraries used for each turbine had different names as shown in Figure <a class="reference internal" href="#multiturbinediscon">6.1</a>.</p>
+<div class="figure align-center" id="id1">
+<span id="multiturbinediscon"></span><a class="reference internal image-reference" href="_images/multiTurbineDISCON.png"><img alt="_images/multiTurbineDISCON.png" src="_images/multiTurbineDISCON.png" style="width: 80%;" /></a>
+<p class="caption"><span class="caption-text"><strong>Figure 6.1:</strong> How to run multiple turbines on a single core in FAST with external bladed-style controller libraries.</span></p>
+</div>
+<div class="section" id="test-with-native-fast">
+<span id="sec-multipleturbinestestnativefast"></span><h2>6.1. Test with native FAST<a class="headerlink" href="#test-with-native-fast" title="Permalink to this headline">¶</a></h2>
+<p>I tested this concept in the <a class="reference external" href="https://github.com/gantech/fastv8DriverProgram/tree/tryMultTurbinesNativeFAST">tryMultTurbinesNativeFAST</a> branch. The FAST archive contains a <em>standard</em> example bladed-style controller <code class="docutils literal"><span class="pre">DISCON.f90</span></code>. I created a <em>modified</em> controller by altering certain parameters in <a class="reference external" href="https://github.com/gantech/fastv8DriverProgram/blob/tryMultTurbinesNativeFAST/fastv8/CertTest/5MW_Baseline/ServoData/Source/DISCON2.f90">DISCON2.f90</a> as:</p>
+<div class="highlight-fortran"><div class="highlight"><pre><span></span><span class="kt">REAL</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span> <span class="k">PARAMETER</span> <span class="kd">::</span> <span class="n">PC_KI</span> <span class="o">=</span> <span class="mf">0.008965149</span> <span class="c">! Integral gain for pitch controller at rated pitch (zero), (-). Copied from OC3 Hywind case</span>
+<span class="kt">REAL</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span> <span class="k">PARAMETER</span> <span class="kd">::</span> <span class="n">PC_KP</span> <span class="o">=</span> <span class="mf">0.006275604</span> <span class="c">! Proportional gain for pitch controller at rated pitch (zero), sec. Copied from OC3 Hywind case</span>
+<span class="kt">REAL</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span> <span class="k">PARAMETER</span> <span class="kd">::</span> <span class="n">PC_MinPit</span> <span class="o">=</span> <span class="mf">0.05235987755982988</span> <span class="c">! Minimum pitch setting in pitch controller, rad. - Setting randomly to 3 degrees</span>
+</pre></div>
+</div>
+<p>I modified the FAST source code to run two turbines that were identical except for the controllers specified in external libraries as <code class="docutils literal"><span class="pre">libDISCON_glin64.so</span></code> and <code class="docutils literal"><span class="pre">libDISCON2_glin64.so</span></code>. Figure  <a class="reference internal" href="#nativefasttwoturbinetest">6.2</a> shows that the two turbines respond differently to the same inflow conditions. Specifically, Figure <a class="reference internal" href="#nativefasttwoturbinetestbldpitch">6.2a</a> shows that the blade pitch of the turbine with the modified controller hits the lower limit of <span class="math">\(3^{\circ}\)</span> as specified in <code class="docutils literal"><span class="pre">DISCON2.f90</span></code>. In addition Figure <a class="reference internal" href="#nativefasttwoturbinetest">6.2</a> also compares the output of each tubine to that obtained using a single turbine in FAST. I have verified that the output from FAST when run using two turbines simultaneously is the same as that obtained when running them individually upto the precision used in the binary output file.</p>
+<div class="figure compound align-center" id="nativefasttwoturbinetest">
+<div style="width: 47%" class="subfigure align-center" id="id2">
+<span id="nativefasttwoturbinetestbldpitch"></span><a class="reference internal image-reference" href="_images/compare_t1_test18_t2_test18_BldPitch1.png"><img alt="_images/compare_t1_test18_t2_test18_BldPitch1.png" src="_images/compare_t1_test18_t2_test18_BldPitch1.png" style="width: 100%;" /></a>
+<p class="caption"><span class="caption-text"><strong>(a)</strong> Blade pitch</span></p>
+</div>
+<div style="width: 47%" class="subfigure align-center" id="id3">
+<span id="nativefastwoturbinetestrotspeed"></span><a class="reference internal image-reference" href="_images/compare_t1_test18_t2_test18_RotSpeed.png"><img alt="_images/compare_t1_test18_t2_test18_RotSpeed.png" src="_images/compare_t1_test18_t2_test18_RotSpeed.png" style="width: 100%;" /></a>
+<p class="caption"><span class="caption-text"><strong>(b)</strong> Rotor speed</span></p>
+</div>
+<p class="caption"><span class="caption-text"><strong>Figure 6.2:</strong> Time history of (a) blade pitch and (b) rotor speed of two turbines with different controllers using the <code class="docutils literal"><span class="pre">fortran</span></code> driver program. The triangles correspond to the same case run using a single turbine in FAST.</span></p>
+</div><p id="nativefasttwoturbinetest">Also, I modified the <code class="docutils literal"><span class="pre">FAST_Subs</span></code> module to write out different checkpoint files for each turbine and restart from them. I also fixed a bug that now enables the output file <label for="sn-binaryOutput" class="margin-toggle sidenote-number"></label><span class="sidenote"> FAST stores all the information to be written to the binary output file during the simulation. It then writes them all out at the very end.</span> for all the turbines to be written out separately.</p>
+</div>
+<div class="section" id="develop-capability-in-c-driver">
+<h2>6.2. Develop capability in C driver<a class="headerlink" href="#develop-capability-in-c-driver" title="Permalink to this headline">¶</a></h2>
+<p>The main <code class="docutils literal"><span class="pre">C</span></code> driver program remains the same for any number of turbines on a core. Any changes to the code to accomodate multiple turbines happen in the <code class="docutils literal"><span class="pre">C++</span></code> interface and <code class="docutils literal"><span class="pre">FAST_Library.f90</span></code>. At a high level, the looping over different turbines could be done either inside <code class="docutils literal"><span class="pre">fortran</span></code> (<code class="docutils literal"><span class="pre">FAST_Library.f90</span></code>) or in the <code class="docutils literal"><span class="pre">C++</span></code> interface class. I don't see any technical advantage for one approach over another. However, the required work is different in the two cases as follows:</p>
+<ul class="simple">
+<li>if done in <code class="docutils literal"><span class="pre">Fortran</span></code>: all the existing subroutines should be unbound from <code class="docutils literal"><span class="pre">C</span></code> and new wrapper subroutines have to developed with almost the same arguments.</li>
+<li>if done in <code class="docutils literal"><span class="pre">C++</span></code>: all the existing subroutines could be reused with minimal changes. This is likely to lower the likelihood of any errors during the development process.</li>
+</ul>
+<p>Hence, I'm going to go ahead with looping over the turbines in <code class="docutils literal"><span class="pre">C++</span></code>.</p>
+<p>The main change that should happen in <code class="docutils literal"><span class="pre">FAST_Library.f90</span></code> is that the <code class="docutils literal"><span class="pre">Turbine</span></code> variable should become an array of turbines. <code class="docutils literal"><span class="pre">FAST_Library.f90</span></code> should include a variable for the total number of turbines. Since the <code class="docutils literal"><span class="pre">Turbine</span></code> variable is now an allocatable array, there has to be a routine that allocates the memory for this array.  All routines should receive an extra argument <code class="docutils literal"><span class="pre">iTurb</span></code> and should use <code class="docutils literal"><span class="pre">Turbine(iTurb)</span></code> instead of just the variable <code class="docutils literal"><span class="pre">Turbine</span></code>.</p>
+</div>
+<div class="section" id="test03">
+<h2>6.3. Test03<a class="headerlink" href="#test03" title="Permalink to this headline">¶</a></h2>
+<p>Test03 makes sure that the glue code runs correctly with two turbines on one core. Test03 is a replica of the test described in Sec <a class="reference internal" href="#sec-multipleturbinestestnativefast"><span class="std std-ref">6.1</span></a> with the C++ glue-code. The input file looks as:</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">nTurbines</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="l l-Scalar l-Scalar-Plain">restart</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
+<span class="l l-Scalar l-Scalar-Plain">tStart</span><span class="p p-Indicator">:</span>  <span class="l l-Scalar l-Scalar-Plain">0.0</span>
+<span class="l l-Scalar l-Scalar-Plain">tEnd</span><span class="p p-Indicator">:</span>    <span class="l l-Scalar l-Scalar-Plain">10.0</span>
+<span class="l l-Scalar l-Scalar-Plain">tMax</span><span class="p p-Indicator">:</span>    <span class="l l-Scalar l-Scalar-Plain">60.0</span>
+<span class="l l-Scalar l-Scalar-Plain">ntStart</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+<span class="l l-Scalar l-Scalar-Plain">ntEnd</span><span class="p p-Indicator">:</span>   <span class="l l-Scalar l-Scalar-Plain">1600</span>
+<span class="l l-Scalar l-Scalar-Plain">dtFAST</span><span class="p p-Indicator">:</span>  <span class="l l-Scalar l-Scalar-Plain">0.00625</span>
+<span class="l l-Scalar l-Scalar-Plain">nEveryCheckPoint</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1600</span>
+
+<span class="l l-Scalar l-Scalar-Plain">Turbine1</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">TurbinePos</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span> <span class="nv">0.0</span><span class="p p-Indicator">,</span> <span class="nv">0.0</span><span class="p p-Indicator">,</span> <span class="nv">0.0</span> <span class="p p-Indicator">]</span>
+  <span class="l l-Scalar l-Scalar-Plain">numScOutputs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+  <span class="l l-Scalar l-Scalar-Plain">numScInputs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+  <span class="l l-Scalar l-Scalar-Plain">restartFileName</span><span class="p p-Indicator">:</span> <span class="s">&quot;banana&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">FASTInputFileName</span><span class="p p-Indicator">:</span> <span class="s">&quot;t1_Test03.fst&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">TurbID</span><span class="p p-Indicator">:</span>  <span class="l l-Scalar l-Scalar-Plain">1</span>
+
+<span class="l l-Scalar l-Scalar-Plain">Turbine2</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">TurbinePos</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span> <span class="nv">0.0</span><span class="p p-Indicator">,</span> <span class="nv">0.0</span><span class="p p-Indicator">,</span> <span class="nv">0.0</span> <span class="p p-Indicator">]</span>
+  <span class="l l-Scalar l-Scalar-Plain">numScOutputs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+  <span class="l l-Scalar l-Scalar-Plain">numScInputs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+  <span class="l l-Scalar l-Scalar-Plain">restartFileName</span><span class="p p-Indicator">:</span> <span class="s">&quot;banana&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">FASTInputFileName</span><span class="p p-Indicator">:</span> <span class="s">&quot;t2_Test03.fst&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">TurbID</span><span class="p p-Indicator">:</span>  <span class="l l-Scalar l-Scalar-Plain">2</span>
+</pre></div>
+</div>
+<p>Test03 passes in commit <a class="reference external" href="https://github.com/gantech/fastv8DriverProgram/commit/b3e7e07e64200d8d833a580087ceed3d7ca601d1">b3e7e07e642</a>.</p>
+</div>
+</div>
+
+
+          </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="currentWork.html" title="Previous document">5. Current work - Overview</a>
+        </li>
+        <li>
+          <a href="multiTurbineMultiCore.html" title="Next document">7. Running multiple turbines on multiple cores</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="index.html">Home</a></li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2016 National Renewable Energy Laboratory.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      1.4.1
+        with the <a href="http://github.com/irskep/sphinx-better-theme">
+          better</a> theme.
+
+  </footer>
+
+  
+  </body>
+</html>

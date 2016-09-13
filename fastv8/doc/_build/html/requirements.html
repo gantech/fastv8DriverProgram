@@ -1,0 +1,205 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>1. Requirements and Design</title>
+    
+    <link rel="stylesheet" href="_static/better.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="" href="index.html" />
+    <link rel="next" title="2. Work done so far" href="workDoneSoFar.html" />
+    <link rel="prev" title="FASTv8 - C++ Glue Code" href="index.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+      <link rel="stylesheet" href="_static/forWeb.css" type="text/css" />
+    <style type="text/css">
+    </style>
+  </head>
+  <body role="document">
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="index.html" title="Previous document">FASTv8 - C++ Glue Code</a>
+        </li>
+        <li>
+          <a href="workDoneSoFar.html" title="Next document">2. Work done so far</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="index.html">Home</a></li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="requirements-and-design">
+<h1>1. Requirements and Design<a class="headerlink" href="#requirements-and-design" title="Permalink to this headline">¶</a></h1>
+<p>The broad requirements of the light weight driver program for FAST v8 are:</p>
+<ol class="arabic simple">
+<li>the program should be very similar to how it would be used in NALU [naluDoc].</li>
+<li>the program should be capable of having a time step that is independent of FAST's time step.</li>
+<li>the program should have an option to turn off the structural modes in FAST.</li>
+<li>the program should be capable of instantiating multiple turbines inside FAST on the same processor core.</li>
+<li>the program should have a restart capability.</li>
+<li>the design of the program should allow a super controller to be built around all the turbines.</li>
+</ol>
+<div class="section" id="meeting-with-matt-03-08-2016">
+<h2>1.1. Meeting with Matt - 03/08/2016<a class="headerlink" href="#meeting-with-matt-03-08-2016" title="Permalink to this headline">¶</a></h2>
+<p>I explained the general structure of the C driver program and how the current framework supports only one turbine per instance of FAST. The current FAST-SOWFA interface framework is:</p>
+<ul class="simple">
+<li>The framework supports an arbitrary number of turbines <cite>n</cite>.</li>
+<li>The FAST instances for turbines <cite>1</cite> through <cite>n</cite> are placed in processors <cite>1</cite> through <cite>n</cite> respectively.</li>
+<li>Global MPI reductions/broadcasts are used to transfer velocity and actuator force between FAST and the CFD solver.</li>
+</ul>
+<p>Matt and I agreed that the current framework of using global MPI communications for each turbine may not scale well to large number of processors. The proposed framework for future CFD-FAST interface is:</p>
+<ul class="simple">
+<li>The new framework will have groups of processors within <cite>MPI_WORLD</cite> for each turbine.</li>
+<li>Each group will contain the CFD domain decomposition of all cells interacting with the turbine and the FAST instance.</li>
+<li>These groups of processors would communicate amongst themselves for all stuff related to that tubine.</li>
+<li>Ideally, the FAST instance for this turbine should be located within one of the processors that contain the CFD domain decomposition for that turbine. However, this is not a requirement. Adding 1 extra processor to this communication group shouldn't increase the total communication load. However, this might be an issue if the processor containing the FAST instance is not physically close to the other processors containing the domain decomposition within the MPI network.</li>
+<li>The domain decomposition/other pre-processing program for the CFD solver should be capable of identifying all processors that contain any cells that interact with the wind tubine. While this is possible in any software that we release, this would have to be a requirement for all external CFD software that want to interface with FAST in the future.</li>
+<li>The domain decomposition could happen in such a way that a processor interacts with two turbines that are close to each other. In this case, the framework could decide to place the FAST instance for both turbines on the same processor. This would require FAST to handle more than 1 turbine from C++. This can be avoided by requiring that the FAST instances for turbines <cite>1</cite> through <cite>n</cite> are placed in processors <cite>1</cite> through <cite>n</cite> respectively.</li>
+</ul>
+</div>
+<div class="section" id="meeting-with-mike-in-lunch-room-03-08-2016">
+<h2>1.2. Meeting with Mike in lunch room - 03/08/2016<a class="headerlink" href="#meeting-with-mike-in-lunch-room-03-08-2016" title="Permalink to this headline">¶</a></h2>
+<p>Mike continues to insist that the light weight driver program for FAST in C++ should be capable of running multiple turbines in 1 processor. However, we also discussed that the light weight driver program should be capable of running in parallel. So I have to figure out a way of incorporating it into the requirements and designing a test for it.</p>
+</div>
+<div class="section" id="super-controller-requirements-from-paul-fleming">
+<h2>1.3. Super Controller requirements from Paul Fleming<a class="headerlink" href="#super-controller-requirements-from-paul-fleming" title="Permalink to this headline">¶</a></h2>
+<p>Paul Fleming created a super controller [fleming2013] to control all the turbines in a wind farm inside SOWFA. The new driver program for FAST v8 should be designed such that it can be easily extended to include the super controller natively. Paul Fleming provided this rather long story about the development of the super controller using FAST v7 [fastv7] and what he envisions when using FAST v8 [fastv8ModFramework].</p>
+<p>So, back when SOWFA was a FOA award, one of my first tasks was to implement the super controller inside of SOWFA.  I wrote this up in the attached (admittedly not great) paper for EWEA.  But at least, Figure 3 is helpful in explaining the architecture.  I was working with the version of SOWFA in which FAST7 is coupled to openfoam.  Working with John Michalakes, Matt, Sang and Pieter we did something like this:</p>
+<ol class="arabic simple">
+<li>FAST can be set to call a compiled controller (usually referred to as Bladed-style since the interface is designed to match what BLADED expects and it’s convenient to use this well-known interface). You see this interface on the left of Fig 3.</li>
+<li>The next thing we did was make a new function called the “superController” which implements the wind farm control.</li>
+</ol>
+<blockquote>
+<div><ol class="loweralpha simple">
+<li>Here’s where things got too technical for me and John really did everything.</li>
+<li>We made sure that there was always one more processor then we need for Openfoam, and then the super controller is some how made to exist there.</li>
+<li>Then the individual turbine controllers call the super controller by reference to the last MPI proc, and pass along a number so the super controller knows who is calling</li>
+<li>It may seem funny the turbine controllers call the super controller rather than the other way around, but we thought about this a lot and couldn’t really see any issue with this, who calls who seems more a software question without much impact on the controls.</li>
+</ol>
+</div></blockquote>
+<p>Ok, finally, this all works, we’ve used it now for a ton of projects, it’s great!</p>
+<p>Chapter 2, In which we meet FAST8</p>
+<p>Ok, so then (1, 2 years ago?) there was a push to convert the FAST7 code to FAST8, including the super controller code.  We had some initial discussions with Avi, Sang and Jason and Bonnie Jonkman, and one of the main outcomes was that the architecture shown in Fig 3 violates FAST8 conventions.   As I understand, the individual turbine controllers talking to the super controller beyond FAST’s reach does not meet FAST’s modular framework.  Therefore a new approach was agreed on, the super controller would exist basically to the left of Openfoam, openfoam would transfer the data from the super controller to each FAST instance, which would propagate the information to the individual controllers.</p>
+<p>This approach had another nice benefit, FAST8 and openfoam have restart, and by having all the turbine and super controller states managed this way, could enable SOWFA + Super Controller to have restart too, which is awesome.</p>
+<p>So this had been going on, Avi and Sang we’re doing the programming.  In my understanding however, this effort ran out of money before it could be completed (or maybe it’s still ongoing?)  Maybe good to check in with Avi and Sang.</p>
+<p>And in the last bit of history, in the last few months, we in the controls group have begun using, in addition to SOWFA + Super controller, other versions of SOWFA.  For example, the actuator disk version.  We like this because, for example, to train FLORIS we need a lot of runs with the turbine operating in stationary but controlled way (like offset in yaw) and we can get way more data with the actuator disk against a coarse mesh grid.  Also, certain partners would like to run SOWFA, and while the “main-line” SOWFA is easy enough to install, SOWFA + Super Controller may have only been successfully installed by John Michalakes, who left NREL some years back.</p>
+<p>So, I hope all this has been helpful.  If everything is on the table now, my plans for including the super controller would be:</p>
+<ul class="simple">
+<li>Make it an option in the main “SOWFA/NALU” distribution, not something that needs to be separately compiled</li>
+<li>Make it generic, able to work coupled to FAST, or AL or AD implementations</li>
+<li>Make sure it fits FAST8 module framework, and includes restart</li>
+<li>Make the individual turbine controllers, and super controller compiled separate, so they can be swapped out without recompiling SOWFA (not how we do it now, and that is too bad)</li>
+</ul>
+</div>
+<div class="section" id="design-for-testing">
+<h2>1.4. Design for testing<a class="headerlink" href="#design-for-testing" title="Permalink to this headline">¶</a></h2>
+<p>The <cite>C</cite> driver program should reproduce the same results as the native fortran program for the same input parameters. Since the <cite>C</cite> and fortran programs are compiled on the same machine, there should be no difference between the output from the two codes upto machine precision. The comparison of the output from the <cite>C</cite> and fortran driver programs will be done with the <cite>diff</cite> program. I will follow the design of the tests in NALU <a class="reference external" href="https://github.com/spdomin/NaluRtest">https://github.com/spdomin/NaluRtest</a>.</p>
+</div>
+<div class="section" id="interface-design">
+<h2>1.5. Interface design<a class="headerlink" href="#interface-design" title="Permalink to this headline">¶</a></h2>
+<p>There are a few key differences between the <cite>C</cite> and fortran driver programs. These differences along with the testing procedure will dictate the design of the <cite>C</cite> driver program.</p>
+<ul class="simple">
+<li>The fortran driver program controls the time step of FAST directly, while the <cite>C</cite> driver program will control the time stepping of FAST externally. Thus, the <cite>C</cite> driver program should be aware of the start (<cite>tStart</cite>) and end (<cite>tEnd</cite>) time points and the corresponding time steps (<cite>ntStart</cite> and <cite>ntEnd</cite>), the time step (<cite>dtFAST</cite>), and the frequency with which the checkpoint files have to be written (<cite>nCheckPoint</cite>).</li>
+<li>The <cite>C</cite> driver program may suppply an additional number of parameters to FAST during initialization. These are defined in <cite>FAST_Types.f90</cite> under the type <cite>FAST_ExternInitType</cite></li>
+</ul>
+<div class="highlight-fortran"><div class="highlight"><pre><span></span><span class="k">TYPE</span><span class="p">,</span> <span class="k">PUBLIC</span> <span class="kd">::</span> <span class="n">fast_externinittype</span>
+  <span class="kt">REAL</span><span class="p">(</span><span class="n">DbKi</span><span class="p">)</span>  <span class="kd">::</span> <span class="n">tmax</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+  <span class="kt">INTEGER</span><span class="p">(</span><span class="n">IntKi</span><span class="p">)</span>  <span class="kd">::</span> <span class="n">sensortype</span> <span class="o">=</span> <span class="n">sensortype_none</span>
+  <span class="kt">LOGICAL</span>  <span class="kd">::</span> <span class="n">lidradialvel</span>
+  <span class="kt">INTEGER</span><span class="p">(</span><span class="n">IntKi</span><span class="p">)</span>  <span class="kd">::</span> <span class="n">turbineid</span>
+  <span class="kt">REAL</span><span class="p">(</span><span class="n">ReKi</span><span class="p">)</span> <span class="p">,</span> <span class="k">DIMENSION</span><span class="p">(</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">)</span>  <span class="kd">::</span> <span class="n">turbinepos</span>
+  <span class="kt">INTEGER</span><span class="p">(</span><span class="n">IntKi</span><span class="p">)</span>  <span class="kd">::</span> <span class="n">numsc2ctrl</span>
+  <span class="kt">INTEGER</span><span class="p">(</span><span class="n">IntKi</span><span class="p">)</span>  <span class="kd">::</span> <span class="n">numctrl2sc</span>
+<span class="k">END TYPE </span><span class="n">fast_externinittype</span>
+</pre></div>
+</div>
+<p>This suggests that the <cite>C</cite> driver program should have atleast the following variables:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="kt">double</span> <span class="n">dtFAST</span><span class="p">;</span>
+<span class="kt">double</span> <span class="n">TMax</span><span class="p">;</span>
+<span class="kt">float</span> <span class="n">TurbinePos</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
+<span class="kt">int</span> <span class="n">TurbID</span><span class="p">;</span>
+<span class="kt">char</span> <span class="n">InputFileName</span><span class="p">[</span><span class="n">INTERFACE_STRING_LENGTH</span><span class="p">];</span>
+<span class="kt">char</span> <span class="n">CheckpointFileRoot</span><span class="p">[</span><span class="n">INTERFACE_STRING_LENGTH</span><span class="p">];</span>
+<span class="kt">double</span> <span class="n">tStart</span><span class="p">,</span> <span class="n">tEnd</span><span class="p">;</span>
+<span class="kt">double</span> <span class="n">ntStart</span><span class="p">,</span> <span class="n">ntEnd</span><span class="p">;</span> <span class="c1">// The time step to start and end the FAST simulation</span>
+<span class="kt">int</span> <span class="n">nCheckPoint</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">NumScOutputs</span><span class="p">;</span>  <span class="c1">// # outputs from the supercontroller == # inputs to the controller == NumSC2Ctrl</span>
+<span class="kt">int</span> <span class="n">NumScInputs</span><span class="p">;</span>   <span class="c1">// # inputs to the supercontroller == # outputs from the controller == NumCtrl2SC</span>
+</pre></div>
+</div>
+<p>This project is really about building an interface class to FAST. The driver program is really secondary and should simply use functions from the class. No one is actually expected to use the driver program as it is. The design of the interface class to FAST should be such that the driver program only contains simple calls as follows.</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="n">setInitialConditions</span><span class="p">()</span> <span class="c1">// Optional to state external initial conditions that don&#39;t belong in the input file.</span>
+<span class="n">init</span><span class="p">()</span>
+<span class="n">step</span><span class="p">()</span>
+<span class="n">end</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Everything else should be abstracted away into either input files or the functions themselves.</p>
+<p>Thus, the variables listed above should be the variables in the C++ class. The same variables should be read in from an input file. Since we're following NALU's [naluDoc] footsteps, I propose that the input file to the <cite>C</cite> driver program/class be in YAML and read using <a class="reference external" href="https://github.com/jbeder/yaml-cpp">yaml-cpp</a>.</p>
+</div>
+</div>
+
+
+          </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="index.html" title="Previous document">FASTv8 - C++ Glue Code</a>
+        </li>
+        <li>
+          <a href="workDoneSoFar.html" title="Next document">2. Work done so far</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="index.html">Home</a></li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2016 National Renewable Energy Laboratory.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      1.4.1
+        with the <a href="http://github.com/irskep/sphinx-better-theme">
+          better</a> theme.
+
+  </footer>
+
+  
+  </body>
+</html>

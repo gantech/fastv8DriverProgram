@@ -1,0 +1,36 @@
+@font-face{
+    font-family: FiraSans;
+    src: url('_static/Fira/FiraSans-Light.eot');
+    src: url('_static/Fira/FiraSans-Light.woff2') format('woff2'),
+         url('_static/Fira/FiraSans-Light.woff') format('woff');
+    font-weight: Regular;
+    font-style: normal;
+}
+
+@font-face{
+    font-family: FiraSans;
+    src: url('_static/Fira/FiraSans-LightItalic.eot');
+    src: url('_static/Fira/FiraSans-LightItalic.woff2') format('woff2'),
+         url('_static/Fira/FiraSans-LightItalic.woff') format('woff');
+    font-weight: Regular;
+    font-style: italic;
+}
+
+@font-face{
+    font-family: FiraSans;
+    src: url('_static/Fira/FiraSans-Medium.eot');
+    src: url('_static/Fira/FiraSans-Medium.woff2') format('woff2'),
+         url('_static/Fira/FiraSans-Medium.woff') format('woff');
+    font-weight: bold;
+    font-style: normal;
+}
+
+@font-face{
+    font-family: FiraSans;
+    src: url('_static/Fira/FiraSans-MediumItalic.eot');
+    src: url('_static/Fira/FiraSans-MediumItalic.woff2') format('woff2'),
+         url('_static/Fira/FiraSans-MediumItalic.woff') format('woff');
+    font-weight: bold;
+    font-style: italic;
+}
+

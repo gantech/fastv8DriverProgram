@@ -1,0 +1,155 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>FASTv8 - C++ Glue Code</title>
+    
+    <link rel="stylesheet" href="_static/better.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="" href="#" />
+    <link rel="next" title="1. Requirements and Design" href="requirements.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+      <link rel="stylesheet" href="_static/forWeb.css" type="text/css" />
+    <style type="text/css">
+    </style>
+  </head>
+  <body role="document">
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          <a href="requirements.html" title="Next document">1. Requirements and Design</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="#">Home</a></li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="fastv8-c-glue-code">
+<h1>FASTv8 - C++ Glue Code<a class="headerlink" href="#fastv8-c-glue-code" title="Permalink to this headline">¶</a></h1>
+<p>The aim of this project is to develop an light weight driver program for FAST v8 <a class="reference internal" href="zrefs.html#fastv8modframework" id="id1">[Jon13]</a> <label for="sn-Jon13" class="margin-toggle sidenote-number"></label><span class="sidenote"> Jason M. Jonkman. The New Modularization Framework for the FAST Wind Turbine CAE Tool. Technical Report NREL/CP-5000-57228, National Renewable Energy Laboratory, January 2013.</span> in C++. This program will serve as an example for people who want to interface FAST v8 with their own simulation framework. The broad requirements of the light weight driver program for FAST v8 are:</p>
+<ol class="arabic simple">
+<li>the program should be very similar to how it would be used in NALU <a class="reference internal" href="zrefs.html#naludoc" id="id2">[Dom15]</a> <label for="sn-Dom15" class="margin-toggle sidenote-number"></label><span class="sidenote"> Stefan Domino. Sierra Low Mach Module: Nalu Theory Manual 1.0. Technical Report SAND2015-3107W, Sandia National Laboratories Unclassified Unlimited Release (UUR), https://github.com/spdomin/NaluDoc, 2015.</span>.</li>
+<li>the program should be capable of having a time step that is independent of FAST's time step.</li>
+<li>the program should have an option to turn off the structural modes in FAST.</li>
+<li>the program should be capable of instantiating multiple turbines inside FAST on the same processor core.</li>
+<li>the program should have a restart capability.</li>
+<li>the design of the program should allow a super controller to be built around all the turbines.</li>
+</ol>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="requirements.html">1. Requirements and Design</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="requirements.html#meeting-with-matt-03-08-2016">1.1. Meeting with Matt - 03/08/2016</a></li>
+<li class="toctree-l2"><a class="reference internal" href="requirements.html#meeting-with-mike-in-lunch-room-03-08-2016">1.2. Meeting with Mike in lunch room - 03/08/2016</a></li>
+<li class="toctree-l2"><a class="reference internal" href="requirements.html#super-controller-requirements-from-paul-fleming">1.3. Super Controller requirements from Paul Fleming</a></li>
+<li class="toctree-l2"><a class="reference internal" href="requirements.html#design-for-testing">1.4. Design for testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="requirements.html#interface-design">1.5. Interface design</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="workDoneSoFar.html">2. Work done so far</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="workDoneSoFar.html#fast-prog-c">2.1. FAST_Prog.c</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workDoneSoFar.html#more-email-exchanges-with-bonnie-jonkman">2.2. More email exchanges with Bonnie Jonkman</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workDoneSoFar.html#understanding-fast-driver-programs-in-fortran-and-c">2.3. Understanding FAST driver programs in FORTRAN and C</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workDoneSoFar.html#meeting-with-avi-purkayastha-07-28-2016">2.4. Meeting with Avi Purkayastha - 07/28/2016</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="developmentProcess.html">3. Development Process</a></li>
+<li class="toctree-l1"><a class="reference internal" href="compilingFASTv8.html">4. Compiling FASTv8</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="compilingFASTv8.html#shreyas-s-cmake-version">4.1. Shreyas's cmake version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="compilingFASTv8.html#michael-sprague-s-instructions-to-compile-on-peregrine">4.2. Michael Sprague's instructions to compile on Peregrine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="compilingFASTv8.html#avi-s-version">4.3. Avi's version</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="currentWork.html">5. Current work - Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="currentWork.html#fix-existing-code">5.1. Fix existing code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="currentWork.html#understanding-time-stepping-in-fast">5.2. Understanding time stepping in FAST</a></li>
+<li class="toctree-l2"><a class="reference internal" href="currentWork.html#c-interface-class-for-fast">5.3. C++ interface class for FAST</a></li>
+<li class="toctree-l2"><a class="reference internal" href="currentWork.html#test-framework-for-the-c-driver-program">5.4. Test framework for the C driver program</a></li>
+<li class="toctree-l2"><a class="reference internal" href="currentWork.html#running-multiple-turbines-in-one-core">5.5. Running multiple turbines in one core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="currentWork.html#multiple-turbines-on-multiple-cores">5.6. Multiple turbines on multiple cores</a></li>
+<li class="toctree-l2"><a class="reference internal" href="currentWork.html#supercontroller">5.7. Supercontroller</a></li>
+<li class="toctree-l2"><a class="reference internal" href="currentWork.html#next-steps">5.8. Next steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="multiTurbineOneCore.html">6. Running multiple turbines on one core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="multiTurbineOneCore.html#test-with-native-fast">6.1. Test with native FAST</a></li>
+<li class="toctree-l2"><a class="reference internal" href="multiTurbineOneCore.html#develop-capability-in-c-driver">6.2. Develop capability in C driver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="multiTurbineOneCore.html#test03">6.3. Test03</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="multiTurbineMultiCore.html">7. Running multiple turbines on multiple cores</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="multiTurbineMultiCore.html#how-to-place-each-turbine-on-a-specific-processor-test04">7.1. How to place each turbine on a specific processor? - Test04</a></li>
+<li class="toctree-l2"><a class="reference internal" href="multiTurbineMultiCore.html#test05">7.2. Test05</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="supercontroller.html">8. Supercontroller</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="supercontroller.html#workflow">8.1. Workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="supercontroller.html#interface-with-glue-code">8.2. Interface with glue code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="supercontroller.html#interface-with-fast">8.3. Interface with FAST</a></li>
+<li class="toctree-l2"><a class="reference internal" href="supercontroller.html#software-details">8.4. Software details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="supercontroller.html#test06">8.5. Test06</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="zrefs.html">9. References</a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          <a href="requirements.html" title="Next document">1. Requirements and Design</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="#">Home</a></li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2016 National Renewable Energy Laboratory.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      1.4.1
+        with the <a href="http://github.com/irskep/sphinx-better-theme">
+          better</a> theme.
+
+  </footer>
+
+  
+  </body>
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>7. Running multiple turbines on multiple cores</title>
+    
+    <link rel="stylesheet" href="_static/better.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="" href="index.html" />
+    <link rel="next" title="8. Supercontroller" href="supercontroller.html" />
+    <link rel="prev" title="6. Running multiple turbines on one core" href="multiTurbineOneCore.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+      <link rel="stylesheet" href="_static/forWeb.css" type="text/css" />
+    <style type="text/css">
+    </style>
+  </head>
+  <body role="document">
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="multiTurbineOneCore.html" title="Previous document">6. Running multiple turbines on one core</a>
+        </li>
+        <li>
+          <a href="supercontroller.html" title="Next document">8. Supercontroller</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="index.html">Home</a></li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="running-multiple-turbines-on-multiple-cores">
+<h1>7. Running multiple turbines on multiple cores<a class="headerlink" href="#running-multiple-turbines-on-multiple-cores" title="Permalink to this headline">¶</a></h1>
+<p>The <code class="docutils literal"><span class="pre">C++</span></code> glue code for FAST is designed to run all the following example cases:</p>
+<ul class="simple">
+<li>one turbine on one processor,</li>
+<li>multiple turbines on one processor,</li>
+<li>50 turbines on 5 processors,</li>
+<li>5 turbines on 5 processors in a larger code running on 100,000 processors.</li>
+</ul>
+<p>We use the MPI [MPI-3.1] standard for parallelization. All the <code class="docutils literal"><span class="pre">MPI</span></code> commands and related stuff are enclosed in <code class="docutils literal"><span class="pre">#ifdef</span> <span class="pre">HAVE_MPI</span></code> to allow the glue-code to run in both serial and parallel modes.</p>
+<div class="section" id="how-to-place-each-turbine-on-a-specific-processor-test04">
+<h2>7.1. How to place each turbine on a specific processor? - Test04<a class="headerlink" href="#how-to-place-each-turbine-on-a-specific-processor-test04" title="Permalink to this headline">¶</a></h2>
+<p>In my current design, the input file dictates the processor number for each turbine. If the user doesn't want to select this, he/she would give it a value of <span class="math">\(-1\)</span> and the driver program should automatically assign each turbine to a processor. After reading the input file, each processor creates <code class="docutils literal"><span class="pre">std::map</span> <span class="pre">turbineMapGlobToProc</span></code> and <code class="docutils literal"><span class="pre">std::map</span> <span class="pre">turbineMapProcToGlob</span></code>. <code class="docutils literal"><span class="pre">std::set</span> <span class="pre">turbineSetProcs</span></code>, a set of processors containing atleast one turbine is used to create <code class="docutils literal"><span class="pre">MPI_Group</span> <span class="pre">fastMPIGroup</span></code> and <code class="docutils literal"><span class="pre">MPI_Comm</span> <span class="pre">fastMPIComm</span></code> so that all the turbines could interact amongst themselves or with a supercontroller in the future. The number of turbines <code class="docutils literal"><span class="pre">nTurbinesProc</span></code> will be different on each processor and could be zero. <a class="reference external" href="https://github.com/gantech/fastv8DriverProgram/commit/008cf737879fb47f0233d4b567e5737f841bf9c1">Test04</a> is designed to use the <code class="docutils literal"><span class="pre">dryRun</span></code> <label for="sn-dryRun" class="margin-toggle sidenote-number"></label><span class="sidenote"> Use this option  to enable runtime checking of the assignment of turbines to processors and the corresponding memory allocation/deallocation without running FAST for any turbine</span> option to explicitly test the assignment of turbines to processors as shown in Fig. <a class="reference internal" href="#multiturbine-multicore-assignment-test04">7.1</a>.</p>
+<div class="figure align-center" id="id2">
+<span id="multiturbine-multicore-assignment-test04"></span><a class="reference internal image-reference" href="_images/multiTurbineMultiCoreAssignmentTest04.pdf"><img alt="_images/multiTurbineMultiCoreAssignmentTest04.pdf" src="_images/multiTurbineMultiCoreAssignmentTest04.pdf" style="width: 100%;" /></a>
+<p class="caption"><span class="caption-text"><strong>Figure 7.1:</strong> Assignment of turbines to processors/cores in Test04</span></p>
+</div>
+</div>
+<div class="section" id="test05">
+<h2>7.2. Test05<a class="headerlink" href="#test05" title="Permalink to this headline">¶</a></h2>
+<p>Test05 is designed to run 3 turbines on 4 processors from t=0-60s with 3 restarts in the middle. The turbines are distributed amongst the processors as:</p>
+<ul class="simple">
+<li>Proc 0: Turbine0 and Turbine1</li>
+<li>Proc 1: no turbines</li>
+<li>Proc 2: Turbine 2</li>
+<li>Proc 3: no turbines</li>
+</ul>
+<p><code class="docutils literal"><span class="pre">Turbine0</span></code> and <code class="docutils literal"><span class="pre">Turbine1</span></code> are identical to the turbines used in Test04, while <code class="docutils literal"><span class="pre">Turbine2</span></code> is identical to Turbine0. The details of the restart are the same as in Tests 03 and 04. Test05 passes in commit <a class="reference external" href="https://github.com/gantech/fastv8DriverProgram/commit/51de163bb48002109d6fc341002c0a4e15cf9c90">51de163bb480021</a>.</p>
+</div>
+</div>
+
+
+          </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="multiTurbineOneCore.html" title="Previous document">6. Running multiple turbines on one core</a>
+        </li>
+        <li>
+          <a href="supercontroller.html" title="Next document">8. Supercontroller</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="index.html">Home</a></li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2016 National Renewable Energy Laboratory.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      1.4.1
+        with the <a href="http://github.com/irskep/sphinx-better-theme">
+          better</a> theme.
+
+  </footer>
+
+  
+  </body>
+</html>

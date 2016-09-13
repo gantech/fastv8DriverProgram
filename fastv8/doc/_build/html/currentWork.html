@@ -1,0 +1,275 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>5. Current work - Overview</title>
+    
+    <link rel="stylesheet" href="_static/better.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="" href="index.html" />
+    <link rel="next" title="6. Running multiple turbines on one core" href="multiTurbineOneCore.html" />
+    <link rel="prev" title="4. Compiling FASTv8" href="compilingFASTv8.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+      <link rel="stylesheet" href="_static/forWeb.css" type="text/css" />
+    <style type="text/css">
+    </style>
+  </head>
+  <body role="document">
+  <div class="related top">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="compilingFASTv8.html" title="Previous document">4. Compiling FASTv8</a>
+        </li>
+        <li>
+          <a href="multiTurbineOneCore.html" title="Next document">6. Running multiple turbines on one core</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="index.html">Home</a></li> 
+    </ul>
+  </nav>
+  </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="current-work-overview">
+<h1>5. Current work - Overview<a class="headerlink" href="#current-work-overview" title="Permalink to this headline">¶</a></h1>
+<p>I got the latest version of FAST v8.16.00 released by Bonnie Jonkman on 23 July 2016. The progress of my work can be tracked at <a class="reference external" href="https://github.com/gantech/fastv8DriverProgram">https://github.com/gantech/fastv8DriverProgram</a>.</p>
+<div class="section" id="fix-existing-code">
+<h2>5.1. Fix existing code<a class="headerlink" href="#fix-existing-code" title="Permalink to this headline">¶</a></h2>
+<p>FAST doesn't compile out of the box on linux systems based on gfortran. I applied the same techniques as Avi Purkayastha to compile it. The key here is the use of <code class="docutils literal"><span class="pre">-DSTATIC_DLL_LOAD</span></code> <label for="sn-staticDLLload" class="margin-toggle sidenote-number"></label><span class="sidenote"> This is used within the BladedInterface module. When this flag is enabled, the module calls the subroutine in the external bladed style library directly instead of calling the external library through a dynamic load call in the middle of the program at run time.</span>  directive in the makefile. Both the native <code class="docutils literal"><span class="pre">fortran</span></code> and <code class="docutils literal"><span class="pre">C</span></code> driver programs now run from scratch, i.e. t=0s. See commit <a class="reference external" href="https://github.com/gantech/fastv8DriverProgram/commit/3f7c967bf661c22b78e1481ff67aaea9cb5d72de">3f7c967bf661c22</a>.</p>
+<p>The example C driver program in FAST v8.16.00 had two major problems regarding restart. First, the number of arguments in the C and Fortran definition of <code class="docutils literal"><span class="pre">FAST_OpFM_Restart</span></code> were different. Second, the name of the checkpoint file passed to the restart routine was getting mangled up. I fixed both of these issues and the restart works ok in commit <a class="reference external" href="https://github.com/gantech/fastv8DriverProgram/commit/17ee6f027a0357b55c0bd2f2eeebfb36f044594c">17ee6f027a0357</a> .</p>
+<p>The FAST library had some issues with unpacking the binary data from the <code class="docutils literal"><span class="pre">checkpoint</span></code> file. Greg Hayman helped fix these issues using Visual Studio on windows. The same fixes work in Linux as well. The version in commit <a class="reference external" href="https://github.com/gantech/fastv8DriverProgram/commit/5c41b918b050f04db1299724ae3565565d73b9c7">5c41b918b050f0</a> restarts correctly with the native fortran version and has been tested with certification tests Test01 and Test18.</p>
+</div>
+<div class="section" id="understanding-time-stepping-in-fast">
+<h2>5.2. Understanding time stepping in FAST<a class="headerlink" href="#understanding-time-stepping-in-fast" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-fortran"><div class="highlight"><pre><span></span><span class="k">DO </span><span class="n">n_t_global</span><span class="o">=</span><span class="n">n_t_global_start</span><span class="p">,</span> <span class="n">ntMax</span>   <span class="c">! Starts from n_t_global=0 in the first run</span>
+
+   <span class="k">IF</span> <span class="p">(</span><span class="n">writeCheckpoint</span><span class="p">)</span> <span class="k">THEN</span>
+<span class="k">      </span><span class="n">writeCheckPoint</span>        <span class="c">!The restart file is written at the start of the time step.</span>
+   <span class="k">END IF</span>
+
+<span class="k">   </span><span class="n">FAST_Step</span>
+
+   <span class="c">! n_t_global still hasn&#39;t changed here. Changes only on the next time step</span>
+
+<span class="k">END DO</span>
+</pre></div>
+</div>
+<p>Consider an example where FAST is run for 1600 time steps from <span class="math">\(t=0\)</span>. Thus, <span class="math">\(ntMax=1599\)</span>. Let us say that I asked FAST to write a restart file every 1600 time steps as well. Since the checkpoint file is written at the start of the time step, FAST will not write a checkpoint file at the end of the simulation. To get FAST to do this, I will have to run FAST for one time step more than the desired number of time steps. The C driver for FAST will do this.</p>
+</div>
+<div class="section" id="c-interface-class-for-fast">
+<h2>5.3. C++ interface class for FAST<a class="headerlink" href="#c-interface-class-for-fast" title="Permalink to this headline">¶</a></h2>
+<p>The main aim of building a C++ interface class for FAST is to keep the driver program very simple as follows:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&quot;FAST_cInterface.h&quot;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;iostream&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;mpi.h&gt;</span><span class="cp"></span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+  <span class="kt">int</span> <span class="n">iErr</span><span class="p">;</span>
+  <span class="kt">int</span> <span class="n">nProcs</span><span class="p">;</span>
+  <span class="kt">int</span> <span class="n">rank</span><span class="p">;</span>
+
+  <span class="n">iErr</span> <span class="o">=</span> <span class="n">MPI_Init</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+  <span class="n">iErr</span> <span class="o">=</span> <span class="n">MPI_Comm_size</span><span class="p">(</span> <span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">nProcs</span><span class="p">);</span>
+  <span class="n">iErr</span> <span class="o">=</span> <span class="n">MPI_Comm_rank</span><span class="p">(</span> <span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">rank</span><span class="p">);</span>
+
+  <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">cDriverInputFile</span><span class="o">=</span><span class="s">&quot;cDriver.i&quot;</span><span class="p">;</span>
+  <span class="n">FAST_cInterface</span> <span class="n">FAST</span><span class="p">;</span>
+  <span class="k">try</span> <span class="p">{</span>
+    <span class="n">FAST</span><span class="p">.</span><span class="n">readInputFile</span><span class="p">(</span><span class="n">cDriverInputFile</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="k">catch</span><span class="p">(</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">runtime_error</span> <span class="o">&amp;</span> <span class="n">ex</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">cerr</span> <span class="o">&lt;&lt;</span> <span class="n">ex</span><span class="p">.</span><span class="n">what</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span> <span class="p">;</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">cerr</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Program quitting now&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span> <span class="p">;</span>
+    <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">if</span><span class="p">(</span> <span class="o">!</span><span class="n">FAST</span><span class="p">.</span><span class="n">isDryRun</span><span class="p">()</span> <span class="p">)</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">nt</span> <span class="o">=</span> <span class="n">FAST</span><span class="p">.</span><span class="n">get_ntStart</span><span class="p">();</span> <span class="n">nt</span> <span class="o">&lt;=</span> <span class="n">FAST</span><span class="p">.</span><span class="n">get_ntEnd</span><span class="p">();</span> <span class="n">nt</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">FAST</span><span class="p">.</span><span class="n">step</span><span class="p">();</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="n">FAST</span><span class="p">.</span><span class="n">end</span><span class="p">()</span> <span class="p">;</span>
+  <span class="n">MPI_Finalize</span><span class="p">()</span> <span class="p">;</span>
+
+  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The C++ interface class will read a YAML style input file like the one below.</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">nTurbinesGlob</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="l l-Scalar l-Scalar-Plain">dryRun</span><span class="p p-Indicator">:</span>  <span class="l l-Scalar l-Scalar-Plain">False</span>
+<span class="l l-Scalar l-Scalar-Plain">restart</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">False</span>
+<span class="l l-Scalar l-Scalar-Plain">tStart</span><span class="p p-Indicator">:</span>  <span class="l l-Scalar l-Scalar-Plain">0.0</span>
+<span class="l l-Scalar l-Scalar-Plain">tEnd</span><span class="p p-Indicator">:</span>    <span class="l l-Scalar l-Scalar-Plain">10.0</span>
+<span class="l l-Scalar l-Scalar-Plain">tMax</span><span class="p p-Indicator">:</span>    <span class="l l-Scalar l-Scalar-Plain">60.0</span>
+<span class="l l-Scalar l-Scalar-Plain">ntStart</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+<span class="l l-Scalar l-Scalar-Plain">ntEnd</span><span class="p p-Indicator">:</span>   <span class="l l-Scalar l-Scalar-Plain">1600</span>
+<span class="l l-Scalar l-Scalar-Plain">dtFAST</span><span class="p p-Indicator">:</span>  <span class="l l-Scalar l-Scalar-Plain">0.00625</span>
+<span class="l l-Scalar l-Scalar-Plain">nEveryCheckPoint</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1600</span>
+
+<span class="l l-Scalar l-Scalar-Plain">Turbine0</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">procNo</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+  <span class="l l-Scalar l-Scalar-Plain">TurbinePos</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span> <span class="nv">0.0</span><span class="p p-Indicator">,</span> <span class="nv">0.0</span><span class="p p-Indicator">,</span> <span class="nv">0.0</span> <span class="p p-Indicator">]</span>
+  <span class="l l-Scalar l-Scalar-Plain">numScOutputs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+  <span class="l l-Scalar l-Scalar-Plain">numScInputs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+  <span class="l l-Scalar l-Scalar-Plain">restartFileName</span><span class="p p-Indicator">:</span> <span class="s">&quot;banana&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">FASTInputFileName</span><span class="p p-Indicator">:</span> <span class="s">&quot;t1_Test05.fst&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">TurbID</span><span class="p p-Indicator">:</span>  <span class="l l-Scalar l-Scalar-Plain">1</span>
+
+<span class="l l-Scalar l-Scalar-Plain">Turbine1</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">procNo</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+  <span class="l l-Scalar l-Scalar-Plain">TurbinePos</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span> <span class="nv">0.0</span><span class="p p-Indicator">,</span> <span class="nv">0.0</span><span class="p p-Indicator">,</span> <span class="nv">0.0</span> <span class="p p-Indicator">]</span>
+  <span class="l l-Scalar l-Scalar-Plain">numScOutputs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+  <span class="l l-Scalar l-Scalar-Plain">numScInputs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+  <span class="l l-Scalar l-Scalar-Plain">restartFileName</span><span class="p p-Indicator">:</span> <span class="s">&quot;banana&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">FASTInputFileName</span><span class="p p-Indicator">:</span> <span class="s">&quot;t2_Test05.fst&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">TurbID</span><span class="p p-Indicator">:</span>  <span class="l l-Scalar l-Scalar-Plain">2</span>
+
+<span class="l l-Scalar l-Scalar-Plain">Turbine2</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">procNo</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+  <span class="l l-Scalar l-Scalar-Plain">TurbinePos</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span> <span class="nv">0.0</span><span class="p p-Indicator">,</span> <span class="nv">0.0</span><span class="p p-Indicator">,</span> <span class="nv">0.0</span> <span class="p p-Indicator">]</span>
+  <span class="l l-Scalar l-Scalar-Plain">numScOutputs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+  <span class="l l-Scalar l-Scalar-Plain">numScInputs</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+  <span class="l l-Scalar l-Scalar-Plain">restartFileName</span><span class="p p-Indicator">:</span> <span class="s">&quot;banana&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">FASTInputFileName</span><span class="p p-Indicator">:</span> <span class="s">&quot;t3_Test05.fst&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">TurbID</span><span class="p p-Indicator">:</span>  <span class="l l-Scalar l-Scalar-Plain">3</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="test-framework-for-the-c-driver-program">
+<h2>5.4. Test framework for the C driver program<a class="headerlink" href="#test-framework-for-the-c-driver-program" title="Permalink to this headline">¶</a></h2>
+<p>Following the philosophy of test driven development, the test framework for the C driver program is being built in the <code class="docutils literal"><span class="pre">cDriverProgramTests</span></code> on github. This will mimic the regression testing framework of NALU [naluDoc] from <a class="reference external" href="https://github.com/spdomin/NaluRtest">https://github.com/spdomin/NaluRtest</a>. The basic idea behind all tests is to compare the output of the C driver program to that of the native fortran program. The current test framework (upto commit <a class="reference external" href="https://github.com/gantech/fastv8DriverProgram/commits/51de163bb48002109d6fc341002c0a4e15cf9c90">51de163b</a> has the following tests that pass:</p>
+<ul>
+<li><p class="first">Test01 - The same as CertTest/Test18 in FAST. Run from <span class="math">\(t=0s\)</span> to <span class="math">\(t=60s\)</span> on one core and compare output to that from native FAST.</p>
+</li>
+<li><p class="first">Test02 - The same as Test01, except is done in 4 parts with restart:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Run 1 - <span class="math">\(t=0s\)</span> to <span class="math">\(t=10s\)</span>,</li>
+<li>Run 2 - <span class="math">\(t=10s\)</span> to <span class="math">\(t=30s\)</span>,</li>
+<li>Run 3 - <span class="math">\(t=30s\)</span> to <span class="math">\(t=50s\)</span>,</li>
+<li>Run 4 - <span class="math">\(t=50s\)</span> to <span class="math">\(t=60s\)</span>.</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Test03 - Run two turbines with different controllers on one core. The rest of the details are the same as Test02.</p>
+</li>
+<li><p class="first">Test04 - Dry run to check allocation of turbines to specific cores as specified in the input file. This will only allocate memory for the turbine datastructure and associated input parameters and deallocate them on exit.</p>
+</li>
+<li><p class="first">Test05 - Run three turbines on four processors with two turbines on the first processor, one turbine on the third processor and no turbines in the other processors. The three turbines have different bladed style controllers. The rest of the details are the same as Test02.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="running-multiple-turbines-in-one-core">
+<h2>5.5. Running multiple turbines in one core<a class="headerlink" href="#running-multiple-turbines-in-one-core" title="Permalink to this headline">¶</a></h2>
+<p>The native version of FAST is capable of handling several different turbines when running on one core. However, this capability breaks down when FAST is used with an external library like a externally defined bladed-style controller for ServoDyn or user defined routines in ServoDyn and ElastoDyn. All variables used in subroutines of externally defined libraries become global variables by default. This leads to a conflict when using the same external library for multiple turbines. In a private discussion, Bonnie suggested that FAST could work with multiple turbines if the external libraries used for each turbine had different names as shown in Figure <a class="reference internal" href="multiTurbineOneCore.html#multiturbinediscon">6.1</a>.</p>
+<div class="figure align-center" id="id5">
+<span id="multiturbinediscon"></span><a class="reference internal image-reference" href="_images/multiTurbineDISCON.png"><img alt="_images/multiTurbineDISCON.png" src="_images/multiTurbineDISCON.png" style="width: 80%;" /></a>
+<p class="caption"><span class="caption-text"><strong>Figure 6.1:</strong> How to run multiple turbines on a single core in FAST with external bladed-style controller libraries.</span></p>
+</div>
+<p>See <a class="reference external" href="multiTurbineOneCore.html">Running multiple turbines in one core</a> for more details.</p>
+</div>
+<div class="section" id="multiple-turbines-on-multiple-cores">
+<h2>5.6. Multiple turbines on multiple cores<a class="headerlink" href="#multiple-turbines-on-multiple-cores" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal"><span class="pre">C++</span></code> glue code for FAST is designed to run all the following example cases:</p>
+<ul class="simple">
+<li>one turbine on one processor,</li>
+<li>multiple turbines on one processor,</li>
+<li>50 turbines on 5 processors,</li>
+<li>5 turbines on 5 processors in a larger code running on 100,000 processors.</li>
+</ul>
+<p>We use the MPI [MPI-3.1] standard for parallelization. All the <code class="docutils literal"><span class="pre">MPI</span></code> commands and related stuff are enclosed in <code class="docutils literal"><span class="pre">#ifdef</span> <span class="pre">HAVE_MPI</span></code> to allow the glue-code to run in both serial and parallel modes. See <a class="reference external" href="multiTurbineMultiCore.html">Running multiple turbines on multiple cores with C driver</a> for more details.</p>
+</div>
+<div class="section" id="supercontroller">
+<h2>5.7. Supercontroller<a class="headerlink" href="#supercontroller" title="Permalink to this headline">¶</a></h2>
+<p>The C++ glue code should be capable of controlling all the turbines in a given simulation through a super controller. Test06, designed to develop this capabilty, changes the minimum pitch setting of two turbines as a function of time as:</p>
+<ul>
+<li><p class="first"><code class="docutils literal"><span class="pre">Turbine0</span></code></p>
+<p>#  0-20s: 0 degrees
+#  20-40s: 1.5 degrees
+#  40-60s: 3 degrees</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">Turbine1</span></code></p>
+<p>#  0-20s: 0.5 degrees
+#  20-40s: 1 degrees
+#  40-60s: 2.5 degrees</p>
+</li>
+</ul>
+<p>See the <a class="reference external" href="supercontroller.html">supercontroller</a> page for more details.</p>
+</div>
+<div class="section" id="next-steps">
+<h2>5.8. Next steps<a class="headerlink" href="#next-steps" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li>Test the capability for a simple super controller to set the minimum pitch angle on different turbines as a function of time.</li>
+<li>Test the capability to specify the velocity at the actuator points.</li>
+<li>Test the capability to turn off the structural properties of the turbine using an input parameter.</li>
+<li>Upgrade the testing framework to be fully automated based on <code class="docutils literal"><span class="pre">git</span> <span class="pre">clone</span></code> including the compilation steps.</li>
+<li>Test if the different bladed style controller files for the turbines can be simlinks of the same file.</li>
+</ol>
+</div>
+</div>
+
+
+          </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  <div class="related bottom">
+  <nav id="rellinks">
+    <ul>
+        <li>
+          &larr;
+          <a href="compilingFASTv8.html" title="Previous document">4. Compiling FASTv8</a>
+        </li>
+        <li>
+          <a href="multiTurbineOneCore.html" title="Next document">6. Running multiple turbines on one core</a>
+          &rarr;
+        </li>
+    </ul>
+  </nav>
+  <nav id="breadcrumbs">
+    <ul>
+      <li><a href="index.html">Home</a></li> 
+    </ul>
+  </nav>
+  </div>
+  <footer id="pagefooter">&copy; 2016 National Renewable Energy Laboratory.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a>
+      1.4.1
+        with the <a href="http://github.com/irskep/sphinx-better-theme">
+          better</a> theme.
+
+  </footer>
+
+  
+  </body>
+</html>
