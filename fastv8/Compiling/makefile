@@ -104,7 +104,7 @@ ifeq ($(OS),Windows_NT)
    UNAME       := $(OS)
 else
 
-   Registry     = $(FAST_DIR)/dependencies/registry.exe
+   Registry     = $(BIN_DIR)/registry.exe
    MAP_lib      = -L$(BIN_DIR) -lmap-1.20.10
 
      # skip the OrcaFlex interface, which seems to be causing issues with gfortran v5 on Mac (The OrcaFlex DLL is for Windows only, anyway)
