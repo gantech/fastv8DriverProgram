@@ -78,13 +78,13 @@ OBJ       = lmder.o \
 
 
 all : $(OBJ)
-	$(CC_TOOLS) $(LDFLAGS) -o libmap-$(MAP_VER).$(LIB_EXT) $(DEBUG) $(OBJ) $(LIB_FLAGS) 
+	$(CC_TOOLS) $(LDFLAGS) -o ../../../../bin/libmap-$(MAP_VER).$(LIB_EXT) $(DEBUG) $(OBJ) $(LIB_FLAGS) 
 
 .c.o :
 	$(CC_TOOLS) -c $(CFLAGS) $<
 
 clean:
-	$(DEL_CMD) *.$(LIB_EXT) *.o *~
+	$(DEL_CMD) *.$(LIB_EXT) *.o *~ ../../../../bin/libmap-$(MAP_VER).$(LIB_EXT)
 
 memcheck:	
 	valgrind --tool=memcheck --leak-check=yes python -E -tt ./main.py	
