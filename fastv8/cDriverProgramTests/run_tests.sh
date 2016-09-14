@@ -75,13 +75,14 @@ if [ ! -d "$FAST_DIR/runFv8cDPRtest/testCases/Test03" ]; then
 fi
 
 cd $FAST_DIR/runFv8cDPRtest/testCases/Test03
+cp $Fv8cDPRtest_DIR/testCases/Test03/makefile_DISCON_DLL $FAST_DIR/runFv8cDPRtest/testCases/Test03/
 cp $Fv8cDPRtest_DIR/testCases/Test03/t*Test03.fst $FAST_DIR/runFv8cDPRtest/testCases/Test03/
 cp $Fv8cDPRtest_DIR/testCases/Test03/cDriver.i* $FAST_DIR/runFv8cDPRtest/testCases/Test03/
 cp $Fv8cDPRtest_DIR/testCases/Test03/5MW_Baseline/ $FAST_DIR/runFv8cDPRtest/testCases/Test03/ -r
 cp $Fv8cDPRtest_DIR/testCases/Test03/test03.sh $FAST_DIR/runFv8cDPRtest/testCases/Test03/
 cp $Fv8cDPRtest_DIR/testCases/Test03/t*Test03.nativeFortran.outb $FAST_DIR/runFv8cDPRtest/testCases/Test03/
 # run it...  
-#./test03.sh
+./test03.sh
 
 
 #=============================================================================
