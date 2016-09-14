@@ -88,7 +88,7 @@ MAP_DIR_Reg  = $(MAP_DIR)
 Orca_DIR_Reg = $(Orca_DIR)
 
 BIN_DIR      = ../bin
-
+LIB_DIR      = ../lib
 
 
    # Names and locations of the Registry, MAP libraries, and instructions for linking with LAPACK.
@@ -105,7 +105,7 @@ ifeq ($(OS),Windows_NT)
 else
 
    Registry     = $(BIN_DIR)/registry.exe
-   MAP_lib      = -L$(BIN_DIR) -lmap-1.20.10
+   MAP_lib      = -L$(LIB_DIR) -lmap-1.20.10
 
      # skip the OrcaFlex interface, which seems to be causing issues with gfortran v5 on Mac (The OrcaFlex DLL is for Windows only, anyway)
    FFLAGS      := $(FFLAGS) -DNO_LibLoad
@@ -134,7 +134,11 @@ endif
 
    # Destination and RootName for executable
 
-DEST_DIR    = $(BIN_DIR)
+ifeq ($(FAST_driver),FAST_Library)
+   DEST_DIR    = $(LIB_DIR)
+else
+   DEST_DIR    = $(BIN_DIR)
+endif
 
 ifeq ($(FAST_driver),FAST_Library)
    LDFLAGS := $(LDFLAGS) -shared

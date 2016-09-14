@@ -5,7 +5,7 @@
 #                                                                                #
 # This makefile has been tested on Linux x64 with gfortran-4.8.                  #
 #                                                                                #
-# It was designed to be used with FAST_Prog.c for a C driver program for FAST    #
+# It was designed to be used with FAST_ProgC.c for a C driver program for FAST    #
 #================================================================================#
 
    # 32-bit or 64-bit?
@@ -16,7 +16,7 @@ BITS = 64
    # You may need to change these for your DLL.
 
 SOURCE_DIR  = ../Source
-SOURCE_FILES = FAST_Prog.c FAST_cInterface.c FAST_Prog_cInterface.c SC.c
+SOURCE_FILES = FAST_cInterface.c FAST_ProgC.c SC.c
 
 
    # Name of compiler to use and flags to use.
@@ -26,9 +26,9 @@ CFLAGS  = -O0 -g -DHAVE_MPI
 
    # Destination and RootName for executable
 
-
-YAMLCPPLIB_DIR = ../Source/dependencies/yaml-cpp/lib/
-FASTLIB_DIR = ../bin
+YAMLCPPINCLUDE_DIR = ../include
+YAMLCPPLIB_DIR = ../lib
+FASTLIB_DIR = ../lib
 DEST_DIR    = ../bin
 
    #==========================================================#
@@ -56,19 +56,16 @@ ALL_OBJS   = $(patsubst %,$(INTER_DIR)/%,$(_ALL_OBJS))
 # Rule to do everything.
 
 all:     default
-cppOnly: $(INTER_DIR) $(DEST_DIR)/FAST_cDriverProg_cInterface$(EXE_EXT)  $(DEST_DIR)/libScontroller.so
-default:  $(INTER_DIR) $(DEST_DIR)/FAST_cDriverProg$(EXE_EXT) $(DEST_DIR)/FAST_cDriverProg_cInterface$(EXE_EXT)
+cppOnly: $(INTER_DIR) $(DEST_DIR)/FAST_ProgC$(EXE_EXT)  $(DEST_DIR)/libScontroller.so
+default:  $(INTER_DIR) $(DEST_DIR)/FAST_ProgC$(EXE_EXT) $(DEST_DIR)/FAST_ProgC$(EXE_EXT)
 
    # General rules for compliling the files.
 
-$(INTER_DIR)/FAST_Prog.o: $(SOURCE_DIR)/FAST_Prog.c $(SOURCE_DIR)/dependencies/OpenFOAM/OpenFOAM_Types.h $(SOURCE_DIR)/dependencies/SuperController/SuperController_Types.h
-	$(CC)  $(CFLAGS) -c $< -I$(SOURCE_DIR)/dependencies/OpenFOAM/ -I$(SOURCE_DIR)/dependencies/SuperController -o $@ 
-
 $(INTER_DIR)/FAST_cInterface.o: $(SOURCE_DIR)/FAST_cInterface.c $(SOURCE_DIR)/FAST_cInterface.h $(SOURCE_DIR)/dependencies/OpenFOAM/OpenFOAM_Types.h $(SOURCE_DIR)/dependencies/SuperController/SuperController_Types.h $(SOURCE_DIR)/SC.h
-	$(CPP)  $(CFLAGS) -c $< -I$(SOURCE_DIR)/dependencies/OpenFOAM/ -I$(SOURCE_DIR)/dependencies/SuperController -I$(SOURCE_DIR)/dependencies/yaml-cpp/include/ -o $@ 
+	$(CPP)  $(CFLAGS) -c $< -I$(SOURCE_DIR)/dependencies/OpenFOAM/ -I$(SOURCE_DIR)/dependencies/SuperController -I$(YAMLCPPINCLUDE_DIR) -o $@ 
 
-$(INTER_DIR)/FAST_Prog_cInterface.o: $(SOURCE_DIR)/FAST_Prog_cInterface.c $(SOURCE_DIR)/FAST_cInterface.h $(INTER_DIR)/FAST_cInterface.o $(SOURCE_DIR)/dependencies/OpenFOAM/OpenFOAM_Types.h $(SOURCE_DIR)/dependencies/SuperController/SuperController_Types.h
-	$(CPP)  $(CFLAGS) -c $< -I$(SOURCE_DIR) -I$(SOURCE_DIR)/dependencies/OpenFOAM/ -I$(SOURCE_DIR)/dependencies/SuperController -I$(SOURCE_DIR)/dependencies/yaml-cpp/include/ -o $@
+$(INTER_DIR)/FAST_ProgC.o: $(SOURCE_DIR)/FAST_ProgC.c $(SOURCE_DIR)/FAST_cInterface.h $(INTER_DIR)/FAST_cInterface.o $(SOURCE_DIR)/dependencies/OpenFOAM/OpenFOAM_Types.h $(SOURCE_DIR)/dependencies/SuperController/SuperController_Types.h
+	$(CPP)  $(CFLAGS) -c $< -I$(SOURCE_DIR) -I$(SOURCE_DIR)/dependencies/OpenFOAM/ -I$(SOURCE_DIR)/dependencies/SuperController -I$(YAMLCPPINCLUDE_DIR) -o $@
 
    # Make sure the destination directory for the intermediate files exist.
 
@@ -77,13 +74,13 @@ $(INTER_DIR):
 
    # For linking 
 
-$(DEST_DIR)/FAST_cDriverProg$(EXE_EXT): $(INTER_DIR)/FAST_Prog.o
-	$(CC) $(CFLAGS) -o $(DEST_DIR)/FAST_cDriverProg$(EXE_EXT) \
-	$(INTER_DIR)/FAST_Prog.o $(LDFLAGS)
+$(DEST_DIR)/FAST_ProgC$(EXE_EXT): $(INTER_DIR)/FAST_ProgC.o
+	$(CC) $(CFLAGS) -o $(DEST_DIR)/FAST_ProgC$(EXE_EXT) \
+	$(INTER_DIR)/FAST_ProgC.o $(LDFLAGS)
 
-$(DEST_DIR)/FAST_cDriverProg_cInterface$(EXE_EXT): $(INTER_DIR)/FAST_Prog_cInterface.o $(INTER_DIR)/FAST_cInterface.o
-	$(CPP) $(CFLAGS) -o $(DEST_DIR)/FAST_cDriverProg_cInterface$(EXE_EXT) \
-	$(INTER_DIR)/FAST_Prog_cInterface.o $(INTER_DIR)/FAST_cInterface.o $(LDFLAGS)
+$(DEST_DIR)/FAST_ProgC$(EXE_EXT): $(INTER_DIR)/FAST_ProgC.o $(INTER_DIR)/FAST_cInterface.o
+	$(CPP) $(CFLAGS) -o $(DEST_DIR)/FAST_ProgC$(EXE_EXT) \
+	$(INTER_DIR)/FAST_ProgC.o $(INTER_DIR)/FAST_cInterface.o $(LDFLAGS)
 
 $(DEST_DIR)/libScontroller.so: $(SOURCE_DIR)/SC.c $(SOURCE_DIR)/SC.h
 	$(CPP) -std=c++11 -fPIC -shared -I$(SOURCE_DIR)/dependencies/SuperController -o $(DEST_DIR)/libScontroller.so \
@@ -92,7 +89,7 @@ $(DEST_DIR)/libScontroller.so: $(SOURCE_DIR)/SC.c $(SOURCE_DIR)/SC.h
    # Cleanup afterwards.
 
 clean:
-	$(DEL_CMD) $(INTER_DIR)$(PATH_SEP)FAST_Prog$(OBJ_EXT) $(INTER_DIR)$(PATH_SEP)FAST_cInterface$(OBJ_EXT) $(INTER_DIR)$(PATH_SEP)FAST_Prog_cInterface$(OBJ_EXT)
+	$(DEL_CMD) $(INTER_DIR)$(PATH_SEP)FAST_ProgC$(OBJ_EXT) $(INTER_DIR)$(PATH_SEP)FAST_cInterface$(OBJ_EXT) $(INTER_DIR)$(PATH_SEP)FAST_ProgC$(OBJ_EXT)
 #	$(DEL_CMD) $(INTER_DIR)$(PATH_SEP)*$(OBJ_EXT) $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT)
 
 
