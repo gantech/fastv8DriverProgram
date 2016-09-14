@@ -97,7 +97,7 @@ cp $Fv8cDPRtest_DIR/testCases/Test04/cDriver.i $FAST_DIR/runFv8cDPRtest/testCase
 cp $Fv8cDPRtest_DIR/testCases/Test04/test04.sh $FAST_DIR/runFv8cDPRtest/testCases/Test04/
 cp $Fv8cDPRtest_DIR/testCases/Test04/log.Test04.gold $FAST_DIR/runFv8cDPRtest/testCases/Test04/
 # run it...  
-#./test04.sh
+./test04.sh
 
 
 #=============================================================================
@@ -108,13 +108,14 @@ if [ ! -d "$FAST_DIR/runFv8cDPRtest/testCases/Test05" ]; then
 fi
 
 cd $FAST_DIR/runFv8cDPRtest/testCases/Test05
+cp $Fv8cDPRtest_DIR/testCases/Test05/makefile_DISCON_DLL $FAST_DIR/runFv8cDPRtest/testCases/Test05/
 cp $Fv8cDPRtest_DIR/testCases/Test05/t*Test05.fst $FAST_DIR/runFv8cDPRtest/testCases/Test05/
 cp $Fv8cDPRtest_DIR/testCases/Test05/cDriver.i* $FAST_DIR/runFv8cDPRtest/testCases/Test05/
 cp $Fv8cDPRtest_DIR/testCases/Test05/5MW_Baseline $FAST_DIR/runFv8cDPRtest/testCases/Test05/ -r
 cp $Fv8cDPRtest_DIR/testCases/Test05/test05.sh $FAST_DIR/runFv8cDPRtest/testCases/Test05/
 cp $Fv8cDPRtest_DIR/testCases/Test05/t*Test05.nativeFortran.outb $FAST_DIR/runFv8cDPRtest/testCases/Test05/
 # run it...  
-#./test05.sh
+./test05.sh
 
 #=============================================================================
 # Test 06
