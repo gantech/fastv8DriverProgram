@@ -14,6 +14,8 @@ scStatus(false)
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &worldMPIRank);
   MPI_Comm_group(MPI_COMM_WORLD, &worldMPIGroup);
+#else 
+  worldMPIRank = 0;
 #endif
 }
 
@@ -80,9 +82,11 @@ int FAST_cInterface::init() {
 
      }
      
-     sc->init(nTurbinesGlob, numScInputs, numScOutputs);
 
      if(scStatus) {
+
+       sc->init(nTurbinesGlob, numScInputs, numScOutputs);
+
        sc->calcOutputs(scOutputsGlob);
        fillScOutputsLoc();
      }
@@ -304,9 +308,11 @@ void FAST_cInterface::allocateTurbinesToProcs(YAML::Node cDriverNode) {
     }
     turbineSetProcs.insert(turbineMapGlobToProc[iTurb]);
   }
+#ifdef HAVE_MPI  
   if ( dryRun ) {
     MPI_Barrier(MPI_COMM_WORLD);  
   }
+#endif
 
   int nProcsWithTurbines=0;
   turbineProcs = new int[turbineSetProcs.size()];
@@ -319,7 +325,9 @@ void FAST_cInterface::allocateTurbinesToProcs(YAML::Node cDriverNode) {
 	  std::cout << "Proc " << worldMPIRank << " loc iTurb " << iTurb << " glob iTurb " << turbineMapProcToGlob[iTurb] << std::endl ;
 	}
       }
+#ifdef HAVE_MPI
       MPI_Barrier(MPI_COMM_WORLD);  
+#endif
     }
 
     nProcsWithTurbines++ ;
@@ -474,6 +482,8 @@ void FAST_cInterface::loadSuperController(YAML::Node c) {
     
    } else {
     scStatus = false;
+    numScInputs = 0;
+    numScOutputs = 0;
    }
 
 }
@@ -540,4 +550,16 @@ template <typename T> void FAST_cInterface::delete2DArray(T** arr) {
   delete [] arr[0];  // remove the pool
   delete [] arr;     // remove the pointers
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
