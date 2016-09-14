@@ -337,10 +337,8 @@ void FAST_cInterface::allocateTurbinesToProcs(YAML::Node cDriverNode) {
   // Construct a group containing all procs running atleast 1 turbine in FAST
   MPI_Group_incl(worldMPIGroup, nProcsWithTurbines, turbineProcs, &fastMPIGroup) ;
   int fastMPIcommTag = MPI_Comm_create(MPI_COMM_WORLD, fastMPIGroup, &fastMPIComm);
-  MPI_Comm_rank(fastMPIComm, &fastMPIRank);
-  if(dryRun) {
-    std::cout << "fastMPIcommTag = " << fastMPIcommTag  << std::endl ;
-    std::cout << "fastMPIComm = " << fastMPIComm << std::endl;
+  if (MPI_COMM_NULL != fastMPIComm) {
+    MPI_Comm_rank(fastMPIComm, &fastMPIRank);
   }
 #endif
 

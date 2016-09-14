@@ -12,8 +12,6 @@ nEveryCheckPoint: 800
 Turbine0:
   procNo: 0
   TurbinePos: [ 0.0, 0.0, 0.0 ]
-  numScOutputs: 0
-  numScInputs: 0
   restartFileName: "blah"
   FASTInputFileName: "t1_test18.fst"
   TurbID:  1
@@ -21,8 +19,6 @@ Turbine0:
 Turbine1:
   procNo: 1
   TurbinePos: [ 0.0, 0.0, 0.0 ]
-  numScOutputs: 0
-  numScInputs: 0
   restartFileName: "blah"
   FASTInputFileName: "t2_test18.fst"
   TurbID:  2
@@ -30,8 +26,6 @@ Turbine1:
 Turbine2:
   procNo: 2
   TurbinePos: [ 0.0, 0.0, 0.0 ]
-  numScOutputs: 0
-  numScInputs: 0
   restartFileName: "blah"
   FASTInputFileName: "t1_test18.fst"
   TurbID:  3
@@ -39,8 +33,6 @@ Turbine2:
 Turbine3:
   procNo: 2
   TurbinePos: [ 0.0, 0.0, 0.0 ]
-  numScOutputs: 0
-  numScInputs: 0
   restartFileName: "blah"
   FASTInputFileName: "t2_test18.fst"
   TurbID:  4
@@ -48,8 +40,6 @@ Turbine3:
 Turbine4:
   procNo: 0
   TurbinePos: [ 0.0, 0.0, 0.0 ]
-  numScOutputs: 0
-  numScInputs: 0
   restartFileName: "blah"
   FASTInputFileName: "t1_test18.fst"
   TurbID:  5
@@ -57,8 +47,6 @@ Turbine4:
 Turbine5:
   procNo: 1
   TurbinePos: [ 0.0, 0.0, 0.0 ]
-  numScOutputs: 0
-  numScInputs: 0
   restartFileName: "blah"
   FASTInputFileName: "t2_test18.fst"
   TurbID:  6
@@ -66,8 +54,6 @@ Turbine5:
 Turbine6:
   procNo: 2
   TurbinePos: [ 0.0, 0.0, 0.0 ]
-  numScOutputs: 0
-  numScInputs: 0
   restartFileName: "blah"
   FASTInputFileName: "t1_test18.fst"
   TurbID:  7
@@ -75,8 +61,6 @@ Turbine6:
 Turbine7:
   procNo: 2
   TurbinePos: [ 0.0, 0.0, 0.0 ]
-  numScOutputs: 0
-  numScInputs: 0
   restartFileName: "blah"
   FASTInputFileName: "t2_test18.fst"
   TurbID:  8
@@ -84,8 +68,6 @@ Turbine7:
 Turbine8:
   procNo: 0
   TurbinePos: [ 0.0, 0.0, 0.0 ]
-  numScOutputs: 0
-  numScInputs: 0
   restartFileName: "blah"
   FASTInputFileName: "t1_test18.fst"
   TurbID:  9
@@ -93,8 +75,6 @@ Turbine8:
 Turbine9:
   procNo: 1
   TurbinePos: [ 0.0, 0.0, 0.0 ]
-  numScOutputs: 0
-  numScInputs: 0
   restartFileName: "blah"
   FASTInputFileName: "t2_test18.fst"
   TurbID:  10
@@ -102,8 +82,6 @@ Turbine9:
 Turbine10:
   procNo: 2
   TurbinePos: [ 0.0, 0.0, 0.0 ]
-  numScOutputs: 0
-  numScInputs: 0
   restartFileName: "blah"
   FASTInputFileName: "t1_test18.fst"
   TurbID:  11
@@ -111,8 +89,6 @@ Turbine10:
 Turbine11:
   procNo: 2
   TurbinePos: [ 0.0, 0.0, 0.0 ]
-  numScOutputs: 0
-  numScInputs: 0
   restartFileName: "blah"
   FASTInputFileName: "t2_test18.fst"
   TurbID:  12
@@ -120,8 +96,6 @@ Turbine11:
 Turbine12:
   procNo: 0
   TurbinePos: [ 0.0, 0.0, 0.0 ]
-  numScOutputs: 0
-  numScInputs: 0
   restartFileName: "blah"
   FASTInputFileName: "t1_test18.fst"
   TurbID:  13
@@ -129,8 +103,6 @@ Turbine12:
 Turbine13:
   procNo: 1
   TurbinePos: [ 0.0, 0.0, 0.0 ]
-  numScOutputs: 0
-  numScInputs: 0
   restartFileName: "blah"
   FASTInputFileName: "t2_test18.fst"
   TurbID:  14
@@ -138,8 +110,6 @@ Turbine13:
 Turbine14:
   procNo: 0
   TurbinePos: [ 0.0, 0.0, 0.0 ]
-  numScOutputs: 0
-  numScInputs: 0
   restartFileName: "blah"
   FASTInputFileName: "t1_test18.fst"
   TurbID:  15
@@ -147,8 +117,6 @@ Turbine14:
 Turbine15:
   procNo: 1
   TurbinePos: [ 0.0, 0.0, 0.0 ]
-  numScOutputs: 0
-  numScInputs: 0
   restartFileName: "blah"
   FASTInputFileName: "t2_test18.fst"
   TurbID:  16
@@ -156,8 +124,6 @@ Turbine15:
 Turbine16:
   procNo: 0
   TurbinePos: [ 0.0, 0.0, 0.0 ]
-  numScOutputs: 0
-  numScInputs: 0
   restartFileName: "blah"
   FASTInputFileName: "t1_test18.fst"
   TurbID:  17
@@ -165,8 +131,6 @@ Turbine16:
 Turbine17:
   procNo: 1
   TurbinePos: [ 0.0, 0.0, 0.0 ]
-  numScOutputs: 0
-  numScInputs: 0
   restartFileName: "blah"
   FASTInputFileName: "t2_test18.fst"
   TurbID:  18
@@ -174,8 +138,6 @@ Turbine17:
 Turbine18:
   procNo: 0
   TurbinePos: [ 0.0, 0.0, 0.0 ]
-  numScOutputs: 0
-  numScInputs: 0
   restartFileName: "blah"
   FASTInputFileName: "t1_test18.fst"
   TurbID:  19
@@ -183,8 +145,6 @@ Turbine18:
 Turbine19:
   procNo: 1
   TurbinePos: [ 0.0, 0.0, 0.0 ]
-  numScOutputs: 0
-  numScInputs: 0
   restartFileName: "blah"
   FASTInputFileName: "t2_test18.fst"
   TurbID:  20
