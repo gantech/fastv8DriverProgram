@@ -8,14 +8,15 @@ if [ -f $CWD/PASS ]; then
     # already ran this test
     didSimulationDiffAnywhere=0
 else
+    make -f makefile_DISCON_DLL &> log.make_DISCON_DLL
     cp cDriver.i.1 cDriver.i
-    mpirun -np 1 $FAST &> log.Test02.1
+    $FAST &> log.Test02.1
     cp cDriver.i.2 cDriver.i
-    mpirun -np 1 $FAST &> log.Test02.2
+    $FAST &> log.Test02.2
     cp cDriver.i.3 cDriver.i
-    mpirun -np 1 $FAST &> log.Test02.3
+    $FAST &> log.Test02.3
     cp cDriver.i.4 cDriver.i
-    mpirun -np 1 $FAST &> log.Test02.4
+    $FAST &> log.Test02.4
     determine_pass_fail Test02.T1.outb Test02.nativeFortran.outb
     didSimulationDiffAnywhere="$?"
 fi

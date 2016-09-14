@@ -8,7 +8,7 @@ if [ -f $CWD/PASS ]; then
     # already ran this test
     didSimulationDiffAnywhere=0
 else
-    make -f makefile_DISCON_DLL
+    make -f makefile_DISCON_DLL &> log.make_DISCON_DLL
     $FAST &> log.Test01
     determine_pass_fail Test01.T1.outb Test01.nativeFortran.outb
     didSimulationDiffAnywhere="$?"
