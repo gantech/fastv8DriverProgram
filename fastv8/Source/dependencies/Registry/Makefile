@@ -12,7 +12,7 @@ endif
 # i586-mingw32msvc-gcc
 #CC_TOOLS = i586-mingw32msvc-gcc
 CC_TOOLS = gcc
-DEST_DIR = ..
+DEST_DIR = ../../../bin/
 CFLAGS = #-ansi
 LDFLAGS =
 DEBUG = -g
