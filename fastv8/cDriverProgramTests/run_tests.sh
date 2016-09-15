@@ -125,10 +125,12 @@ if [ ! -d "$FAST_DIR/runFv8cDPRtest/testCases/Test06" ]; then
 fi
 
 cd $FAST_DIR/runFv8cDPRtest/testCases/Test06
+cp $Fv8cDPRtest_DIR/testCases/Test06/makefile_DISCON_DLL $FAST_DIR/runFv8cDPRtest/testCases/Test06/
+cp $Fv8cDPRtest_DIR/testCases/Test06/makefileSC $FAST_DIR/runFv8cDPRtest/testCases/Test06/
+cp $Fv8cDPRtest_DIR/testCases/Test06/SC* $FAST_DIR/runFv8cDPRtest/testCases/Test06/
 cp $Fv8cDPRtest_DIR/testCases/Test06/t*Test06.fst $FAST_DIR/runFv8cDPRtest/testCases/Test06/
 cp $Fv8cDPRtest_DIR/testCases/Test06/cDriver.i* $FAST_DIR/runFv8cDPRtest/testCases/Test06/
 cp $Fv8cDPRtest_DIR/testCases/Test06/5MW_Baseline $FAST_DIR/runFv8cDPRtest/testCases/Test06/ -r
-cp $Fv8cDPRtest_DIR/testCases/Test06/libScontroller.so $FAST_DIR/runFv8cDPRtest/testCases/Test06/
 cp $Fv8cDPRtest_DIR/testCases/Test06/test06.sh $FAST_DIR/runFv8cDPRtest/testCases/Test06/
 cp $Fv8cDPRtest_DIR/testCases/Test06/t*Test06.nativeFortran.outb $FAST_DIR/runFv8cDPRtest/testCases/Test06/
 # run it...  

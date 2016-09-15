@@ -8,6 +8,8 @@ if [ -f $CWD/PASS ]; then
     # already ran this test
     didSimulationDiffAnywhere=0
 else
+    make -f makefile_DISCON_DLL &> log.make_DISCON_DLL
+    make -f makefileSC &> log.makeSC
     cp cDriver.i.1 cDriver.i
     mpirun -np 2 $FAST &> log.Test06.1
     cp cDriver.i.2 cDriver.i

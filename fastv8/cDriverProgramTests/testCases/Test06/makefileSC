@@ -1,0 +1,37 @@
+#================================================================================#
+# This makefile created by G. Vijayakumar on 14-Sept-2016                        #
+# (c) 2016 National Renewable Energy Laboratory                                  #
+#                                                                                #
+# This makefile has been tested on Linux x64 with gfortran-4.8.                  #
+#                                                                                #
+# It was designed to be used with SC.c for a supercontroller for FAST            #
+#================================================================================#
+
+# Location of source files for the DLL.
+# You may need to change these for your DLL.
+
+SOURCE_DIR  = ../../../Source
+
+   # Name of compiler to use and flags to use.
+CPP     = mpic++
+
+# Rule to do everything.
+
+all:     libScontroller.so
+
+   # General rules for compliling the files.
+
+libScontroller.so: SC.c SC.h
+	$(CPP) -std=c++11 -fPIC -shared -I$(SOURCE_DIR)/dependencies/SuperController -o libScontroller.so \
+        SC.c $(HDF5_INC) -L/nopt/nrel/apps/hdf5/1.8.12-openmpi-gcc/lib -lz -lhdf5_hl -Wl,-rpath=/nopt/nrel/apps/hdf5/1.8.12-openmpi-gcc/lib -lhdf5 -Wl,-rpath=/nopt/nrel/apps/hdf5/1.8.12-openmpi-gcc/lib
+
+   # Cleanup afterwards.
+
+clean:
+	$(DEL_CMD) libScontroller.so
+
+
+
+
+
+

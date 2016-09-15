@@ -16,7 +16,7 @@ BITS = 64
    # You may need to change these for your DLL.
 
 SOURCE_DIR  = ../Source
-SOURCE_FILES = FAST_cInterface.c FAST_ProgC.c SC.c
+SOURCE_FILES = FAST_cInterface.c FAST_ProgC.c 
 
 
    # Name of compiler to use and flags to use.
@@ -56,8 +56,7 @@ ALL_OBJS   = $(patsubst %,$(INTER_DIR)/%,$(_ALL_OBJS))
 # Rule to do everything.
 
 all:     default
-cppOnly: $(INTER_DIR) $(DEST_DIR)/FAST_ProgC$(EXE_EXT)  $(DEST_DIR)/libScontroller.so
-default:  $(INTER_DIR) $(DEST_DIR)/FAST_ProgC$(EXE_EXT) $(DEST_DIR)/FAST_ProgC$(EXE_EXT)
+default:  $(INTER_DIR) $(DEST_DIR)/FAST_ProgC$(EXE_EXT)
 
    # General rules for compliling the files.
 
@@ -74,17 +73,9 @@ $(INTER_DIR):
 
    # For linking 
 
-$(DEST_DIR)/FAST_ProgC$(EXE_EXT): $(INTER_DIR)/FAST_ProgC.o
-	$(CC) $(CFLAGS) -o $(DEST_DIR)/FAST_ProgC$(EXE_EXT) \
-	$(INTER_DIR)/FAST_ProgC.o $(LDFLAGS)
-
 $(DEST_DIR)/FAST_ProgC$(EXE_EXT): $(INTER_DIR)/FAST_ProgC.o $(INTER_DIR)/FAST_cInterface.o
 	$(CPP) $(CFLAGS) -o $(DEST_DIR)/FAST_ProgC$(EXE_EXT) \
 	$(INTER_DIR)/FAST_ProgC.o $(INTER_DIR)/FAST_cInterface.o $(LDFLAGS)
-
-$(DEST_DIR)/libScontroller.so: $(SOURCE_DIR)/SC.c $(SOURCE_DIR)/SC.h
-	$(CPP) -std=c++11 -fPIC -shared -I$(SOURCE_DIR)/dependencies/SuperController -o $(DEST_DIR)/libScontroller.so \
-        $(SOURCE_DIR)/SC.c $(HDF5_INC) -L/nopt/nrel/apps/hdf5/1.8.12-openmpi-gcc/lib -lz -lhdf5_hl -Wl,-rpath=/nopt/nrel/apps/hdf5/1.8.12-openmpi-gcc/lib -lhdf5 -Wl,-rpath=/nopt/nrel/apps/hdf5/1.8.12-openmpi-gcc/lib
 
    # Cleanup afterwards.
 
