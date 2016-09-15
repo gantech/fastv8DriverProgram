@@ -2,3 +2,11 @@ bin/
 Compiling/Obj_lin32/
 Compiling/Obj_lin64/
 runFv8cDPRtest/
+Compiling/log.make
+Compiling/log.makeCDriverProg
+Compiling/log.make_DISCON_DLL
+Compiling/log.make_FAST_Prog
+Source/dependencies/Registry/log.make
+Source/dependencies/map-plus-plus/src/log.make
+include/
+lib/
