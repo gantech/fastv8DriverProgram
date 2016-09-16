@@ -9,7 +9,7 @@
 
 
    # Name of compiler to use and flags to use.
-FC      = gfortran
+FC      = ifort
 
 # 32-bit or 64-bit?
 #BITS = 32
@@ -23,9 +23,8 @@ FAST_driver = FAST_Library
 #================================================================================#
 
 
-
-FFLAGS  = -O0 -g -pg -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -DDOUBLE_PRECISION  -fdefault-real-8 
-LDFLAGS = -O0 -g -pg -m$(BITS) -fbacktrace
+FFLAGS  = -fpp -threads -O0 -g -finline-functions -real-size 64 -double-size 128 -DDOUBLE_PRECISION 
+LDFLAGS = -fpp -threads -O0 -g -finline-functions -real-size 64 -double-size 128
 
 #FFLAGS  = -O0 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input
 #FFLAGS  = -O0 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -g -pg
@@ -120,7 +119,7 @@ else
    else
         # ifeq ($(UNAME), Linux)
         # bjj verify this: # I've been told that the lapack linking needs to occur at the end of the line (after all the object files) on linux:
-      LAPACK_LINK  = -Wl,-rpath,/nopt/intel/13.0/composer_xe_2013.3.163/mkl/lib/intel64 -Wl,-rpath,/nopt/intel/13.0/composer_xe_2013.3.163/mkl/../compiler/lib/intel64 -L/nopt/intel/13.0/composer_xe_2013.3.163/mkl/lib/intel64 -L/nopt/intel/13.0/composer_xe_2013.3.163/mkl/../compiler/lib/intel64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm
+      LAPACK_LINK  = -Wl,-rpath,/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/lib/intel64 -Wl,-rpath,/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/../compiler/lib/intel64 -L/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/lib/intel64 -L/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/../compiler/lib/intel64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm
       #DLL_EXT     := so
    endif
 
@@ -423,13 +422,13 @@ default:  $(INTER_DIR) $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT)
    # General rules for compiling the files.
 
 %$(OBJ_EXT): %.f90
-	$(FC) -I $(INTER_DIR) $(FFLAGS) -c $< -o $(INTER_DIR)/$@ -J $(INTER_DIR) -B $(INTER_DIR)
+	$(FC) -I $(INTER_DIR) $(FFLAGS) -c $< -o $(INTER_DIR)/$@ -module $(INTER_DIR) -B $(INTER_DIR)
 
 %$(OBJ_EXT): %.F90
-	$(FC) -I $(INTER_DIR) $(FFLAGS) -c $< -o $(INTER_DIR)/$@ -J $(INTER_DIR) -B $(INTER_DIR)
+	$(FC) -I $(INTER_DIR) $(FFLAGS) -c $< -o $(INTER_DIR)/$@ -module $(INTER_DIR) -B $(INTER_DIR)
 
 %$(OBJ_EXT): %.f
-	$(FC) -I $(INTER_DIR) $(FFLAGS) -c $< -o $(INTER_DIR)/$@ -J $(INTER_DIR) -B $(INTER_DIR)
+	$(FC) -I $(INTER_DIR) $(FFLAGS) -c $< -o $(INTER_DIR)/$@ -module $(INTER_DIR) -B $(INTER_DIR)
 
 
 

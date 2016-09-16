@@ -22,9 +22,9 @@ SOURCE_DIR     = 5MW_Baseline/ServoData/Source/
 SOURCE_FILES = DISCON_SC1.f90 DISCON_SC2.f90
 
    # Name of compiler to use and flags to use.
-FC      = gfortran
-FFLAGS  = -O0 -g -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input 
-LDFLAGS = -shared -O0 -g -m$(BITS) -fbacktrace
+FC      = ifort
+FFLAGS  = -fpp -threads -O2 -finline-functions -xhost -real-size 64 -double-size 128 -C
+LDFLAGS = -shared -fpp -threads -O2 -finline-functions -xhost -real-size 64 -double-size 128
 
 # other useful gfortran options:
 #  -fdefault-real-8 -fcheck=bounds -std=f2003 -O0 -v

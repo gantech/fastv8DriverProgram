@@ -92,6 +92,10 @@ CONTAINS
 !=======================================================================
    FUNCTION FileSize( Unit )
 
+#ifndef __GFORTRAN__
+    USE IFPORT
+#else
+#endif
 
       ! This function calls the portability routine, FSTAT, to obtain the file size
       ! in bytes corresponding to a file unit number or returns -1 on error.
@@ -148,7 +152,10 @@ CONTAINS
 !bjj note: this subroutine is not tested for this compiler
    SUBROUTINE Get_CWD ( DirName, Status )
 
-
+#ifndef __GFORTRAN__
+    USE IFPORT
+#else
+#endif
       ! This routine retrieves the path of the current working directory.
 
 
@@ -432,7 +439,11 @@ CONTAINS
 
 !   WRITE (CU,'(1X,A)',ADVANCE='NO')  Str
    WRITE (CU,'(A)',ADVANCE='NO')  Str
-
+   
+#ifndef __GFORTRAN__
+      FLUSH(CU)
+#else
+#endif
 
    RETURN
    END SUBROUTINE WrNR ! ( Str )
@@ -465,7 +476,11 @@ CONTAINS
       WRITE (Fmt(5:7),'(I3)')  NChars
 
       WRITE (CU,Fmt,ADVANCE='NO')  CR, Str
-
+   
+#ifndef __GFORTRAN__
+      FLUSH(CU)
+#else
+#endif
    ELSE
       ! bjj: note that this will almost certainly write more than MaxWrScrLen characters on a line
       WRITE (CU,'(A)',ADVANCE='NO')  CR, Str
