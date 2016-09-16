@@ -20,8 +20,8 @@ SOURCE_FILES = FAST_cInterface.c FAST_ProgC.c
 
 
    # Name of compiler to use and flags to use.
-CC      = mpicc
-CPP     = mpic++
+CC      = mpiicc
+CPP     = mpiicpc
 CFLAGS  = -O0 -g -DHAVE_MPI
 
    # Destination and RootName for executable
@@ -47,7 +47,7 @@ SYS_FILE  = SysGnuLinux
 
 UNAME := $(shell uname -s)
 
-CFLAGS     := $(CFLAGS) -fPIC -fpermissive -std=c++11
+CFLAGS     := $(CFLAGS) -fPIC -fpermissive -std=c++11 -xhost
 LDFLAGS    = -fPIC -L$(FASTLIB_DIR) -L$(YAMLCPPLIB_DIR) -lFAST_glin$(BITS) -lmap-1.20.10 -lyaml-cpp -ldl
 
 _ALL_OBJS  = $(SOURCE_FILE:.c=$(OBJ_EXT))

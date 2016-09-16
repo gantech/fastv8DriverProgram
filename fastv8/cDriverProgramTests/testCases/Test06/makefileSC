@@ -13,7 +13,7 @@
 SOURCE_DIR  = ../../../Source
 
    # Name of compiler to use and flags to use.
-CPP     = mpic++
+CPP     = mpiicpc
 
 # Rule to do everything.
 
