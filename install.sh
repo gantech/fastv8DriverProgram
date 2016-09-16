@@ -51,7 +51,7 @@ compileYAMLcpp() {
     cd build
     passFail $?
     echo -n "   Configuring"
-    cmake ../yaml-cpp/ -DCMAKE_INSTALL_PREFIX=../../../../ &> log.cmake
+    cmake ../yaml-cpp/ -DCMAKE_CXX_COMPILER=icpc -DCMAKE_CXX_FLAGS=-std=c++11 -DCMAKE_INSTALL_PREFIX=../../../../ &> log.cmake
     passFail $? 
     echo -n "   Compiling"
     make &> log.make
