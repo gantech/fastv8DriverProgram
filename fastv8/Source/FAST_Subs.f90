@@ -558,14 +558,13 @@ SUBROUTINE FAST_InitializeAll( t_initial, p_FAST, y_FAST, m_FAST, ED, BD, SrvD, 
          InitInData_SC%NumSC2Ctrl = ExternInitData%NumSC2Ctrl
          InitInData_SC%NumCtrl2SC = ExternInitData%NumCtrl2SC  
       ELSE
-         CALL SetErrStat( ErrID_Fatal, 'SuperController integration can be used only with external input data (not the stand-alone executable).', ErrStat, ErrMsg, RoutineName )
-         CALL Cleanup()
-         RETURN         
+         InitInData_SC%NumSC2Ctrl = 0
+         InitInData_SC%NumCtrl2SC = 0
       END IF
       
          ! set up the data structures for integration with supercontroller
       CALL Init_SC( InitInData_SC, SC, ErrStat2, ErrMsg2 )
-         CALL SetErrStat(ErrStat2,ErrMsg2,ErrStat,ErrMsg,RoutineName)
+      CALL SetErrStat(ErrStat2,ErrMsg2,ErrStat,ErrMsg,RoutineName)
       
       IF (ErrStat >= AbortErrLev) THEN
          CALL Cleanup()

@@ -291,6 +291,7 @@ typedef	^	^	OpFM_MiscVarType	m	-	-	-	"Parameters"
 # ..... SuperController integration data .......................................................................................................
 typedef	FAST	SuperController_Data	SC_InputType	u	-	-	-	"System inputs"
 typedef	^	^	SC_OutputType	y	-	-	-	"System outputs"
+typedef	^	^	SC_ParameterType	p	-	-	-	"System parameters"
 
 # ..... SubDyn data .......................................................................................................
 typedef	FAST	SubDyn_Data	SD_ContinuousStateType	x	{2}	-	-	"Continuous states"

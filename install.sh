@@ -76,7 +76,7 @@ compileFAST() {
     make FAST_driver=FAST_Prog &> log.make_FAST_Prog #Fortran driver program
     passFail $?
     echo -n "   Compiling C driver program"
-    make -f makefileCDriverProg cppOnly &> log.makeCDriverProg #C driver program
+    make -f makefileCDriverProg &> log.makeCDriverProg #C driver program
     passFail $?
 }
 

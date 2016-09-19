@@ -97,7 +97,13 @@ SUBROUTINE Init_SC( InitInp, SC, ErrStat, ErrMsg )
       SC%y%c_obj%fromSC     = C_LOC( SC%y%fromSC(1) )
    end if
    
-   
+
+   if( (InitInp%NumSC2Ctrl > 0) .and. (InitInp%NumSC2Ctrl > 0)) then
+      SC%p%scOn = .true. 
+   else
+      SC%p%scOn = .false.
+   end if
+
    RETURN
    
 END SUBROUTINE Init_SC
