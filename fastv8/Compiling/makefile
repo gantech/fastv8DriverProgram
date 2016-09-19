@@ -23,8 +23,8 @@ FAST_driver = FAST_Library
 #================================================================================#
 
 
-FFLAGS  = -fpp -threads -O0 -g -finline-functions -real-size 64 -double-size 128 -DDOUBLE_PRECISION 
-LDFLAGS = -fpp -threads -O0 -g -finline-functions -real-size 64 -double-size 128
+FFLAGS  = -fpp -threads -O2 -xhost -mkl:sequential -finline-functions -real-size 64 -double-size 128 -DDOUBLE_PRECISION 
+LDFLAGS = -fpp -threads -O2 -xhost -mkl:sequential -finline-functions -real-size 64 -double-size 128
 
 #FFLAGS  = -O0 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input
 #FFLAGS  = -O0 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -g -pg
