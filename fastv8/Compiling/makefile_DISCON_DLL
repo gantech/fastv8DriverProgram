@@ -19,12 +19,12 @@ BITS = 64
 
 DLL_DIR     = ../CertTest/5MW_Baseline/ServoData/Source/
 
-SOURCE_FILES = DISCON.f90 DISCON2.f90 DISCON3.f90 DISCON4.f90 DISCON_SC.f90 DISCON_SC1.f90 DISCON_SC2.f90
+SOURCE_FILES = DISCON.f90 DISCON2.f90 DISCON3.f90 DISCON4.f90 DISCON_SC.f90 DISCON_SC1.f90 DISCON_SC2.f90  DISCON_ITIBarge.f90   DISCON_OC3Hywind.f90
 
    # Name of compiler to use and flags to use.
 FC      = ifort
-FFLAGS  = -fpp -threads -O2 -finline-functions -xhost -real-size 64 -double-size 128 -C
-LDFLAGS = -shared -fpp -threads -O2 -finline-functions -xhost -real-size 64 -double-size 128
+FFLAGS  = -fpp -threads -O0 -finline-functions -xhost -real-size 64 -double-size 128 -C -DDOUBLE_PRECISION
+LDFLAGS = -fpp -threads -O0 -finline-functions -xhost -real-size 64 -double-size 128 -shared
 
 # other useful gfortran options:
 #  -fdefault-real-8 -fcheck=bounds -std=f2003 -O0 -v
@@ -86,7 +86,7 @@ ALL_OBJS      = $(DLL_SOURCES:.f90=$(OBJ_EXT))
    # Rule to do everything.
 
 all:     default
-default:  $(INTER_DIR) $(DEST_DIR)/libDISCON$(SOBJ_EXT) $(DEST_DIR)/libDISCON2$(SOBJ_EXT) $(DEST_DIR)/libDISCON3$(SOBJ_EXT) $(DEST_DIR)/libDISCON4$(SOBJ_EXT) $(DEST_DIR)/libDISCON_SC$(SOBJ_EXT) $(DEST_DIR)/libDISCON_SC1$(SOBJ_EXT) $(DEST_DIR)/libDISCON_SC2$(SOBJ_EXT)
+default:  $(INTER_DIR) $(DEST_DIR)/libDISCON$(SOBJ_EXT) $(DEST_DIR)/libDISCON2$(SOBJ_EXT) $(DEST_DIR)/libDISCON3$(SOBJ_EXT) $(DEST_DIR)/libDISCON4$(SOBJ_EXT) $(DEST_DIR)/libDISCON_SC$(SOBJ_EXT) $(DEST_DIR)/libDISCON_SC1$(SOBJ_EXT) $(DEST_DIR)/libDISCON_SC2$(SOBJ_EXT) $(DEST_DIR)/libDISCON_ITIBarge$(SOBJ_EXT) $(DEST_DIR)/libDISCON_OC3Hywind$(SOBJ_EXT)
 
    # General rules for compliling the files.
 
@@ -124,6 +124,13 @@ $(DEST_DIR)/libDISCON_SC1$(SOBJ_EXT): DISCON_SC1$(OBJ_EXT) | $(INTER_DIR)
 
 $(DEST_DIR)/libDISCON_SC2$(SOBJ_EXT): DISCON_SC2$(OBJ_EXT) | $(INTER_DIR)
 	$(FC) $(LDFLAGS) -I $(INTER_DIR) -o $(DEST_DIR)/libDISCON_SC2$(SOBJ_EXT) $(INTER_DIR)/DISCON_SC2$(OBJ_EXT)
+
+$(DEST_DIR)/libDISCON_ITIBarge$(SOBJ_EXT): DISCON_ITIBarge$(OBJ_EXT) | $(INTER_DIR)
+	$(FC) $(LDFLAGS) -I $(INTER_DIR) -o $(DEST_DIR)/libDISCON_ITIBarge$(SOBJ_EXT) $(INTER_DIR)/DISCON_ITIBarge$(OBJ_EXT)
+
+$(DEST_DIR)/libDISCON_OC3Hywind$(SOBJ_EXT): DISCON_OC3Hywind$(OBJ_EXT) | $(INTER_DIR)
+	$(FC) $(LDFLAGS) -I $(INTER_DIR) -o $(DEST_DIR)/libDISCON_OC3Hywind$(SOBJ_EXT) $(INTER_DIR)/DISCON_OC3Hywind$(OBJ_EXT)
+
 
    # Cleanup afterwards.
 
