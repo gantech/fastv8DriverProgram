@@ -9,6 +9,27 @@
 # It was designed to be used with discon.f90 for the Bladed DLL Interface        #
 #================================================================================#
 
+#COMPILER options - gnu, intel, intelPhi
+#COMPILER = intelPhi
+
+#BUILD options - RELEASE, DEBUG
+#BUILD = RELEASE
+
+   # Name of compiler to use and flags to use.
+ifeq ($(COMPILER),gnu)
+	FC = gfortran
+else ifeq ($(COMPILER),intel)
+	FC      = ifort
+else ifeq ($(COMPILER),intelPhi)
+	FC      = ifort
+endif
+
+ifeq ($(BUILD),RELEASE)
+	OPT_OPTIONS = -O2
+else ifeq ($(BUILD),DEBUG)
+	OPT_OPTIONS = -O0 -g
+endif
+
    # 32-bit or 64-bit?
 #BITS = 32
 BITS = 64
@@ -22,9 +43,16 @@ DLL_DIR     = ../CertTest/5MW_Baseline/ServoData/Source/
 SOURCE_FILES = DISCON.f90 DISCON2.f90 DISCON3.f90 DISCON4.f90 DISCON_SC.f90 DISCON_SC1.f90 DISCON_SC2.f90  DISCON_ITIBarge.f90   DISCON_OC3Hywind.f90
 
    # Name of compiler to use and flags to use.
-FC      = ifort
-FFLAGS  = -fpp -threads -O0 -finline-functions -xhost -real-size 64 -double-size 128 -C -DDOUBLE_PRECISION
-LDFLAGS = -fpp -threads -O0 -finline-functions -xhost -real-size 64 -double-size 128 -shared
+ifeq ($(COMPILER),gnu)
+     FFLAGS  = -m$(BITS) $(OPT_OPTIONS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -DDOUBLE_PRECISION  -fdefault-real-8 -C
+     LDFLAGS = -m$(BITS) $(OPT_OPTIONS) -fbacktrace -shared
+else ifeq ($(COMPILER),intel)
+     FFLAGS  = -fpp -threads $(OPT_OPTIONS) -fp-model precise -finline-functions -real-size 64 -double-size 128 -DDOUBLE_PRECISION 
+     LDFLAGS = -fpp -threads $(OPT_OPTIONS) -fp-model precise -finline-functions -real-size 64 -double-size 128 -shared
+else ifeq ($(COMPILER),intelPhi)
+     FFLAGS  = -fpp -threads $(OPT_OPTIONS) -fp-model strict -mmic -mkl:sequential -finline-functions -real-size 64 -double-size 128 -DDOUBLE_PRECISION 
+     LDFLAGS = -fpp -threads $(OPT_OPTIONS) -fp-model strict -mmic -mkl:sequential -finline-functions -real-size 64 -double-size 128 -shared
+endif
 
 # other useful gfortran options:
 #  -fdefault-real-8 -fcheck=bounds -std=f2003 -O0 -v
@@ -57,7 +85,13 @@ else
 
       # Linux
    DEL_CMD   = rm -f
-   SOBJ_EXT   = _glin$(BITS).so
+   ifeq ($(COMPILER),gnu)
+	SOBJ_EXT   = _glin$(BITS).so
+   else ifeq ($(COMPILER),intel)
+	SOBJ_EXT   = _ilin$(BITS).so
+   else ifeq ($(COMPILER),intelPhi)
+	SOBJ_EXT   = _iphilin$(BITS).so
+   endif
    INTER_DIR = Obj_lin$(BITS)
    MD_CMD    = @mkdir -p
    OBJ_EXT   = .o
@@ -72,6 +106,11 @@ else
    endif
 endif
 
+ifeq ($(COMPILER),gnu)
+	MODULEFLAGS = 
+else
+	MODULEFLAGS = -module $(INTER_DIR)
+endif
 
    # Source files (by module)
 
@@ -91,7 +130,7 @@ default:  $(INTER_DIR) $(DEST_DIR)/libDISCON$(SOBJ_EXT) $(DEST_DIR)/libDISCON2$(
    # General rules for compliling the files.
 
 %$(OBJ_EXT): %.f90
-	$(FC)  $(FFLAGS) -c $< -o $(INTER_DIR)/$@ -module $(INTER_DIR) -B $(INTER_DIR)
+	$(FC)  $(FFLAGS) -c $< -o $(INTER_DIR)/$@ $(MODULEFLAGS) -B $(INTER_DIR)
 
 
    #  Dependency rules.

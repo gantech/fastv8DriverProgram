@@ -8,6 +8,33 @@
 # It was designed to be used with FAST_ProgC.c for a C driver program for FAST    #
 #================================================================================#
 
+#COMPILER options - gnu, intel, intelPhi
+#COMPILER = intelPhi
+
+#BUILD options - release, debug
+#BUILD = release
+
+#LAPACK options - lapack, mkl
+#LAPACK = LAPACK
+
+   # Name of compiler to use and flags to use.
+ifeq ($(COMPILER),gnu)
+     CC = mpicc
+     CPP = mpic++
+else ifeq ($(COMPILER),intel)
+     CC = mpiicc
+     CPP = mpiicpc
+else ifeq ($(COMPILER),intelPhi)
+     CC = mpiicc
+     CPP = mpiicpc
+endif
+
+ifeq ($(BUILD),release)
+	OPT_OPTIONS = -O2
+else ifeq ($(BUILD),debug)
+	OPT_OPTIONS = -O0 -g
+endif
+
    # 32-bit or 64-bit?
 #BITS = 32
 BITS = 64
@@ -20,9 +47,24 @@ SOURCE_FILES = FAST_cInterface.c FAST_ProgC.c
 
 
    # Name of compiler to use and flags to use.
-CC      = mpiicc
-CPP     = mpiicpc
-CFLAGS  = -O0 -g -DHAVE_MPI
+ifeq ($(COMPILER),gnu)
+        CFLAGS = $(OPT_OPTIONS) -fPIC -fpermissive -std=c++11 -DHAVE_MPI
+	LDFLAGS = -fPIC -L$(FASTLIB_DIR) -L$(YAMLCPPLIB_DIR) -lFAST_glin$(BITS)_$(BUILD) -lmap-1.20.10 -lyaml-cpp -ldl
+	ifeq ($(LAPACK),lapack)
+		LAPACK_LINK = -L$(FASTLIB_DIR)$(BITS) -llapack -lblas -llapacke -lm
+	else ifeq ($(LAPACK),mkl)
+		LAPACK_LINK = -Wl,-rpath,/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/lib/intel64 -Wl,-rpath,/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/../compiler/lib/intel64 -L/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/lib/intel64 -L/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/../compiler/lib/intel64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm
+	endif
+else ifeq ($(COMPILER),intel)
+	CFLAGS  = $(OPT_OPTIONS) -fpermissive -fp-model strict -xhost -DHAVE_MPI -fPIC -std=c++11 
+	LDFLAGS    = -fPIC -L$(FASTLIB_DIR) -L$(YAMLCPPLIB_DIR) -lFAST_ilin$(BITS)_$(BUILD) -lmap-1.20.10 -lyaml-cpp -ldl
+	LAPACK_LINK = -Wl,-rpath,/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/lib/intel64 -Wl,-rpath,/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/../compiler/lib/intel64 -L/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/lib/intel64 -L/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/../compiler/lib/intel64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm
+else ifeq ($(COMPILER),intelPhi)
+	CFLAGS  = $(OPT_OPTIONS) -fpermissive -fp-model strict -mmic -DHAVE_MPI -fPIC -fpermissive -std=c++11 
+	LDFLAGS    = -fPIC -L$(FASTLIB_DIR) -L$(YAMLCPPLIB_DIR) -lFAST_iphilin$(BITS)_$(BUILD) -lmap-1.20.10 -lyaml-cpp -ldl
+	LAPACK_LINK  = -Wl,-rpath,/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/lib/mic -Wl,-rpath,/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/../compiler/lib/mic -L/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/lib/mic -L/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/../compiler/lib/mic -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm
+endif
+
 
    # Destination and RootName for executable
 
@@ -38,7 +80,13 @@ DEST_DIR    = ../bin
 #Currently only supports Linux
 # System-specific settings.
 DEL_CMD   = rm -f
-EXE_EXT   = _glin$(BITS)
+ifeq ($(COMPILER),gnu)
+	EXE_EXT   = _glin$(BITS)_$(BUILD)
+else ifeq ($(COMPILER),intel)
+	EXE_EXT   = _ilin$(BITS)_$(BUILD)
+else ifeq ($(COMPILER),intelPhi)
+	EXE_EXT   = _iphilin$(BITS)_$(BUILD)
+endif
 INTER_DIR = Obj_lin$(BITS)
 MD_CMD    = @mkdir -p
 OBJ_EXT   = .o
@@ -46,9 +94,6 @@ PATH_SEP  = /
 SYS_FILE  = SysGnuLinux
 
 UNAME := $(shell uname -s)
-
-CFLAGS     := $(CFLAGS) -fPIC -fpermissive -std=c++11 -xhost
-LDFLAGS    = -fPIC -L$(FASTLIB_DIR) -L$(YAMLCPPLIB_DIR) -lFAST_glin$(BITS) -lmap-1.20.10 -lyaml-cpp -ldl
 
 _ALL_OBJS  = $(SOURCE_FILE:.c=$(OBJ_EXT))
 ALL_OBJS   = $(patsubst %,$(INTER_DIR)/%,$(_ALL_OBJS))
@@ -75,16 +120,10 @@ $(INTER_DIR):
 
 $(DEST_DIR)/FAST_ProgC$(EXE_EXT): $(INTER_DIR)/FAST_ProgC.o $(INTER_DIR)/FAST_cInterface.o
 	$(CPP) $(CFLAGS) -o $(DEST_DIR)/FAST_ProgC$(EXE_EXT) \
-	$(INTER_DIR)/FAST_ProgC.o $(INTER_DIR)/FAST_cInterface.o $(LDFLAGS)
+	$(INTER_DIR)/FAST_ProgC.o $(INTER_DIR)/FAST_cInterface.o $(LDFLAGS) $(LAPACK_LINK)
 
    # Cleanup afterwards.
 
 clean:
 	$(DEL_CMD) $(INTER_DIR)$(PATH_SEP)FAST_ProgC$(OBJ_EXT) $(INTER_DIR)$(PATH_SEP)FAST_cInterface$(OBJ_EXT) $(INTER_DIR)$(PATH_SEP)FAST_ProgC$(OBJ_EXT)
 #	$(DEL_CMD) $(INTER_DIR)$(PATH_SEP)*$(OBJ_EXT) $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT)
-
-
-
-
-
-

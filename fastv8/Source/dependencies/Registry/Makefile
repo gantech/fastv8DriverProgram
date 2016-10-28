@@ -9,12 +9,22 @@ else
 endif
 .SUFFIXES: .c .o
 
+#COMPILER options - gnu, intel, intelPhi
+#COMPILER = intelPhi
+
 # i586-mingw32msvc-gcc
 #CC_TOOLS = i586-mingw32msvc-gcc
-CC_TOOLS = icc
+   # Name of compiler to use and flags to use.
+ifeq ($(COMPILER),gnu)
+	CC_TOOLS = gcc
+else ifeq ($(COMPILER),intel)
+	CC_TOOLS = icc
+else ifeq ($(COMPILER),intelPhi)
+	CC_TOOLS = icc
+	CFLAGS = -mmic 
+	LDFLAGS = -mmic
+endif
 DEST_DIR = ../../../bin/
-CFLAGS = #-ansi
-LDFLAGS =
 DEBUG = -g
 OBJ = registry.o \
 	my_strtok.o \

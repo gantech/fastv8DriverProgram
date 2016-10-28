@@ -7,9 +7,29 @@
 #                                                                                #
 #================================================================================#
 
+#COMPILER options - gnu, intel, intelPhi
+#COMPILER = intelPhi
+
+#BUILD options - release, debug
+#BUILD = release
+
+#LAPACK options - lapack, mkl
+#LAPACK = LAPACK
 
    # Name of compiler to use and flags to use.
-FC      = ifort
+ifeq ($(COMPILER),gnu)
+	FC = gfortran
+else ifeq ($(COMPILER),intel)
+	FC      = ifort
+else ifeq ($(COMPILER),intelPhi)
+	FC      = ifort
+endif
+
+ifeq ($(BUILD),release)
+	OPT_OPTIONS = -O2
+else ifeq ($(BUILD),debug)
+	OPT_OPTIONS = -O0 -g
+endif
 
 # 32-bit or 64-bit?
 #BITS = 32
@@ -22,13 +42,16 @@ FAST_driver = FAST_Library
 #FAST_driver = FAST_Prog
 #================================================================================#
 
-
-FFLAGS  = -fpp -threads -O2 -xhost -mkl:sequential -finline-functions -real-size 64 -double-size 128 -DDOUBLE_PRECISION 
-LDFLAGS = -fpp -threads -O2 -xhost -mkl:sequential -finline-functions -real-size 64 -double-size 128
-
-#FFLAGS  = -O0 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input
-#FFLAGS  = -O0 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -g -pg
-#LDFLAGS = -O0 -m$(BITS) -fbacktrace  -g -pg
+ifeq ($(COMPILER),gnu)
+	FFLAGS  = -pg -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -DDOUBLE_PRECISION  -fdefault-real-8 $(OPT_OPTIONS)
+	LDFLAGS = -pg -m$(BITS) -fbacktrace $(OPT_OPTIONS)
+else ifeq ($(COMPILER),intel)
+	FFLAGS  = -fpp -threads $(OPT_OPTIONS) -fp-model strict -xhost -mkl:sequential -finline-functions -real-size 64 -double-size 128 -DDOUBLE_PRECISION 
+	LDFLAGS = -fpp -threads $(OPT_OPTIONS) -fp-model strict -xhost -mkl:sequential -finline-functions -real-size 64 -double-size 128
+else ifeq ($(COMPILER),intelPhi)
+	FFLAGS  = -fpp -threads $(OPT_OPTIONS) -fp-model strict -mmic -mkl:sequential -finline-functions -real-size 64 -double-size 128 -DDOUBLE_PRECISION 
+	LDFLAGS = -fpp -threads $(OPT_OPTIONS) -fp-model strict -mmic -mkl:sequential -finline-functions -real-size 64 -double-size 128
+endif
 
 #.........................................
 # preprocessor definitions:
@@ -119,7 +142,19 @@ else
    else
         # ifeq ($(UNAME), Linux)
         # bjj verify this: # I've been told that the lapack linking needs to occur at the end of the line (after all the object files) on linux:
-      LAPACK_LINK  = -Wl,-rpath,/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/lib/intel64 -Wl,-rpath,/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/../compiler/lib/intel64 -L/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/lib/intel64 -L/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/../compiler/lib/intel64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm
+
+	ifeq ($(COMPILER),gnu)
+		ifeq ($(LAPACK),lapack)
+			LAPACK_LINK = -L$(LIB_DIR)$(BITS) -llapack -lblas -llapacke -lm 
+		else ifeq ($(LAPACK),mkl)
+			LAPACK_LINK = -Wl,-rpath,/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/lib/intel64 -Wl,-rpath,/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/../compiler/lib/intel64 -L/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/lib/intel64 -L/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/../compiler/lib/intel64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm
+		endif
+	else ifeq ($(COMPILER),intel)
+		LAPACK_LINK  = -Wl,-rpath,/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/lib/intel64 -Wl,-rpath,/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/../compiler/lib/intel64 -L/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/lib/intel64 -L/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/../compiler/lib/intel64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm
+	else ifeq ($(COMPILER),intelPhi)
+# No choice of lapack here - Gotta use mkl
+		LAPACK_LINK  = -Wl,-rpath,/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/lib/mic -Wl,-rpath,/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/../compiler/lib/mic -L/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/lib/mic -L/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/../compiler/lib/mic -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm
+	endif
       #DLL_EXT     := so
    endif
 
@@ -189,13 +224,30 @@ else
    SYS_FILE  = SysGnuLinux
 
    ifeq ($(FAST_driver),FAST_Library)
-      EXE_EXT   = _glin$(BITS).so
+	ifeq ($(COMPILER),gnu)
+		EXE_EXT   = _glin$(BITS)_$(BUILD).so
+	else ifeq ($(COMPILER),intel)
+		EXE_EXT   = _ilin$(BITS)_$(BUILD).so
+	else ifeq ($(COMPILER),intelPhi)
+		EXE_EXT   = _iphilin$(BITS)_$(BUILD).so
+	endif
    else
-      EXE_EXT   = _glin$(BITS)
+	ifeq ($(COMPILER),gnu)
+		EXE_EXT   = _glin$(BITS)_$(BUILD)
+	else ifeq ($(COMPILER),intel)
+		EXE_EXT   = _ilin$(BITS)_$(BUILD)
+	else ifeq ($(COMPILER),intelPhi)
+		EXE_EXT   = _iphilin$(BITS)_$(BUILD)
+	endif
    endif
 
 endif
 
+ifeq ($(COMPILER),gnu)
+	MODULEFLAGS = 
+else
+	MODULEFLAGS = -module $(INTER_DIR)
+endif
 
    # Source files (by module)
 
@@ -422,14 +474,14 @@ default:  $(INTER_DIR) $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT)
    # General rules for compiling the files.
 
 %$(OBJ_EXT): %.f90
-	$(FC) -I $(INTER_DIR) $(FFLAGS) -c $< -o $(INTER_DIR)/$@ -module $(INTER_DIR) -B $(INTER_DIR)
+	$(FC) -I $(INTER_DIR) $(FFLAGS) -c $< -o $(INTER_DIR)/$@ $(MODULE_FLAGS) -B $(INTER_DIR)		
+
 
 %$(OBJ_EXT): %.F90
-	$(FC) -I $(INTER_DIR) $(FFLAGS) -c $< -o $(INTER_DIR)/$@ -module $(INTER_DIR) -B $(INTER_DIR)
+	$(FC) -I $(INTER_DIR) $(FFLAGS) -c $< -o $(INTER_DIR)/$@ $(MODULE_FLAGS) -B $(INTER_DIR)
 
 %$(OBJ_EXT): %.f
-	$(FC) -I $(INTER_DIR) $(FFLAGS) -c $< -o $(INTER_DIR)/$@ -module $(INTER_DIR) -B $(INTER_DIR)
-
+	$(FC) -I $(INTER_DIR) $(FFLAGS) -c $< -o $(INTER_DIR)/$@ $(MODULE_FLAGS) -B $(INTER_DIR)
 
 
    # General rules for creating _Types.f90 files from Registry files.
