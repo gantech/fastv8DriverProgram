@@ -244,9 +244,9 @@ else
 endif
 
 ifeq ($(COMPILER),gnu)
-	MODULEFLAGS = 
+	MODULE_FLAGS = -J $(INTER_DIR)
 else
-	MODULEFLAGS = -module $(INTER_DIR)
+	MODULE_FLAGS = -module $(INTER_DIR)
 endif
 
    # Source files (by module)
