@@ -2,24 +2,26 @@
 . ../../pass_fail.sh
 
 CWD=$(pwd)
-didSimulationDiffAnywhere=0
+didSimulationRun=0
 
 if [ -f $CWD/PASS ]; then
     # already ran this test
-    didSimulationDiffAnywhere=0
+    didSimulationRun=0
 else
+    cd 5MW_Baseline/ServoData/Source/
+    python generateTurbineControllerCases.py 8
+    cd ../../../
     make -f makefile_DISCON_DLL COMPILER=${COMPILER} BUILD=${BUILD} &> log.make_DISCON_DLL
     if [ "${COMPILER}" == 'intelPhi' ] ; then
-	ssh `hostname`-mic0 "cd $PWD; source ../../../../phi.env; $FAST &> log.Test01"
+	ssh `hostname`-mic0 "cd $PWD; source ../../../../phi.env; mpirun -np 8 $FAST &> log.Test07"
     else
-	$FAST &> log.Test01
+	mpirun -np 8 $FAST &> log.Test07
     fi
-    determine_pass_fail Test01.T1.outb Test01.nativeFortran.outb
-    didSimulationDiffAnywhere="$?"
+    didSimulationRun="$?"
 fi
 
 # write the file based on final status
-if [ "$didSimulationDiffAnywhere" -gt 0 ]; then
+if [ "$didSimulationRun" -gt 0 ]; then
     PASS_STATUS=0
 else
     PASS_STATUS=1
@@ -28,9 +30,10 @@ fi
 
 # report it; 30 spaces
 if [ $PASS_STATUS -ne 1 ]; then
-    echo -e "..Test01................ FAILED"
+    echo -e "..Test07................ FAILED"
 else
-    echo -e "..Test01................ PASSED"
+    echo -e "..Test07................ PASSED"
 fi
 
 exit
+

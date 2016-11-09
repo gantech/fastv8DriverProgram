@@ -40,7 +40,7 @@ BITS = 64
 
 SOURCE_DIR     = 5MW_Baseline/ServoData/Source/
 
-SOURCE_FILES = DISCON.f90
+CASE_SOURCEFILES
 
    # Name of compiler to use and flags to use.
 ifeq ($(COMPILER),gnu)
@@ -104,25 +104,6 @@ endif
    # Rule to do everything.
 
 all:     default
-default:  $(DEST_DIR)/libDISCON$(SOBJ_EXT) 
+CASE_DEFAULT
 
    # General rules for compliling the files.
-
-$(SOURCE_DIR)/DISCON$(OBJ_EXT): $(SOURCE_DIR)/DISCON.f90
-	$(FC)  $(FFLAGS) -c $< -o $@ 
-
-   # For linking 
-
-$(DEST_DIR)/libDISCON$(SOBJ_EXT): $(SOURCE_DIR)/DISCON$(OBJ_EXT) 
-	$(FC) $(LDFLAGS) -I $(SOURCE_DIR) -o $(DEST_DIR)/libDISCON$(SOBJ_EXT) $(SOURCE_DIR)/DISCON$(OBJ_EXT)
-
-   # Cleanup afterwards.
-
-clean:
-	$(DEL_CMD) $(DEST_DIR)/libDISCON$(SOBJ_EXT)
-
-
-
-
-
-

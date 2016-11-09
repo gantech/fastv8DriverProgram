@@ -13,7 +13,15 @@
 SOURCE_DIR  = ../../../Source
 
    # Name of compiler to use and flags to use.
-CPP     = mpiicpc
+   # Name of compiler to use and flags to use.
+ifeq ($(COMPILER),gnu)
+	CPP = mpic++
+else ifeq ($(COMPILER),intel)
+	CPP = mpiicpc
+endif
+
+#No parallel hdf5 with intel and openmpi on Peregrine
+HDF5_FLAGS = $(HDF5_INC) -L/nopt/nrel/apps/hdf5/1.8.12-openmpi-gcc/lib -lz -lhdf5_hl -Wl,-rpath=/nopt/nrel/apps/hdf5/1.8.12-openmpi-gcc/lib -lhdf5 -Wl,-rpath=/nopt/nrel/apps/hdf5/1.8.12-openmpi-gcc/lib
 
 # Rule to do everything.
 
@@ -23,7 +31,7 @@ all:     libScontroller.so
 
 libScontroller.so: SC.c SC.h
 	$(CPP) -std=c++11 -fPIC -shared -I$(SOURCE_DIR)/dependencies/SuperController -o libScontroller.so \
-        SC.c $(HDF5_INC) -L/nopt/nrel/apps/hdf5/1.8.12-openmpi-gcc/lib -lz -lhdf5_hl -Wl,-rpath=/nopt/nrel/apps/hdf5/1.8.12-openmpi-gcc/lib -lhdf5 -Wl,-rpath=/nopt/nrel/apps/hdf5/1.8.12-openmpi-gcc/lib
+        SC.c $(HDF5_FLAGS)
 
    # Cleanup afterwards.
 

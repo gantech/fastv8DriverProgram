@@ -8,8 +8,12 @@ if [ -f $CWD/PASS ]; then
     # already ran this test
     didSimulationDiffAnywhere=0
 else
-    mpirun -np 4 $FAST &> log.Test04
-    diff log.Test04 log.Test04.gold
+    if [ "${COMPILER}" == 'intelPhi' ] ; then
+	ssh `hostname`-mic0 "cd $PWD; source ../../../../phi.env; mpirun -np 4 $FAST &> log.Test04"
+    else
+	mpirun -np 4 $FAST &> log.Test04
+    fi
+    diff log.Test04 log.Test04.gold &> /dev/null
     didSimulationDiffAnywhere="$?"
 fi
 

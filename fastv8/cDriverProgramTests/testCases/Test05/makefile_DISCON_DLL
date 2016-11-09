@@ -9,6 +9,27 @@
 # It was designed to be used with discon.f90 for the Bladed DLL Interface        #
 #================================================================================#
 
+#COMPILER options - gnu, intel, intelPhi
+#COMPILER = intelPhi
+
+#BUILD options - RELEASE, DEBUG
+#BUILD = RELEASE
+
+   # Name of compiler to use and flags to use.
+ifeq ($(COMPILER),gnu)
+	FC = gfortran
+else ifeq ($(COMPILER),intel)
+	FC      = ifort
+else ifeq ($(COMPILER),intelPhi)
+	FC      = ifort
+endif
+
+ifeq ($(BUILD),RELEASE)
+	OPT_OPTIONS = -O2
+else ifeq ($(BUILD),DEBUG)
+	OPT_OPTIONS = -O0 -g
+endif
+
    # 32-bit or 64-bit?
 #BITS = 32
 BITS = 64
@@ -22,9 +43,16 @@ SOURCE_DIR     = 5MW_Baseline/ServoData/Source/
 SOURCE_FILES = DISCON.f90 DISCON2.f90
 
    # Name of compiler to use and flags to use.
-FC      = ifort
-FFLAGS  = -fpp -threads -O2 -finline-functions -xhost -real-size 64 -double-size 128 -C
-LDFLAGS = -shared -fpp -threads -O2 -finline-functions -xhost -real-size 64 -double-size 128
+ifeq ($(COMPILER),gnu)
+     FFLAGS  = -m$(BITS) $(OPT_OPTIONS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -DDOUBLE_PRECISION  -fdefault-real-8 -C
+     LDFLAGS = -m$(BITS) $(OPT_OPTIONS) -fbacktrace -shared
+else ifeq ($(COMPILER),intel)
+     FFLAGS  = -fpp -threads $(OPT_OPTIONS) -fp-model precise -finline-functions -real-size 64 -double-size 128 -DDOUBLE_PRECISION 
+     LDFLAGS = -fpp -threads $(OPT_OPTIONS) -fp-model precise -finline-functions -real-size 64 -double-size 128 -shared
+else ifeq ($(COMPILER),intelPhi)
+     FFLAGS  = -fpp -threads $(OPT_OPTIONS) -fp-model strict -mmic -mkl:sequential -finline-functions -real-size 64 -double-size 128 -DDOUBLE_PRECISION 
+     LDFLAGS = -fpp -threads $(OPT_OPTIONS) -fp-model strict -mmic -mkl:sequential -finline-functions -real-size 64 -double-size 128 -shared
+endif
 
 # other useful gfortran options:
 #  -fdefault-real-8 -fcheck=bounds -std=f2003 -O0 -v

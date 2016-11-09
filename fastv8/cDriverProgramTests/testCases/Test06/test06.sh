@@ -4,26 +4,31 @@
 CWD=$(pwd)
 didSimulationDiffAnywhere=0
 
-if [ -f $CWD/PASS ]; then
-    # already ran this test
-    didSimulationDiffAnywhere=0
+if [ "${COMPILER}" == 'intelPhi' ] ; then
+    echo "Not running Test06 for intelPhi"
 else
-    make -f makefile_DISCON_DLL &> log.make_DISCON_DLL
-    make -f makefileSC &> log.makeSC
-    cp cDriver.i.1 cDriver.i
-    mpirun -np 2 $FAST &> log.Test06.1
-    cp cDriver.i.2 cDriver.i
-    mpirun -np 2 $FAST &> log.Test06.2
-    cp cDriver.i.3 cDriver.i
-    mpirun -np 2 $FAST &> log.Test06.3
-    cp cDriver.i.4 cDriver.i
-    mpirun -np 2 $FAST &> log.Test06.4
-    determine_pass_fail t1_Test06.T1.outb t1_Test06.nativeFortran.outb
-    t1_pf=$?
-    determine_pass_fail t2_Test06.T2.outb t2_Test06.nativeFortran.outb
-    t2_pf=$?
-    [[ (( t1_pf -eq 0 )) && ((t2_pf -eq 0)) ]]
-    didSimulationDiffAnywhere="$?"
+
+    if [ -f $CWD/PASS ]; then
+    # already ran this test
+	didSimulationDiffAnywhere=0
+    else
+	make -f makefile_DISCON_DLL COMPILER=${COMPILER} BUILD=${BUILD} &> log.make_DISCON_DLL
+	make -f makefileSC COMPILER=${COMPILER} BUILD=${BUILD} &> log.makeSC
+	cp cDriver.i.1 cDriver.i
+	mpirun -np 2 $FAST &> log.Test06.1
+	cp cDriver.i.2 cDriver.i
+	mpirun -np 2 $FAST &> log.Test06.2
+	cp cDriver.i.3 cDriver.i
+	mpirun -np 2 $FAST &> log.Test06.3
+	cp cDriver.i.4 cDriver.i
+	mpirun -np 2 $FAST &> log.Test06.4
+	determine_pass_fail t1_Test06.T1.outb t1_Test06.nativeFortran.outb
+	t1_pf=$?
+	determine_pass_fail t2_Test06.T2.outb t2_Test06.nativeFortran.outb
+	t2_pf=$?
+	[[ (( t1_pf -eq 0 )) && ((t2_pf -eq 0)) ]]
+	didSimulationDiffAnywhere="$?"
+    fi
 fi
 
 # write the file based on final status

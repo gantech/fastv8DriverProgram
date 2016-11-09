@@ -8,15 +8,31 @@ if [ -f $CWD/PASS ]; then
     # already ran this test
     didSimulationDiffAnywhere=0
 else
-    make -f makefile_DISCON_DLL &> log.make_DISCON_DLL
+    make -f makefile_DISCON_DLL COMPILER=${COMPILER} BUILD=${BUILD} &> log.make_DISCON_DLL
     cp cDriver.i.1 cDriver.i
-    mpirun -np 4 $FAST &> log.Test05.1
+    if [ "${COMPILER}" == 'intelPhi' ] ; then
+	ssh `hostname`-mic0 "cd $PWD; source ../../../../phi.env; mpirun -np 4 $FAST &> log.Test05.1"
+    else
+	mpirun -np 4 $FAST &> log.Test05.1
+    fi
     cp cDriver.i.2 cDriver.i
-    mpirun -np 4 $FAST &> log.Test05.2
+    if [ "${COMPILER}" == 'intelPhi' ] ; then
+	ssh `hostname`-mic0 "cd $PWD; source ../../../../phi.env; mpirun -np 4 $FAST &> log.Test05.2"
+    else
+	mpirun -np 4 $FAST &> log.Test05.2
+    fi
     cp cDriver.i.3 cDriver.i
-    mpirun -np 4 $FAST &> log.Test05.3
+    if [ "${COMPILER}" == 'intelPhi' ] ; then
+	ssh `hostname`-mic0 "cd $PWD; source ../../../../phi.env; mpirun -np 4 $FAST &> log.Test05.3"
+    else
+	mpirun -np 4 $FAST &> log.Test05.3
+    fi
     cp cDriver.i.4 cDriver.i
-    mpirun -np 4 $FAST &> log.Test05.4
+    if [ "${COMPILER}" == 'intelPhi' ] ; then
+	ssh `hostname`-mic0 "cd $PWD; source ../../../../phi.env; mpirun -np 4 $FAST &> log.Test05.4"
+    else
+	mpirun -np 4 $FAST &> log.Test05.4
+    fi
     determine_pass_fail t1_Test05.T1.outb t1_Test05.nativeFortran.outb
     t1_pf=$?
     determine_pass_fail t2_Test05.T2.outb t2_Test05.nativeFortran.outb
