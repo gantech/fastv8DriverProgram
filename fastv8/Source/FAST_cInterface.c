@@ -1,5 +1,31 @@
 #include "FAST_cInterface.h"
 
+#ifndef Contiguous2DArrayHack
+#define Contiguous2DArrayHack
+
+// Neat hack from http://stackoverflow.com/questions/21943621/how-to-create-a-contiguous-2d-array-in-c to allocate and deallocate contiguous 2D arrays in C++
+
+  /* double **dPtr = create2DArray<double>(10,10); */
+  /* dPtr[0][0] = 10;  // for example */
+  /* delete2DArray(dPtr);  // free the memory */
+
+template <typename T> T** create2DArray(unsigned nrows, unsigned ncols) {
+
+  T** ptr = new T*[nrows];  // allocate pointers
+  T* pool = new T[nrows*ncols];  // allocate pool
+  for (unsigned i = 0; i < nrows; ++i, pool += ncols )
+    ptr[i] = pool;
+  return ptr;
+}
+
+template <typename T> void delete2DArray(T** arr) {
+
+  delete [] arr[0];  // remove the pool
+  delete [] arr;     // remove the pointers
+}
+
+#endif
+
 
 //Constructor
 FAST_cInterface::FAST_cInterface():
@@ -250,6 +276,37 @@ void FAST_cInterface::setOutputsToFAST(OpFM_InputType_t* cDriver_Input_from_FAST
 
    return;
 }
+
+void FAST_cInterface::getCoordinates(double *currentCoords, int iNode) {
+
+  // Set coordinates at current node of current blade of current turbine
+  // Current turbine assumed to be the first turbine for now
+  currentCoords[0] = cDriver_Input_from_FAST[0]->px[iNode] ;
+  currentCoords[1] = cDriver_Input_from_FAST[0]->py[iNode] ;
+  currentCoords[2] = cDriver_Input_from_FAST[0]->pz[iNode] ;
+
+}
+
+void FAST_cInterface::getForce(std::vector<double> & currentForce, int iNode) {
+
+  // Set coordinates at current node 
+  // Current turbine assumed to be the first turbine for now
+  currentForce[0] = cDriver_Input_from_FAST[0]->fx[iNode] ;
+  currentForce[1] = cDriver_Input_from_FAST[0]->fy[iNode] ;
+  currentForce[2] = cDriver_Input_from_FAST[0]->fz[iNode] ;
+
+}
+
+void FAST_cInterface::setVelocity(std::vector<double> & currentVelocity, int iNode) {
+
+  // Set velocity at current node
+  // Current turbine assumed to be the first turbine for now
+  cDriver_Output_to_FAST[0]->u[iNode] = currentVelocity[0];
+  cDriver_Output_to_FAST[0]->v[iNode] = currentVelocity[1];
+  cDriver_Output_to_FAST[0]->w[iNode] = currentVelocity[2];
+
+}
+
 
 
 void FAST_cInterface::allocateInputData() {
@@ -525,30 +582,6 @@ void FAST_cInterface::fillScOutputsLoc() {
   }
 
 }
-
-
-
-// Neat hack from http://stackoverflow.com/questions/21943621/how-to-create-a-contiguous-2d-array-in-c to allocate and deallocate contiguous 2D arrays in C++
-
-  /* double **dPtr = create2DArray<double>(10,10); */
-  /* dPtr[0][0] = 10;  // for example */
-  /* delete2DArray(dPtr);  // free the memory */
-
-template <typename T> T** FAST_cInterface::create2DArray(unsigned nrows, unsigned ncols) {
-
-  T** ptr = new T*[nrows];  // allocate pointers
-  T* pool = new T[nrows*ncols];  // allocate pool
-  for (unsigned i = 0; i < nrows; ++i, pool += ncols )
-    ptr[i] = pool;
-  return ptr;
-}
-
-template <typename T> void FAST_cInterface::delete2DArray(T** arr) {
-
-  delete [] arr[0];  // remove the pool
-  delete [] arr;     // remove the pointers
-}
-
 
 
 

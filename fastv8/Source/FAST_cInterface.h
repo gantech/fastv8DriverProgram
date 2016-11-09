@@ -89,9 +89,16 @@ class FAST_cInterface {
   int readInputFile(std::string cInterfaceInputFile);  
   int init();
   int step();
+  void getCoordinates(double *currentCoords, int iNode);
+  void getForce(std::vector<double> & force, int iNode);
+  void setVelocity(std::vector<double> & velocity, int iNode);
   int get_ntStart() { return ntStart; }
   int get_ntEnd() { return ntEnd; }
   bool isDryRun() { return dryRun; }
+  int get_numBlades(int iTurb) { return numBlades[iTurb]; }
+  int get_numNodesPerBlade(int iTurb) { return numElementsPerBlade[iTurb]; }
+  int get_numTwrNodes(int iTurb) { return numTwrElements[iTurb]; }
+  int get_numNodes(int iTurb) { return 1 + numBlades[iTurb]*numElementsPerBlade[iTurb] + numTwrElements[iTurb]; }
   void end();
 
  private:
@@ -109,8 +116,6 @@ class FAST_cInterface {
   
   void fillScInputsGlob() ;
   void fillScOutputsLoc() ;
-  template <typename T> T** FAST_cInterface::create2DArray(unsigned nrows, unsigned ncols);
-  template <typename T> void FAST_cInterface::delete2DArray(T** arr);
 
 };
 
