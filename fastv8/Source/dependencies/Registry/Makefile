@@ -1,3 +1,4 @@
+
 ifeq ($(OS),Windows_NT)
   ifeq ($(OSTYPE),cygwin)
     RM=rm -f
@@ -14,16 +15,15 @@ endif
 
 # i586-mingw32msvc-gcc
 #CC_TOOLS = i586-mingw32msvc-gcc
-   # Name of compiler to use and flags to use.
+# Name of compiler to use and flags to use.
 ifeq ($(COMPILER),gnu)
-	CC_TOOLS = gcc
+  CC_TOOLS = gcc
 else ifeq ($(COMPILER),intel)
-	CC_TOOLS = icc
+  CC_TOOLS = icc
 else ifeq ($(COMPILER),intelPhi)
-	CC_TOOLS = icc
-	CFLAGS = -mmic 
-	LDFLAGS = -mmic
+  CC_TOOLS = icc
 endif
+
 DEST_DIR = ../../../bin/
 DEBUG = -g
 OBJ = registry.o \
