@@ -243,6 +243,54 @@ int FAST_cInterface::readInputFile(std::string cInterfaceInputFile ) {
   
 }
 
+int FAST_cInterface::readInputFile(const YAML::Node & cDriverInp) {
+
+  nTurbinesGlob = cDriverInp["n_turbines_glob"].as<int>();
+
+  if (nTurbinesGlob > 0) {
+    
+    if(cDriverInp["dry_run"]) {
+      dryRun = cDriverInp["dry_run"].as<bool>();
+    } else {
+      dryRun = false;
+    }
+    
+    allocateTurbinesToProcs(cDriverInp);
+    
+    allocateInputData(); // Allocate memory for all inputs that are dependent on the number of turbines
+    
+    
+    restart = cDriverInp["restart"].as<bool>();
+    tStart = cDriverInp["tStart"].as<double>();
+    tEnd = cDriverInp["tEnd"].as<double>();
+    tMax = cDriverInp["tMax"].as<double>();
+    nEveryCheckPoint = cDriverInp["n_every_checkpoint"].as<int>();
+    
+    loadSuperController(cDriverInp);
+    
+    if (restart == false) {
+      ntStart = 0;
+      nt_global = ntStart;
+      dtFAST = cDriverInp["dt_FAST"].as<double>();
+      ntEnd = int((tEnd - tStart)/dtFAST);
+    }
+    
+    for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
+      readTurbineData(iTurb, cDriverInp["Turbine" + std::to_string(turbineMapProcToGlob[iTurb])] );
+    }
+
+    if ( !dryRun ) {
+      init();
+    }
+    
+  } else {
+    throw std::runtime_error("Number of turbines < 0 ");
+    return 1;
+  }
+  
+  return 0;
+  
+}
 
 void FAST_cInterface::checkError(const int ErrStat, const char * ErrMsg){
 
@@ -361,6 +409,7 @@ void FAST_cInterface::allocateTurbinesToProcs(YAML::Node cDriverNode) {
     }
     if(worldMPIRank == turbineMapGlobToProc[iTurb]) {
       turbineMapProcToGlob[nTurbinesProc] = iTurb;
+      reverseTurbineMapProcToGlob[iTurb] = nTurbinesProc;
       nTurbinesProc++ ;
     }
     turbineSetProcs.insert(turbineMapGlobToProc[iTurb]);

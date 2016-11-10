@@ -49,8 +49,9 @@ class FAST_cInterface {
   SC_OutputType_t ** cDriverSC_Output_to_FAST;
 
   // Turbine Number is DIFFERENT from TurbID. Turbine Number simply runs from 0:n-1 locally and globally.
-  std::map<int, int> turbineMapGlobToProc; // Mapping global turbine number to processor
+  std::map<int, int> turbineMapGlobToProc; // Mapping global turbine number to processor number
   std::map<int, int> turbineMapProcToGlob; // Mapping local to global turbine number
+  std::map<int, int> reverseTurbineMapProcToGlob; // Reverse Mapping global turbine number to local turbine number
   std::set<int> turbineSetProcs; // Set of processors containing atleast one turbine 
   int * turbineProcs; // Same as the turbineSetProcs, but as an integer array
 
@@ -87,6 +88,7 @@ class FAST_cInterface {
   ~FAST_cInterface() {} ;
   
   int readInputFile(std::string cInterfaceInputFile);  
+  int readInputFile(const YAML::Node &);  
   int init();
   int step();
   void getCoordinates(double *currentCoords, int iNode);
@@ -95,6 +97,9 @@ class FAST_cInterface {
   int get_ntStart() { return ntStart; }
   int get_ntEnd() { return ntEnd; }
   bool isDryRun() { return dryRun; }
+  int get_procNo(int iTurbGlob) { return turbineMapGlobToProc[iTurbGlob] ; } // Get processor number of a turbine with global id 'iTurbGlob'
+  int get_localProcNo(int iTurbGlob) { return reverseTurbineMapProcToGlob[iTurbGlob]; }
+  int get_nTurbinesGlob() { return nTurbinesGlob; } 
   int get_numBlades(int iTurb) { return numBlades[iTurb]; }
   int get_numNodesPerBlade(int iTurb) { return numElementsPerBlade[iTurb]; }
   int get_numTwrNodes(int iTurb) { return numTwrElements[iTurb]; }
