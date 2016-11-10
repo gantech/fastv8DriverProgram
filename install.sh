@@ -13,6 +13,9 @@ prepareSourceMods() {
 #Prepare sourceMods.sh
     echo -n "Sourcing modules"
     echo -n $PWD > /tmp/fastDir
+    echo "export COMPILER=${COMPILER}" > sourceMods.sh
+    echo "export BUILD=${BUILD}" >> sourceMods.sh
+    echo "export LAPACK=${LAPACK}" >> sourceMods.sh
     echo "COMPILER=${COMPILER}" > sourceMods.sh
     echo "BUILD=${BUILD}" >> sourceMods.sh
     echo "LAPACK=${LAPACK}" >> sourceMods.sh
@@ -44,6 +47,7 @@ compileLapack() {
     cd fastv8/Source/dependencies/lapack
     wget http://www.netlib.org/lapack/lapack-3.6.0.tgz &> log.wget
     tar -zxf lapack-3.6.0.tgz &> log.untar
+    rm -rf build
     [ -d build ] || mkdir build
     cd build
     make clean
@@ -100,7 +104,7 @@ compileFAST() {
     cd fastv8/Compiling
     echo "Compiling FAST"
     echo -n "   Compiling FAST Library"
-#    make clean &> /dev/null
+    make clean &> /dev/null
     make COMPILER=${COMPILER} BUILD=${BUILD} LAPACK=${LAPACK} &> log.make #Basic FAST Library
     passFail $?
     echo -n "   Compiling Bladed style controller libraries"
