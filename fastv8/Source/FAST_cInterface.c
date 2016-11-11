@@ -52,6 +52,12 @@ inline bool FAST_cInterface::checkFileExists(const std::string& name) {
 
 int FAST_cInterface::init() {
 
+    if (restart == false) {
+      ntStart = 0;
+      nt_global = ntStart;
+      ntEnd = int((tEnd - tStart)/dtFAST);
+    }
+
    // Allocate memory for Turbine datastructure for all turbines
    FAST_AllocateTurbines(&nTurbinesProc, &ErrStat, ErrMsg);
 
@@ -255,32 +261,28 @@ int FAST_cInterface::readInputFile(const YAML::Node & cDriverInp) {
       dryRun = false;
     }
     
+    if(cDriverInp["debug"]) {
+      debug = cDriverInp["debug"].as<bool>();
+    } else {
+      debug = false;
+    }
+
     allocateTurbinesToProcs(cDriverInp);
     
     allocateInputData(); // Allocate memory for all inputs that are dependent on the number of turbines
     
     
-    restart = cDriverInp["restart"].as<bool>();
-    tStart = cDriverInp["tStart"].as<double>();
-    tEnd = cDriverInp["tEnd"].as<double>();
-    tMax = cDriverInp["tMax"].as<double>();
+    /* restart - Has to come from cfd solver */ 
+    /* tStart - Has to come from cfd solver */
+    /* tEnd - Has to come from cfd solver */
+    /* dtFAST - Has to come from cfd solver */
+    tMax = cDriverInp["tMax"].as<double>(); // tMax is the total duration to which you want to run FAST. This should be the same as the end time given in the FAST fst file. Choose this carefully as FAST writes the output file only at this point if you choose the binary file output.
     nEveryCheckPoint = cDriverInp["n_every_checkpoint"].as<int>();
     
     loadSuperController(cDriverInp);
     
-    if (restart == false) {
-      ntStart = 0;
-      nt_global = ntStart;
-      dtFAST = cDriverInp["dt_FAST"].as<double>();
-      ntEnd = int((tEnd - tStart)/dtFAST);
-    }
-    
     for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
       readTurbineData(iTurb, cDriverInp["Turbine" + std::to_string(turbineMapProcToGlob[iTurb])] );
-    }
-
-    if ( !dryRun ) {
-      init();
     }
     
   } else {
@@ -290,6 +292,26 @@ int FAST_cInterface::readInputFile(const YAML::Node & cDriverInp) {
   
   return 0;
   
+}
+
+void FAST_cInterface::setRestart(const bool & isRestart) {
+  /* Set whether the simulation is restarted or from scratch */
+  restart = isRestart;
+}
+
+void FAST_cInterface::setTstart(const double & cfdTstart) {
+  /* Set the end time for the simulation */
+  tStart = cfdTstart;
+}
+
+void FAST_cInterface::setDt(const double & cfdDt) {
+  /* Set the time step for the simulation */
+  dtFAST = cfdDt;
+}
+
+void FAST_cInterface::setTend(const double & cfdTend) {
+  /* Set the end time for the simulation */
+  tEnd = cfdTend;
 }
 
 void FAST_cInterface::checkError(const int ErrStat, const char * ErrMsg){

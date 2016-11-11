@@ -89,6 +89,10 @@ class FAST_cInterface {
   
   int readInputFile(std::string cInterfaceInputFile);  
   int readInputFile(const YAML::Node &);  
+  void setRestart(const bool & isRestart);
+  void setTstart(const double & cfdTstart);
+  void setDt(const double & cfdDt);
+  void setTend(const double & cfdTend);
   int init();
   int step();
   void getCoordinates(double *currentCoords, int iNode);

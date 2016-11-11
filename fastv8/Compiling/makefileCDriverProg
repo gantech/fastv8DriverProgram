@@ -121,7 +121,7 @@ $(INTER_DIR):
 
 $(FASTLIB_DIR)/libFAST_cInterface$(EXE_EXT).a: $(INTER_DIR)/FAST_cInterface.o
 	ar rcs $(FASTLIB_DIR)/libFAST_cInterface$(EXE_EXT).a $(INTER_DIR)/FAST_cInterface.o 
-	cp $(SOURCE_DIR)/FAST_cInterface.h ../include/
+	cp $(SOURCE_DIR)/FAST_cInterface.h $(SOURCE_DIR)/FAST_Library.h $(SOURCE_DIR)/dependencies/OpenFOAM/OpenFOAM_Types.h $(SOURCE_DIR)/dependencies/SuperController/SuperController_Types.h $(SOURCE_DIR)/SC.h ../include
 
 $(DEST_DIR)/FAST_ProgC$(EXE_EXT): $(FASTLIB_DIR)/libFAST_cInterface$(EXE_EXT).a $(INTER_DIR)/FAST_ProgC.o
 	$(CPP) $(CFLAGS) -o $(DEST_DIR)/FAST_ProgC$(EXE_EXT) \
