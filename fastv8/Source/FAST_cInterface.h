@@ -16,6 +16,13 @@
 #endif
 #include "SC.h"
 
+enum ActuatorNodeType {
+  HUB = 0,
+  BLADE = 1,
+  TOWER = 2,
+  ActuatorNodeType_END
+};
+
 class FAST_cInterface {
 
  private:
@@ -107,12 +114,13 @@ class FAST_cInterface {
   bool isDebug() { return debug; }
   bool isTimeZero() { return timeZero; }
   int get_procNo(int iTurbGlob) { return turbineMapGlobToProc[iTurbGlob] ; } // Get processor number of a turbine with global id 'iTurbGlob'
-  int get_localProcNo(int iTurbGlob) { return reverseTurbineMapProcToGlob[iTurbGlob]; }
+  int get_localTurbNo(int iTurbGlob) { return reverseTurbineMapProcToGlob[iTurbGlob]; }
   int get_nTurbinesGlob() { return nTurbinesGlob; } 
-  int get_numBlades(int iTurb) { return numBlades[iTurb]; }
-  int get_numNodesPerBlade(int iTurb) { return numElementsPerBlade[iTurb]; }
-  int get_numTwrNodes(int iTurb) { return numTwrElements[iTurb]; }
-  int get_numNodes(int iTurb) { return 1 + numBlades[iTurb]*numElementsPerBlade[iTurb] + numTwrElements[iTurb]; }
+  int get_numBlades(int iTurbLoc) { return numBlades[iTurbLoc]; }
+  int get_numNodesPerBlade(int iTurbLoc) { return numElementsPerBlade[iTurbLoc]; }
+  int get_numTwrNodes(int iTurbLoc) { return numTwrElements[iTurbLoc]; }
+  int get_numNodes(int iTurbLoc) { return 1 + numBlades[iTurbLoc]*numElementsPerBlade[iTurbLoc] + numTwrElements[iTurbLoc]; }
+  ActuatorNodeType getNodeType(int iTurbGlob, int iNode);
   void end();
 
  private:

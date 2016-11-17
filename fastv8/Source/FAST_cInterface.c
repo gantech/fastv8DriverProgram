@@ -140,12 +140,6 @@ int FAST_cInterface::solution0() {
 
      for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
 
-       if ( isDebug() ) {
-	 for (int iNode=0; iNode < get_numNodes(iTurb); iNode++) {
-	   std::cout << "Node " << iNode << " Velocity = " << cDriver_Output_to_FAST[iTurb]->u[iNode] << " " << cDriver_Output_to_FAST[iTurb]->v[iNode] << " " << cDriver_Output_to_FAST[iTurb]->w[iNode] << " " << std::endl ;
-	 }
-       }
-
        FAST_OpFM_Solution0(&iTurb, &ErrStat, ErrMsg);
        checkError(ErrStat, ErrMsg);
 
@@ -209,7 +203,7 @@ int FAST_cInterface::step() {
 	 std::cout << "Node " << iNode << " Position = " << cDriver_Input_from_FAST[iTurb]->px[iNode] << " " << cDriver_Input_from_FAST[iTurb]->py[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pz[iNode] << " " << std::endl ;
        }
        for (int iNode=0; iNode < get_numNodes(iTurb); iNode++) {
-	 std::cout << "Node " << iNode << " Force = " << cDriver_Input_from_FAST[iTurb]->fx[iNode] << " " << cDriver_Input_from_FAST[iTurb]->fy[iNode] << " " << cDriver_Input_from_FAST[iTurb]->fz[iNode] << " " << std::endl ;
+	 std::cout << "Node " << iNode << " Type " << getNodeType(turbineMapProcToGlob[iTurb], iNode) << " Force = " << cDriver_Input_from_FAST[iTurb]->fx[iNode] << " " << cDriver_Input_from_FAST[iTurb]->fy[iNode] << " " << cDriver_Input_from_FAST[iTurb]->fz[iNode] << " " << std::endl ;
        }
      }
 
@@ -410,7 +404,28 @@ void FAST_cInterface::setVelocity(std::vector<double> & currentVelocity, int iNo
 
 }
 
+ActuatorNodeType FAST_cInterface::getNodeType(int iTurbGlob, int iNode) {
+  // Return the type of actuator node for the given node number. The node ordering (from FAST) is 
+  // Node 0 - Hub node
+  // Blade 1 nodes
+  // Blade 2 nodes
+  // Blade 3 nodes
+  // Tower nodes
 
+  int iTurbLoc = get_localTurbNo(iTurbGlob);
+  if (iNode) {
+    if ( (iNode + 1 - (get_numNodes(iTurbLoc) - get_numTwrNodes(iTurbLoc)) ) > 0) {
+      return TOWER; 
+    }
+    else {
+      return BLADE;
+    }
+  }
+  else {
+    return HUB; 
+  }
+  
+}
 
 void FAST_cInterface::allocateInputData() {
 	
