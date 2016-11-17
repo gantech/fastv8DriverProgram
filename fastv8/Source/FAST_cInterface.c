@@ -35,7 +35,8 @@ cDriverSC_Input_from_FAST(NULL),
 cDriverSC_Output_to_FAST(NULL),
 nTurbinesGlob(0),
 nTurbinesProc(0),
-scStatus(false)
+scStatus(false),
+timeZero(false)
 {
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &worldMPIRank);
@@ -56,6 +57,7 @@ int FAST_cInterface::init() {
       ntStart = 0;
       nt_global = ntStart;
       ntEnd = int((tEnd - tStart)/dtFAST);
+      timeZero = true;
     }
 
    // Allocate memory for Turbine datastructure for all turbines
@@ -109,12 +111,25 @@ int FAST_cInterface::init() {
        
        numTwrElements[iTurb] = cDriver_Output_to_FAST[iTurb]->u_Len - numBlades[iTurb]*numElementsPerBlade[iTurb] - 1;
 
-       // set wind speeds at initial locations
-       //      setOutputsToFAST(cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb]);
 
+       if ( isDebug() ) {
+	 for (int iNode=0; iNode < get_numNodes(iTurb); iNode++) {
+	   std::cout << "Node " << iNode << " Position = " << cDriver_Input_from_FAST[iTurb]->px[iNode] << " " << cDriver_Input_from_FAST[iTurb]->py[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pz[iNode] << " " << std::endl ;
+	 }
+       }
      }
      
+   }
+   
+   return 0;
 
+}
+
+int FAST_cInterface::solution0() {
+
+       // set wind speeds at initial locations
+       //      setOutputsToFAST(cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb]);
+     
      if(scStatus) {
 
        sc->init(nTurbinesGlob, numScInputs, numScOutputs);
@@ -125,6 +140,12 @@ int FAST_cInterface::init() {
 
      for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
 
+       if ( isDebug() ) {
+	 for (int iNode=0; iNode < get_numNodes(iTurb); iNode++) {
+	   std::cout << "Node " << iNode << " Velocity = " << cDriver_Output_to_FAST[iTurb]->u[iNode] << " " << cDriver_Output_to_FAST[iTurb]->v[iNode] << " " << cDriver_Output_to_FAST[iTurb]->w[iNode] << " " << std::endl ;
+	 }
+       }
+
        FAST_OpFM_Solution0(&iTurb, &ErrStat, ErrMsg);
        checkError(ErrStat, ErrMsg);
 
@@ -134,10 +155,9 @@ int FAST_cInterface::init() {
        fillScInputsGlob(); // Update inputs to super controller
      }
 
-   }
-   
-   return 0;
+     timeZero = false; // Turn the flag to compute solution0 off
 
+     return 0;
 }
 
 int FAST_cInterface::step() {
@@ -175,8 +195,23 @@ int FAST_cInterface::step() {
 
      // this advances the states, calls CalcOutput, and solves for next inputs. Predictor-corrector loop is imbeded here:
      // (note OpenFOAM could do subcycling around this step)
+     if ( isDebug() ) {
+       for (int iNode=0; iNode < get_numNodes(iTurb); iNode++) {
+	 std::cout << "Node " << iNode << " Velocity = " << cDriver_Output_to_FAST[iTurb]->u[iNode] << " " << cDriver_Output_to_FAST[iTurb]->v[iNode] << " " << cDriver_Output_to_FAST[iTurb]->w[iNode] << " " << std::endl ;
+       }
+     }
+
      FAST_OpFM_Step(&iTurb, &ErrStat, ErrMsg);
      checkError(ErrStat, ErrMsg);
+
+     if ( isDebug() ) {
+       for (int iNode=0; iNode < get_numNodes(iTurb); iNode++) {
+	 std::cout << "Node " << iNode << " Position = " << cDriver_Input_from_FAST[iTurb]->px[iNode] << " " << cDriver_Input_from_FAST[iTurb]->py[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pz[iNode] << " " << std::endl ;
+       }
+       for (int iNode=0; iNode < get_numNodes(iTurb); iNode++) {
+	 std::cout << "Node " << iNode << " Force = " << cDriver_Input_from_FAST[iTurb]->fx[iNode] << " " << cDriver_Input_from_FAST[iTurb]->fy[iNode] << " " << cDriver_Input_from_FAST[iTurb]->fz[iNode] << " " << std::endl ;
+       }
+     }
 
    }
 
@@ -237,6 +272,7 @@ int FAST_cInterface::readInputFile(std::string cInterfaceInputFile ) {
 
       if ( !dryRun ) {
 	init();
+	solution0();
       }
       
     } else {
@@ -349,8 +385,7 @@ void FAST_cInterface::setOutputsToFAST(OpFM_InputType_t* cDriver_Input_from_FAST
 
 void FAST_cInterface::getCoordinates(double *currentCoords, int iNode) {
 
-  // Set coordinates at current node of current blade of current turbine
-  // Current turbine assumed to be the first turbine for now
+  // Set coordinates at current node of current turbine - Only one turbine for now
   currentCoords[0] = cDriver_Input_from_FAST[0]->px[iNode] ;
   currentCoords[1] = cDriver_Input_from_FAST[0]->py[iNode] ;
   currentCoords[2] = cDriver_Input_from_FAST[0]->pz[iNode] ;
@@ -359,8 +394,7 @@ void FAST_cInterface::getCoordinates(double *currentCoords, int iNode) {
 
 void FAST_cInterface::getForce(std::vector<double> & currentForce, int iNode) {
 
-  // Set coordinates at current node 
-  // Current turbine assumed to be the first turbine for now
+  // Set coordinates at current node of current turbine - Only one turbine for now
   currentForce[0] = cDriver_Input_from_FAST[0]->fx[iNode] ;
   currentForce[1] = cDriver_Input_from_FAST[0]->fy[iNode] ;
   currentForce[2] = cDriver_Input_from_FAST[0]->fz[iNode] ;
@@ -369,8 +403,7 @@ void FAST_cInterface::getForce(std::vector<double> & currentForce, int iNode) {
 
 void FAST_cInterface::setVelocity(std::vector<double> & currentVelocity, int iNode) {
 
-  // Set velocity at current node
-  // Current turbine assumed to be the first turbine for now
+  // Set velocity at current node of current turbine - Only one turbine for now
   cDriver_Output_to_FAST[0]->u[iNode] = currentVelocity[0];
   cDriver_Output_to_FAST[0]->v[iNode] = currentVelocity[1];
   cDriver_Output_to_FAST[0]->w[iNode] = currentVelocity[2];
@@ -404,11 +437,11 @@ void FAST_cInterface::readTurbineData(int iTurb, YAML::Node turbNode) {
 
   //Read turbine data for a given turbine using the YAML node
   
-  TurbID[iTurb] = turbNode["TurbID"].as<int>();
-  std::strcpy(FASTInputFileName[iTurb], turbNode["FASTInputFileName"].as<std::string>().c_str()) ;
-  std::strcpy(CheckpointFileRoot[iTurb], turbNode["restartFileName"].as<std::string>().c_str() );
-  if (turbNode["TurbinePos"].IsSequence() ) {
-    std::vector<double> tp = turbNode["TurbinePos"].as<std::vector<double> >() ;
+  TurbID[iTurb] = turbNode["turb_id"].as<int>();
+  std::strcpy(FASTInputFileName[iTurb], turbNode["FAST_input_filename"].as<std::string>().c_str()) ;
+  std::strcpy(CheckpointFileRoot[iTurb], turbNode["restart_filename"].as<std::string>().c_str() );
+  if (turbNode["turbine_pos"].IsSequence() ) {
+    std::vector<double> tp = turbNode["turbine_pos"].as<std::vector<double> >() ;
     for(int i=0;i<3;i++) {
       TurbinePos[iTurb][i] = tp[i];
     }

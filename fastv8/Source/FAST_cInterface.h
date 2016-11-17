@@ -21,6 +21,8 @@ class FAST_cInterface {
  private:
 
   bool dryRun;        // If this is true, class will simply go through allocation and deallocation of turbine data
+  bool debug;   // Write out extra information if this flags is turned on
+  bool timeZero; // Flag to determine whether the Solution0 function has to be called or not.
   int nTurbinesProc;
   int nTurbinesGlob;
   bool restart;
@@ -94,6 +96,7 @@ class FAST_cInterface {
   void setDt(const double & cfdDt);
   void setTend(const double & cfdTend);
   int init();
+  int solution0();
   int step();
   void getCoordinates(double *currentCoords, int iNode);
   void getForce(std::vector<double> & force, int iNode);
@@ -101,6 +104,8 @@ class FAST_cInterface {
   int get_ntStart() { return ntStart; }
   int get_ntEnd() { return ntEnd; }
   bool isDryRun() { return dryRun; }
+  bool isDebug() { return debug; }
+  bool isTimeZero() { return timeZero; }
   int get_procNo(int iTurbGlob) { return turbineMapGlobToProc[iTurbGlob] ; } // Get processor number of a turbine with global id 'iTurbGlob'
   int get_localProcNo(int iTurbGlob) { return reverseTurbineMapProcToGlob[iTurbGlob]; }
   int get_nTurbinesGlob() { return nTurbinesGlob; } 
