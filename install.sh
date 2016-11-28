@@ -34,7 +34,7 @@ compileRegistry() {
 #Registry
     echo -n "Compiling Registry"
     cd fastv8/Source/dependencies/Registry/
-    make clean &> /dev/null
+#    make clean &> /dev/null
     make COMPILER=${COMPILER} &> log.make
     passFail $?
     cd ../../../../
@@ -50,7 +50,7 @@ compileLapack() {
     rm -rf build
     [ -d build ] || mkdir build
     cd build
-    make clean
+#    make clean
     rm CMakeCache.txt
     cmake -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DCMAKE_FORTRAN_COMPILER=gfortran -DCMAKE_INSTALL_PREFIX=../../../../ -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_SHARED_LIBS=ON -DBUILD_DEPRECATED=ON -DLAPACKE=ON ../lapack-3.6.0 &> log.config
     make -j 8 &> log.make
@@ -63,7 +63,7 @@ compileMapPlusPlus() {
 #map-plus-plus
     echo -n "Compiling map-plus-plus"
     cd fastv8/Source/dependencies/map-plus-plus/src/
-    make clean &> /dev/null
+#    make clean &> /dev/null
     if [ "${COMPILER}" == 'intelPhi' ] ; then
 	icpc -c -mmic  -o lmroutines.o lmroutines.cc
     fi
@@ -77,18 +77,18 @@ compileYAMLcpp() {
     echo "Compiling yaml-cpp"
     echo -n "   Setting up build directory"
     cd fastv8/Source/dependencies/yaml-cpp
-    git clone https://github.com/jbeder/yaml-cpp.git
+    git clone https://github.com/jbeder/yaml-cpp.git &> /dev/null
     rm -rf build
     [ -d build ] || mkdir build
     cd build
     passFail $?
     echo -n "   Configuring"
     if [ "${COMPILER}" == 'gnu' ] ; then
-	cmake ../yaml-cpp/ -DCMAKE_CXX_COMPILER=g++ -DCMAKE_CXX_FLAGS="-std=c++11" -DCMAKE_INSTALL_PREFIX=../../../../ &> log.cmake
+	cmake ../yaml-cpp/ -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_COMPILER=g++ -DCMAKE_CXX_FLAGS="-std=c++11" -DCMAKE_INSTALL_PREFIX=../../../../ &> log.cmake
     elif [ "${COMPILER}" == 'intel' ] ; then
-	cmake ../yaml-cpp/ -DCMAKE_CXX_COMPILER=icpc -DCMAKE_CXX_FLAGS="-std=c++11" -DCMAKE_INSTALL_PREFIX=../../../../ &> log.cmake
+	cmake ../yaml-cpp/ -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_COMPILER=icpc -DCMAKE_CXX_FLAGS="-std=c++11" -DCMAKE_INSTALL_PREFIX=../../../../ &> log.cmake
     elif [ "${COMPILER}" == 'intelPhi' ] ; then
-	cmake ../yaml-cpp/ -DCMAKE_CXX_COMPILER=icpc -DCMAKE_CXX_FLAGS="-std=c++11 -mmic" -DCMAKE_INSTALL_PREFIX=../../../../ &> log.cmake
+	cmake ../yaml-cpp/ -DBUILD_SHARED_LIBS=ON -DCMAKE_CXX_COMPILER=icpc -DCMAKE_CXX_FLAGS="-std=c++11 -mmic" -DCMAKE_INSTALL_PREFIX=../../../../ &> log.cmake
     fi
     passFail $? 
     echo -n "   Compiling"
