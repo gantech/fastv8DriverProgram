@@ -119,16 +119,16 @@ $(INTER_DIR):
 
    # For linking 
 
-$(FASTLIB_DIR)/libFAST_cInterface$(EXE_EXT).a: $(INTER_DIR)/FAST_cInterface.o
-	ar rcs $(FASTLIB_DIR)/libFAST_cInterface$(EXE_EXT).a $(INTER_DIR)/FAST_cInterface.o 
+$(FASTLIB_DIR)/libFAST_cInterface$(EXE_EXT).so: $(INTER_DIR)/FAST_cInterface.o
+	$(CPP) -fPIC -shared $(INTER_DIR)/FAST_cInterface.o -o $(FASTLIB_DIR)/libFAST_cInterface$(EXE_EXT).so
 	cp $(SOURCE_DIR)/FAST_cInterface.h $(SOURCE_DIR)/FAST_Library.h $(SOURCE_DIR)/dependencies/OpenFOAM/OpenFOAM_Types.h $(SOURCE_DIR)/dependencies/SuperController/SuperController_Types.h $(SOURCE_DIR)/SC.h ../include
 
-$(DEST_DIR)/FAST_ProgC$(EXE_EXT): $(FASTLIB_DIR)/libFAST_cInterface$(EXE_EXT).a $(INTER_DIR)/FAST_ProgC.o
+$(DEST_DIR)/FAST_ProgC$(EXE_EXT): $(FASTLIB_DIR)/libFAST_cInterface$(EXE_EXT).so $(INTER_DIR)/FAST_ProgC.o
 	$(CPP) $(CFLAGS) -o $(DEST_DIR)/FAST_ProgC$(EXE_EXT) \
 	$(INTER_DIR)/FAST_ProgC.o  $(LDFLAGS) $(LAPACK_LINK)
 
    # Cleanup afterwards.
 
 clean:
-	$(DEL_CMD) $(INTER_DIR)$(PATH_SEP)FAST_ProgC$(OBJ_EXT) $(INTER_DIR)$(PATH_SEP)FAST_cInterface$(OBJ_EXT) $(FASTLIB_DIR)$(PATH_SEP)libFAST_cInterface$(EXE_EXT).a $(INTER_DIR)$(PATH_SEP)FAST_ProgC$(OBJ_EXT)
+	$(DEL_CMD) $(INTER_DIR)$(PATH_SEP)FAST_ProgC$(OBJ_EXT) $(INTER_DIR)$(PATH_SEP)FAST_cInterface$(OBJ_EXT) $(FASTLIB_DIR)$(PATH_SEP)libFAST_cInterface$(EXE_EXT).so $(INTER_DIR)$(PATH_SEP)FAST_ProgC$(OBJ_EXT)
 #	$(DEL_CMD) $(INTER_DIR)$(PATH_SEP)*$(OBJ_EXT) $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT)
