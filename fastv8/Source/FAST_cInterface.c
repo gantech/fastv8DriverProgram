@@ -254,111 +254,6 @@ int FAST_cInterface::setGlobalInputs(int nTsGlob, bool dRun, bool sController, s
   
 }
 
-int FAST_cInterface::readInputFile(std::string cInterfaceInputFile ) {
-
-  // Check if the input file exists and call init
-  if ( checkFileExists(cInterfaceInputFile) ) {
-
-    YAML::Node cDriverInp = YAML::LoadFile(cInterfaceInputFile);
-    
-    nTurbinesGlob = cDriverInp["nTurbinesGlob"].as<int>();
-
-    if (nTurbinesGlob > 0) {
-      
-      if(cDriverInp["dryRun"]) {
-	dryRun = cDriverInp["dryRun"].as<bool>();
-      } else {
-	dryRun = false;
-      }
-      
-      allocateTurbinesToProcs(cDriverInp);
-
-      allocateInputData(); // Allocate memory for all inputs that are dependent on the number of turbines
-
-      
-      restart = cDriverInp["restart"].as<bool>();
-      tStart = cDriverInp["tStart"].as<double>();
-      tEnd = cDriverInp["tEnd"].as<double>();
-      tMax = cDriverInp["tMax"].as<double>();
-      nEveryCheckPoint = cDriverInp["nEveryCheckPoint"].as<int>();
-      
-      loadSuperController(cDriverInp);
-
-      if (restart == false) {
-	ntStart = 0;
-	nt_global = ntStart;
-	dtFAST = cDriverInp["dtFAST"].as<double>();
-	ntEnd = int((tEnd - tStart)/dtFAST);
-      }
-
-      for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
-	//	if (cDriverInp["Turbine" + std::to_string(iTurb)] == YAML::Node) {
-	  readTurbineData(iTurb, cDriverInp["Turbine" + std::to_string(turbineMapProcToGlob[iTurb])] );
-	  //	} else {
-	  //	  throw std::runtime_error("Node for Turbine" + std::to_string(iTurb) + " not present in input file");
-	  //	}
-      }
-
-      if ( !dryRun ) {
-	init();
-	solution0();
-      }
-      
-    } else {
-      throw std::runtime_error("Number of turbines < 0 ");
-    }
-    
-  } else {
-    throw std::runtime_error("Input file " + cInterfaceInputFile + " does not exist or I cannot access it");
-  }
-  
-}
-
-int FAST_cInterface::readInputFile(const YAML::Node & cDriverInp) {
-
-  nTurbinesGlob = cDriverInp["n_turbines_glob"].as<int>();
-
-  if (nTurbinesGlob > 0) {
-    
-    if(cDriverInp["dry_run"]) {
-      dryRun = cDriverInp["dry_run"].as<bool>();
-    } else {
-      dryRun = false;
-    }
-    
-    if(cDriverInp["debug"]) {
-      debug = cDriverInp["debug"].as<bool>();
-    } else {
-      debug = false;
-    }
-
-    allocateTurbinesToProcs(cDriverInp);
-    
-    allocateInputData(); // Allocate memory for all inputs that are dependent on the number of turbines
-    
-    
-    /* restart - Has to come from cfd solver */ 
-    /* tStart - Has to come from cfd solver */
-    /* tEnd - Has to come from cfd solver */
-    /* dtFAST - Has to come from cfd solver */
-    tMax = cDriverInp["tMax"].as<double>(); // tMax is the total duration to which you want to run FAST. This should be the same as the end time given in the FAST fst file. Choose this carefully as FAST writes the output file only at this point if you choose the binary file output.
-    nEveryCheckPoint = cDriverInp["n_every_checkpoint"].as<int>();
-    
-    loadSuperController(cDriverInp);
-    
-    for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
-      readTurbineData(iTurb, cDriverInp["Turbine" + std::to_string(turbineMapProcToGlob[iTurb])] );
-    }
-    
-  } else {
-    throw std::runtime_error("Number of turbines < 0 ");
-    return 1;
-  }
-  
-  return 0;
-  
-}
-
 void FAST_cInterface::setRestart(const bool & isRestart) {
   /* Set whether the simulation is restarted or from scratch */
   restart = isRestart;
@@ -483,23 +378,6 @@ void FAST_cInterface::allocateInputData() {
   return;
 }
 
-void FAST_cInterface::readTurbineData(int iTurb, YAML::Node turbNode) {
-
-  //Read turbine data for a given turbine using the YAML node
-  
-  TurbID[iTurb] = turbNode["turb_id"].as<int>();
-  std::strcpy(FASTInputFileName[iTurb], turbNode["FAST_input_filename"].as<std::string>().c_str()) ;
-  std::strcpy(CheckpointFileRoot[iTurb], turbNode["restart_filename"].as<std::string>().c_str() );
-  if (turbNode["turbine_pos"].IsSequence() ) {
-    std::vector<double> tp = turbNode["turbine_pos"].as<std::vector<double> >() ;
-    for(int i=0;i<3;i++) {
-      TurbinePos[iTurb][i] = tp[i];
-    }
-  }
-
-  return ;
-}
-
 void FAST_cInterface::setTurbineData(int tid, std::string fastInpFile, std::string fastRstartFile, std::vector<double> tPos) {
 
   //Read turbine data for a given turbine using arguments - Assumes only one turbine on a given processor
@@ -571,62 +449,6 @@ void FAST_cInterface::allocateTurbinesToProcsSimple() {
 
   
 }
-
-void FAST_cInterface::allocateTurbinesToProcs(YAML::Node cDriverNode) {
-  
-  // Allocate turbines to each processor
-  
-  for (int iTurb=0; iTurb < nTurbinesGlob; iTurb++) {
-    turbineMapGlobToProc[iTurb] = cDriverNode["Turbine" + std::to_string(iTurb)]["procNo"].as<int>();
-    if (dryRun) {
-      if(worldMPIRank == 0) {
-	std::cout << "iTurb = " << iTurb << " turbineMapGlobToProc[iTurb] = " << turbineMapGlobToProc[iTurb] << std::endl ;
-      }
-    }
-    if(worldMPIRank == turbineMapGlobToProc[iTurb]) {
-      turbineMapProcToGlob[nTurbinesProc] = iTurb;
-      reverseTurbineMapProcToGlob[iTurb] = nTurbinesProc;
-      nTurbinesProc++ ;
-    }
-    turbineSetProcs.insert(turbineMapGlobToProc[iTurb]);
-  }
-#ifdef HAVE_MPI  
-  if ( dryRun ) {
-    MPI_Barrier(MPI_COMM_WORLD);  
-  }
-#endif
-
-  int nProcsWithTurbines=0;
-  turbineProcs = new int[turbineSetProcs.size()];
-  for (std::set<int>::const_iterator p = turbineSetProcs.begin(); p != turbineSetProcs.end(); p++) {
-    turbineProcs[nProcsWithTurbines] = *p;
-
-    if (dryRun) {
-      if ( worldMPIRank == turbineProcs[nProcsWithTurbines] ) {
-	for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
-	  std::cout << "Proc " << worldMPIRank << " loc iTurb " << iTurb << " glob iTurb " << turbineMapProcToGlob[iTurb] << std::endl ;
-	}
-      }
-#ifdef HAVE_MPI
-      MPI_Barrier(MPI_COMM_WORLD);  
-#endif
-    }
-
-    nProcsWithTurbines++ ;
-  }
-    
-#ifdef HAVE_MPI
-  // Construct a group containing all procs running atleast 1 turbine in FAST
-  MPI_Group_incl(worldMPIGroup, nProcsWithTurbines, turbineProcs, &fastMPIGroup) ;
-  int fastMPIcommTag = MPI_Comm_create(MPI_COMM_WORLD, fastMPIGroup, &fastMPIComm);
-  if (MPI_COMM_NULL != fastMPIComm) {
-    MPI_Comm_rank(fastMPIComm, &fastMPIRank);
-  }
-#endif
-
-  return ;
-}
-
 
 void FAST_cInterface::end() {
 
@@ -709,64 +531,64 @@ void FAST_cInterface::end() {
   }
 
 
-void FAST_cInterface::loadSuperController(YAML::Node c) {
+/* void FAST_cInterface::loadSuperController(YAML::Node c) { */
 
-  if(c["superController"]) {
-    scStatus = c["superController"].as<bool>();
-    scLibFile = c["scLibFile"].as<std::string>();
+/*   if(c["superController"]) { */
+/*     scStatus = c["superController"].as<bool>(); */
+/*     scLibFile = c["scLibFile"].as<std::string>(); */
 
-    // open the library
-    scLibHandle = dlopen(scLibFile.c_str(), RTLD_LAZY);
-    if (!scLibHandle) {
-      std::cerr << "Cannot open library: " << dlerror() << '\n';
-    }
+/*     // open the library */
+/*     scLibHandle = dlopen(scLibFile.c_str(), RTLD_LAZY); */
+/*     if (!scLibHandle) { */
+/*       std::cerr << "Cannot open library: " << dlerror() << '\n'; */
+/*     } */
     
-    create_SuperController = (create_sc_t*) dlsym(scLibHandle, "create_sc");
-    // reset errors
-    dlerror();
-    const char *dlsym_error = dlerror();
-    if (dlsym_error) {
-      std::cerr << "Cannot load symbol 'create_sc': " << dlsym_error << '\n';
-      dlclose(scLibHandle);
-    }
+/*     create_SuperController = (create_sc_t*) dlsym(scLibHandle, "create_sc"); */
+/*     // reset errors */
+/*     dlerror(); */
+/*     const char *dlsym_error = dlerror(); */
+/*     if (dlsym_error) { */
+/*       std::cerr << "Cannot load symbol 'create_sc': " << dlsym_error << '\n'; */
+/*       dlclose(scLibHandle); */
+/*     } */
 
-    destroy_SuperController = (destroy_sc_t*) dlsym(scLibHandle, "destroy_sc");
-    // reset errors
-    dlerror();
-    const char *dlsym_error_us = dlerror();
-    if (dlsym_error_us) {
-      std::cerr << "Cannot load symbol 'destroy_sc': " << dlsym_error_us << '\n';
-      dlclose(scLibHandle);
-    }
+/*     destroy_SuperController = (destroy_sc_t*) dlsym(scLibHandle, "destroy_sc"); */
+/*     // reset errors */
+/*     dlerror(); */
+/*     const char *dlsym_error_us = dlerror(); */
+/*     if (dlsym_error_us) { */
+/*       std::cerr << "Cannot load symbol 'destroy_sc': " << dlsym_error_us << '\n'; */
+/*       dlclose(scLibHandle); */
+/*     } */
 
-    sc = create_SuperController() ;
+/*     sc = create_SuperController() ; */
 
-    numScInputs = c["numScInputs"].as<int>();
-    numScOutputs = c["numScOutputs"].as<int>();
+/*     numScInputs = c["numScInputs"].as<int>(); */
+/*     numScOutputs = c["numScOutputs"].as<int>(); */
 
-    if ( (numScInputs > 0) && (numScOutputs > 0)) {
-      scOutputsGlob = create2DArray<double>(nTurbinesGlob, numScOutputs);
-      scInputsGlob = create2DArray<double>(nTurbinesGlob, numScInputs);
-      for (int iTurb=0; iTurb < nTurbinesGlob; iTurb++) {
-	for(int iInput=0; iInput < numScInputs; iInput++) {
-	  scInputsGlob[iTurb][iInput] = 0.0 ; // Initialize to zero
-	}
-	for(int iOutput=0; iOutput < numScOutputs; iOutput++) {
-	  scOutputsGlob[iTurb][iOutput] = 0.0 ; // Initialize to zero
-	}
-      }
+/*     if ( (numScInputs > 0) && (numScOutputs > 0)) { */
+/*       scOutputsGlob = create2DArray<double>(nTurbinesGlob, numScOutputs); */
+/*       scInputsGlob = create2DArray<double>(nTurbinesGlob, numScInputs); */
+/*       for (int iTurb=0; iTurb < nTurbinesGlob; iTurb++) { */
+/* 	for(int iInput=0; iInput < numScInputs; iInput++) { */
+/* 	  scInputsGlob[iTurb][iInput] = 0.0 ; // Initialize to zero */
+/* 	} */
+/* 	for(int iOutput=0; iOutput < numScOutputs; iOutput++) { */
+/* 	  scOutputsGlob[iTurb][iOutput] = 0.0 ; // Initialize to zero */
+/* 	} */
+/*       } */
 
-    } else {
-      std::cerr <<  "Make sure numScInputs and numScOutputs are greater than zero" << std::endl;
-    }
+/*     } else { */
+/*       std::cerr <<  "Make sure numScInputs and numScOutputs are greater than zero" << std::endl; */
+/*     } */
     
-   } else {
-    scStatus = false;
-    numScInputs = 0;
-    numScOutputs = 0;
-   }
+/*    } else { */
+/*     scStatus = false; */
+/*     numScInputs = 0; */
+/*     numScOutputs = 0; */
+/*    } */
 
-}
+/* } */
 
 
 void FAST_cInterface::fillScInputsGlob() {

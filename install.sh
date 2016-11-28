@@ -115,7 +115,7 @@ compileFAST() {
     make FAST_driver=FAST_Prog COMPILER=${COMPILER} BUILD=${BUILD} LAPACK=${LAPACK} &> log.make_FAST_Prog #Fortran driver program
     passFail $?
     echo -n "   Compiling C driver program"
-    make -f makefileCDriverProg COMPILER=${COMPILER} BUILD=${BUILD} LAPACK=${LAPACK} &> log.makeCDriverProg #C driver program
+    make -f makefileCDriverProg COMPILER=${COMPILER} BUILD=${BUILD} LAPACK=${LAPACK} library &> log.makeCDriverProg #C driver program
     passFail $?
     cd ../../
 }
@@ -140,7 +140,7 @@ if [ "${LAPACK}" == 'lapack' ]; then
     fi
 fi
 compileMapPlusPlus
-compileYAMLcpp
+#compileYAMLcpp
 compileFAST
 if [ "${COMPILER}" == 'intelPhi' ]; then
     prepPhiEnv

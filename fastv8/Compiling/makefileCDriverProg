@@ -103,6 +103,7 @@ ALL_OBJS   = $(patsubst %,$(INTER_DIR)/%,$(_ALL_OBJS))
 
 all:     default
 default:  $(INTER_DIR) $(DEST_DIR)/FAST_ProgC$(EXE_EXT)
+library: $(INTER_DIR) $(FASTLIB_DIR)/libFAST_cInterface$(EXE_EXT).so
 
    # General rules for compliling the files.
 
@@ -120,7 +121,7 @@ $(INTER_DIR):
    # For linking 
 
 $(FASTLIB_DIR)/libFAST_cInterface$(EXE_EXT).so: $(INTER_DIR)/FAST_cInterface.o
-	$(CPP) -fPIC -shared $(INTER_DIR)/FAST_cInterface.o -L$(YAMLCPPLIB_DIR) -Wl,-rpath=$(YAMLCPPLIB_DIR) -lyaml-cpp  -o $(FASTLIB_DIR)/libFAST_cInterface$(EXE_EXT).so
+	$(CPP) -fPIC -shared $(INTER_DIR)/FAST_cInterface.o -o $(FASTLIB_DIR)/libFAST_cInterface$(EXE_EXT).so
 	cp $(SOURCE_DIR)/FAST_cInterface.h $(SOURCE_DIR)/FAST_Library.h $(SOURCE_DIR)/dependencies/OpenFOAM/OpenFOAM_Types.h $(SOURCE_DIR)/dependencies/SuperController/SuperController_Types.h $(SOURCE_DIR)/SC.h ../include
 
 $(DEST_DIR)/FAST_ProgC$(EXE_EXT): $(FASTLIB_DIR)/libFAST_cInterface$(EXE_EXT).so $(INTER_DIR)/FAST_ProgC.o
