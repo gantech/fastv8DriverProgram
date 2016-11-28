@@ -219,6 +219,41 @@ int FAST_cInterface::step() {
    return 0;
 }
 
+int FAST_cInterface::setGlobalInputs(int nTsGlob, bool dRun, bool sController, std::string sControlLib, bool rStart, double timeStart, double timeEnd, double timeMax, double timeStep, int nCheckpoint, int nScOutputs, int nScInputs ) {
+  
+  // Read inputs from arguments instead of a file
+
+  nTurbinesGlob = nTsGlob;
+
+  if (nTurbinesGlob > 0) {
+    
+    dryRun = dRun ; 
+    
+    allocateTurbinesToProcsSimple();
+    
+    allocateInputData(); // Allocate memory for all inputs that are dependent on the number of turbines
+    
+    restart = rStart;
+    tStart = timeStart;
+    tEnd = timeEnd;
+    tMax = timeMax;
+    nEveryCheckPoint = nCheckpoint;
+    
+    //    loadSuperController(); - Super controller functionality disabled for now
+    
+    if (restart == false) {
+      ntStart = 0;
+      nt_global = ntStart;
+      dtFAST = timeStep;
+      ntEnd = int((tEnd - tStart)/dtFAST);
+    }
+    
+  } else {
+    throw std::runtime_error("Number of turbines < 0 ");
+  }
+  
+}
+
 int FAST_cInterface::readInputFile(std::string cInterfaceInputFile ) {
 
   // Check if the input file exists and call init
@@ -465,6 +500,77 @@ void FAST_cInterface::readTurbineData(int iTurb, YAML::Node turbNode) {
   return ;
 }
 
+void FAST_cInterface::setTurbineData(int tid, std::string fastInpFile, std::string fastRstartFile, std::vector<double> tPos) {
+
+  //Read turbine data for a given turbine using arguments - Assumes only one turbine on a given processor
+  
+  TurbID[0] = tid;
+  std::strcpy(FASTInputFileName[0], fastInpFile.c_str()) ;
+  std::strcpy(CheckpointFileRoot[0], fastRstartFile.c_str() );
+  for(int i=0;i<3;i++) {
+    TurbinePos[0][i] = tPos[i];
+  }
+
+  return ;
+}
+
+
+void FAST_cInterface::allocateTurbinesToProcsSimple() {
+
+  //Simple allocation - n Turbines go on to the first n procs
+  
+  for (int iTurb=0; iTurb < nTurbinesGlob; iTurb++) {
+    turbineMapGlobToProc[iTurb] = iTurb;
+    if (dryRun) {
+      if(worldMPIRank == 0) {
+	std::cout << "iTurb = " << iTurb << " turbineMapGlobToProc[iTurb] = " << turbineMapGlobToProc[iTurb] << std::endl ;
+      }
+    }
+    if(worldMPIRank == turbineMapGlobToProc[iTurb]) {
+      turbineMapProcToGlob[nTurbinesProc] = iTurb;
+      reverseTurbineMapProcToGlob[iTurb] = nTurbinesProc;
+      nTurbinesProc++ ;
+    }
+    turbineSetProcs.insert(turbineMapGlobToProc[iTurb]);
+  }
+#ifdef HAVE_MPI  
+  if ( dryRun ) {
+    MPI_Barrier(MPI_COMM_WORLD);  
+  }
+#endif
+
+  int nProcsWithTurbines=0;
+  turbineProcs = new int[turbineSetProcs.size()];
+  for (std::set<int>::const_iterator p = turbineSetProcs.begin(); p != turbineSetProcs.end(); p++) {
+    turbineProcs[nProcsWithTurbines] = *p;
+
+    if (dryRun) {
+      if ( worldMPIRank == turbineProcs[nProcsWithTurbines] ) {
+	for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
+	  std::cout << "Proc " << worldMPIRank << " loc iTurb " << iTurb << " glob iTurb " << turbineMapProcToGlob[iTurb] << std::endl ;
+	}
+      }
+#ifdef HAVE_MPI
+      MPI_Barrier(MPI_COMM_WORLD);  
+#endif
+    }
+
+    nProcsWithTurbines++ ;
+  }
+    
+#ifdef HAVE_MPI
+  // Construct a group containing all procs running atleast 1 turbine in FAST
+  MPI_Group_incl(worldMPIGroup, nProcsWithTurbines, turbineProcs, &fastMPIGroup) ;
+  int fastMPIcommTag = MPI_Comm_create(MPI_COMM_WORLD, fastMPIGroup, &fastMPIComm);
+  if (MPI_COMM_NULL != fastMPIComm) {
+    MPI_Comm_rank(fastMPIComm, &fastMPIRank);
+  }
+#endif
+
+  return ;
+
+  
+}
 
 void FAST_cInterface::allocateTurbinesToProcs(YAML::Node cDriverNode) {
   

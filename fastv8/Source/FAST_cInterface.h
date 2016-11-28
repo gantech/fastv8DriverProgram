@@ -97,6 +97,7 @@ class FAST_cInterface {
   ~FAST_cInterface() {} ;
   
   int readInputFile(std::string cInterfaceInputFile);  
+  int setGlobalInputs(int nTsGlob, bool dRun, bool sController, std::string sControlLib, bool rStart, double timeStart, double timeEnd, double timeMax, double timeStep, int nCheckpoint, int nScOutputs, int nScInputs) ;
   int readInputFile(const YAML::Node &);  
   void setRestart(const bool & isRestart);
   void setTstart(const double & cfdTstart);
@@ -132,8 +133,10 @@ class FAST_cInterface {
   inline bool checkFileExists(const std::string& name);
 
   void readTurbineData(int iTurb, YAML::Node turbNode);
+  void setTurbineData(int tid, std::string fastInpFile, std::string fastRstartFile, std::vector<double> tPos);
   void allocateInputData();
   void allocateTurbinesToProcs(YAML::Node cDriverNode);
+  void allocateTurbinesToProcsSimple();
   void loadSuperController(YAML::Node c);
   
   void fillScInputsGlob() ;
