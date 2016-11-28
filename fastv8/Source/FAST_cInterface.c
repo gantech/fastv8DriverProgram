@@ -388,10 +388,10 @@ void FAST_cInterface::getCoordinates(double *currentCoords, int iNode) {
 
 void FAST_cInterface::getForce(std::vector<double> & currentForce, int iNode) {
 
-  // Set coordinates at current node of current turbine - Only one turbine for now
-  currentForce[0] = cDriver_Input_from_FAST[0]->fx[iNode] ;
-  currentForce[1] = cDriver_Input_from_FAST[0]->fy[iNode] ;
-  currentForce[2] = cDriver_Input_from_FAST[0]->fz[iNode] ;
+  // Set forces at current node of current turbine - Only one turbine for now
+  currentForce[0] = -cDriver_Input_from_FAST[0]->fx[iNode] ;
+  currentForce[1] = -cDriver_Input_from_FAST[0]->fy[iNode] ;
+  currentForce[2] = -cDriver_Input_from_FAST[0]->fz[iNode] ;
 
 }
 
