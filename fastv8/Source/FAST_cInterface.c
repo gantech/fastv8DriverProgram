@@ -219,7 +219,7 @@ int FAST_cInterface::step() {
    return 0;
 }
 
-int FAST_cInterface::setGlobalInputs(int nTsGlob, bool dRun, bool sController, std::string sControlLib, bool rStart, double timeStart, double timeEnd, double timeMax, double timeStep, int nCheckpoint, int nScOutputs, int nScInputs ) {
+int FAST_cInterface::setGlobalInputs(int nTsGlob, bool dRun, bool sController, std::string sControlLib, bool rStart, double timeStart, int nTimeStepStart, double timeEnd, int nTimeStepEnd, double timeMax, double timeStep, int nCheckpoint, int nScOutputs, int nScInputs ) {
   
   // Read inputs from arguments instead of a file
 
@@ -240,12 +240,15 @@ int FAST_cInterface::setGlobalInputs(int nTsGlob, bool dRun, bool sController, s
     nEveryCheckPoint = nCheckpoint;
     
     //    loadSuperController(); - Super controller functionality disabled for now
-    
+    dtFAST = timeStep ;
     if (restart == false) {
       ntStart = 0;
       nt_global = ntStart;
-      dtFAST = timeStep;
       ntEnd = int((tEnd - tStart)/dtFAST);
+    }
+    else {
+      ntStart = nTimeStepStart ;
+      ntEnd = nTimeStepEnd ;
     }
     
   } else {

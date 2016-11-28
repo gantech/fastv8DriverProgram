@@ -9,7 +9,9 @@
 #include <cstring>
 #include <malloc.h>
 #include <stdexcept>
-#include "yaml-cpp/yaml.h"
+#include <set>
+#include <vector>
+#include <map>
 #include "dlfcn.h"
 #ifdef HAVE_MPI
   #include "mpi.h"
@@ -96,7 +98,7 @@ class FAST_cInterface {
   // Destructor
   ~FAST_cInterface() {} ;
   
-  int setGlobalInputs(int nTsGlob, bool dRun, bool sController, std::string sControlLib, bool rStart, double timeStart, double timeEnd, double timeMax, double timeStep, int nCheckpoint, int nScOutputs, int nScInputs) ;
+  int setGlobalInputs(int nTsGlob, bool dRun, bool sController, std::string sControlLib, bool rStart, double timeStart, int nTimeStepStart, double timeEnd, int nTimeStepEnd, double timeMax, double timeStep, int nCheckpoint, int nScOutputs, int nScInputs) ;
   void setRestart(const bool & isRestart);
   void setTstart(const double & cfdTstart);
   void setDt(const double & cfdDt);
