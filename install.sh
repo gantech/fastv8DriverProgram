@@ -78,7 +78,7 @@ compileYAMLcpp() {
     echo -n "   Setting up build directory"
     cd fastv8/Source/dependencies/yaml-cpp
     git clone https://github.com/jbeder/yaml-cpp.git &> /dev/null
-    rm -rf build
+#    rm -rf build
     [ -d build ] || mkdir build
     cd build
     passFail $?
@@ -105,7 +105,7 @@ compileFAST() {
     cd fastv8/Compiling
     echo "Compiling FAST"
     echo -n "   Compiling FAST Library"
-    make clean &> /dev/null
+    make -f makefileCDriverProg COMPILER=${COMPILER} BUILD=${BUILD} LAPACK=${LAPACK} clean &> /dev/null
     make COMPILER=${COMPILER} BUILD=${BUILD} LAPACK=${LAPACK} &> log.make #Basic FAST Library
     passFail $?
     echo -n "   Compiling Bladed style controller libraries"
