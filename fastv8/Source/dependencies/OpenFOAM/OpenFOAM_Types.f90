@@ -81,23 +81,31 @@ IMPLICIT NONE
   TYPE, BIND(C) :: OpFM_ParameterType_C
    TYPE(C_PTR) :: object = C_NULL_PTR
     REAL(KIND=C_FLOAT) :: AirDens 
-    INTEGER(KIND=C_INT) :: Nnodes 
+    INTEGER(KIND=C_INT) :: NnodesVel 
+    INTEGER(KIND=C_INT) :: NnodesForce 
   END TYPE OpFM_ParameterType_C
   TYPE, PUBLIC :: OpFM_ParameterType
     TYPE( OpFM_ParameterType_C ) :: C_obj
     REAL(ReKi)  :: AirDens      !< Air density for normalization of loads sent to OpenFOAM [kg/m^3]
-    INTEGER(IntKi)  :: Nnodes      !< number of nodes on FAST v8-OpenFOAM interface [-]
+    INTEGER(IntKi)  :: NnodesVel      !< number of velocity nodes on FAST v8-OpenFOAM interface [-]
+    INTEGER(IntKi)  :: NnodesForce      !< number of force nodes on FAST v8-OpenFOAM interface [-]
   END TYPE OpFM_ParameterType
 ! =======================
 ! =========  OpFM_InputType_C  =======
   TYPE, BIND(C) :: OpFM_InputType_C
    TYPE(C_PTR) :: object = C_NULL_PTR
-    TYPE(C_ptr) :: px = C_NULL_PTR 
-    INTEGER(C_int) :: px_Len = 0 
-    TYPE(C_ptr) :: py = C_NULL_PTR 
-    INTEGER(C_int) :: py_Len = 0 
-    TYPE(C_ptr) :: pz = C_NULL_PTR 
-    INTEGER(C_int) :: pz_Len = 0 
+    TYPE(C_ptr) :: pxVel = C_NULL_PTR 
+    INTEGER(C_int) :: pxVel_Len = 0 
+    TYPE(C_ptr) :: pyVel = C_NULL_PTR 
+    INTEGER(C_int) :: pyVel_Len = 0 
+    TYPE(C_ptr) :: pzVel = C_NULL_PTR 
+    INTEGER(C_int) :: pzVel_Len = 0 
+    TYPE(C_ptr) :: pxForce = C_NULL_PTR 
+    INTEGER(C_int) :: pxForce_Len = 0 
+    TYPE(C_ptr) :: pyForce = C_NULL_PTR 
+    INTEGER(C_int) :: pyForce_Len = 0 
+    TYPE(C_ptr) :: pzForce = C_NULL_PTR 
+    INTEGER(C_int) :: pzForce_Len = 0 
     TYPE(C_ptr) :: fx = C_NULL_PTR 
     INTEGER(C_int) :: fx_Len = 0 
     TYPE(C_ptr) :: fy = C_NULL_PTR 
@@ -109,9 +117,12 @@ IMPLICIT NONE
   END TYPE OpFM_InputType_C
   TYPE, PUBLIC :: OpFM_InputType
     TYPE( OpFM_InputType_C ) :: C_obj
-    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: px => NULL()      !< x position of interface nodes [m]
-    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: py => NULL()      !< y position of interface nodes [m]
-    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: pz => NULL()      !< z position of interface nodes [m]
+    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: pxVel => NULL()      !< x position of velocity interface (Aerodyn) nodes [m]
+    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: pyVel => NULL()      !< y position of velocity interface (Aerodyn) nodes [m]
+    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: pzVel => NULL()      !< z position of velocity interface (Aerodyn) nodes [m]
+    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: pxForce => NULL()      !< x position of velocity interface (Aerodyn) nodes [m]
+    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: pyForce => NULL()      !< y position of velocity interface (Aerodyn) nodes [m]
+    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: pzForce => NULL()      !< z position of velocity interface (Aerodyn) nodes [m]
     REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: fx => NULL()      !< normalized x force of interface nodes [N/kg/m^3]
     REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: fy => NULL()      !< normalized y force of interface nodes [N/kg/m^3]
     REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: fz => NULL()      !< normalized z force of interface nodes [N/kg/m^3]
@@ -1395,8 +1406,10 @@ ENDIF
    ErrMsg  = ""
     DstParamData%AirDens = SrcParamData%AirDens
     DstParamData%C_obj%AirDens = SrcParamData%C_obj%AirDens
-    DstParamData%Nnodes = SrcParamData%Nnodes
-    DstParamData%C_obj%Nnodes = SrcParamData%C_obj%Nnodes
+    DstParamData%NnodesVel = SrcParamData%NnodesVel
+    DstParamData%C_obj%NnodesVel = SrcParamData%C_obj%NnodesVel
+    DstParamData%NnodesForce = SrcParamData%NnodesForce
+    DstParamData%C_obj%NnodesForce = SrcParamData%C_obj%NnodesForce
  END SUBROUTINE OpFM_CopyParam
 
  SUBROUTINE OpFM_DestroyParam( ParamData, ErrStat, ErrMsg )
@@ -1446,7 +1459,8 @@ ENDIF
   Db_BufSz  = 0
   Int_BufSz  = 0
       Re_BufSz   = Re_BufSz   + 1  ! AirDens
-      Int_BufSz  = Int_BufSz  + 1  ! Nnodes
+      Int_BufSz  = Int_BufSz  + 1  ! NnodesVel
+      Int_BufSz  = Int_BufSz  + 1  ! NnodesForce
   IF ( Re_BufSz  .GT. 0 ) THEN 
      ALLOCATE( ReKiBuf(  Re_BufSz  ), STAT=ErrStat2 )
      IF (ErrStat2 /= 0) THEN 
@@ -1478,7 +1492,9 @@ ENDIF
 
       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%AirDens
       Re_Xferred   = Re_Xferred   + 1
-      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%Nnodes
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NnodesVel
+      Int_Xferred   = Int_Xferred   + 1
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NnodesForce
       Int_Xferred   = Int_Xferred   + 1
  END SUBROUTINE OpFM_PackParam
 
@@ -1517,9 +1533,12 @@ ENDIF
       OutData%AirDens = ReKiBuf( Re_Xferred )
       Re_Xferred   = Re_Xferred + 1
       OutData%C_obj%AirDens = OutData%AirDens
-      OutData%Nnodes = IntKiBuf( Int_Xferred ) 
+      OutData%NnodesVel = IntKiBuf( Int_Xferred ) 
       Int_Xferred   = Int_Xferred + 1
-      OutData%C_obj%Nnodes = OutData%Nnodes
+      OutData%C_obj%NnodesVel = OutData%NnodesVel
+      OutData%NnodesForce = IntKiBuf( Int_Xferred ) 
+      Int_Xferred   = Int_Xferred + 1
+      OutData%C_obj%NnodesForce = OutData%NnodesForce
  END SUBROUTINE OpFM_UnPackParam
 
  SUBROUTINE OpFM_C2Fary_CopyParam( ParamData, ErrStat, ErrMsg )
@@ -1530,7 +1549,8 @@ ENDIF
     ErrStat = ErrID_None
     ErrMsg  = ""
     ParamData%AirDens = ParamData%C_obj%AirDens
-    ParamData%Nnodes = ParamData%C_obj%Nnodes
+    ParamData%NnodesVel = ParamData%C_obj%NnodesVel
+    ParamData%NnodesForce = ParamData%C_obj%NnodesForce
  END SUBROUTINE OpFM_C2Fary_CopyParam
 
  SUBROUTINE OpFM_CopyInput( SrcInputData, DstInputData, CtrlCode, ErrStat, ErrMsg )
@@ -1548,50 +1568,95 @@ ENDIF
 ! 
    ErrStat = ErrID_None
    ErrMsg  = ""
-IF (ASSOCIATED(SrcInputData%px)) THEN
-  i1_l = LBOUND(SrcInputData%px,1)
-  i1_u = UBOUND(SrcInputData%px,1)
-  IF (.NOT. ASSOCIATED(DstInputData%px)) THEN 
-    ALLOCATE(DstInputData%px(i1_l:i1_u),STAT=ErrStat2)
+IF (ASSOCIATED(SrcInputData%pxVel)) THEN
+  i1_l = LBOUND(SrcInputData%pxVel,1)
+  i1_u = UBOUND(SrcInputData%pxVel,1)
+  IF (.NOT. ASSOCIATED(DstInputData%pxVel)) THEN 
+    ALLOCATE(DstInputData%pxVel(i1_l:i1_u),STAT=ErrStat2)
     IF (ErrStat2 /= 0) THEN 
-      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstInputData%px.', ErrStat, ErrMsg,RoutineName)
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstInputData%pxVel.', ErrStat, ErrMsg,RoutineName)
       RETURN
     END IF
-    DstInputData%c_obj%px_Len = SIZE(DstInputData%px)
-    IF (DstInputData%c_obj%px_Len > 0) &
-      DstInputData%c_obj%px = C_LOC( DstInputData%px(i1_l) ) 
+    DstInputData%c_obj%pxVel_Len = SIZE(DstInputData%pxVel)
+    IF (DstInputData%c_obj%pxVel_Len > 0) &
+      DstInputData%c_obj%pxVel = C_LOC( DstInputData%pxVel(i1_l) ) 
   END IF
-    DstInputData%px = SrcInputData%px
+    DstInputData%pxVel = SrcInputData%pxVel
 ENDIF
-IF (ASSOCIATED(SrcInputData%py)) THEN
-  i1_l = LBOUND(SrcInputData%py,1)
-  i1_u = UBOUND(SrcInputData%py,1)
-  IF (.NOT. ASSOCIATED(DstInputData%py)) THEN 
-    ALLOCATE(DstInputData%py(i1_l:i1_u),STAT=ErrStat2)
+IF (ASSOCIATED(SrcInputData%pyVel)) THEN
+  i1_l = LBOUND(SrcInputData%pyVel,1)
+  i1_u = UBOUND(SrcInputData%pyVel,1)
+  IF (.NOT. ASSOCIATED(DstInputData%pyVel)) THEN 
+    ALLOCATE(DstInputData%pyVel(i1_l:i1_u),STAT=ErrStat2)
     IF (ErrStat2 /= 0) THEN 
-      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstInputData%py.', ErrStat, ErrMsg,RoutineName)
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstInputData%pyVel.', ErrStat, ErrMsg,RoutineName)
       RETURN
     END IF
-    DstInputData%c_obj%py_Len = SIZE(DstInputData%py)
-    IF (DstInputData%c_obj%py_Len > 0) &
-      DstInputData%c_obj%py = C_LOC( DstInputData%py(i1_l) ) 
+    DstInputData%c_obj%pyVel_Len = SIZE(DstInputData%pyVel)
+    IF (DstInputData%c_obj%pyVel_Len > 0) &
+      DstInputData%c_obj%pyVel = C_LOC( DstInputData%pyVel(i1_l) ) 
   END IF
-    DstInputData%py = SrcInputData%py
+    DstInputData%pyVel = SrcInputData%pyVel
 ENDIF
-IF (ASSOCIATED(SrcInputData%pz)) THEN
-  i1_l = LBOUND(SrcInputData%pz,1)
-  i1_u = UBOUND(SrcInputData%pz,1)
-  IF (.NOT. ASSOCIATED(DstInputData%pz)) THEN 
-    ALLOCATE(DstInputData%pz(i1_l:i1_u),STAT=ErrStat2)
+IF (ASSOCIATED(SrcInputData%pzVel)) THEN
+  i1_l = LBOUND(SrcInputData%pzVel,1)
+  i1_u = UBOUND(SrcInputData%pzVel,1)
+  IF (.NOT. ASSOCIATED(DstInputData%pzVel)) THEN 
+    ALLOCATE(DstInputData%pzVel(i1_l:i1_u),STAT=ErrStat2)
     IF (ErrStat2 /= 0) THEN 
-      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstInputData%pz.', ErrStat, ErrMsg,RoutineName)
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstInputData%pzVel.', ErrStat, ErrMsg,RoutineName)
       RETURN
     END IF
-    DstInputData%c_obj%pz_Len = SIZE(DstInputData%pz)
-    IF (DstInputData%c_obj%pz_Len > 0) &
-      DstInputData%c_obj%pz = C_LOC( DstInputData%pz(i1_l) ) 
+    DstInputData%c_obj%pzVel_Len = SIZE(DstInputData%pzVel)
+    IF (DstInputData%c_obj%pzVel_Len > 0) &
+      DstInputData%c_obj%pzVel = C_LOC( DstInputData%pzVel(i1_l) ) 
   END IF
-    DstInputData%pz = SrcInputData%pz
+    DstInputData%pzVel = SrcInputData%pzVel
+ENDIF
+IF (ASSOCIATED(SrcInputData%pxForce)) THEN
+  i1_l = LBOUND(SrcInputData%pxForce,1)
+  i1_u = UBOUND(SrcInputData%pxForce,1)
+  IF (.NOT. ASSOCIATED(DstInputData%pxForce)) THEN 
+    ALLOCATE(DstInputData%pxForce(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstInputData%pxForce.', ErrStat, ErrMsg,RoutineName)
+      RETURN
+    END IF
+    DstInputData%c_obj%pxForce_Len = SIZE(DstInputData%pxForce)
+    IF (DstInputData%c_obj%pxForce_Len > 0) &
+      DstInputData%c_obj%pxForce = C_LOC( DstInputData%pxForce(i1_l) ) 
+  END IF
+    DstInputData%pxForce = SrcInputData%pxForce
+ENDIF
+IF (ASSOCIATED(SrcInputData%pyForce)) THEN
+  i1_l = LBOUND(SrcInputData%pyForce,1)
+  i1_u = UBOUND(SrcInputData%pyForce,1)
+  IF (.NOT. ASSOCIATED(DstInputData%pyForce)) THEN 
+    ALLOCATE(DstInputData%pyForce(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstInputData%pyForce.', ErrStat, ErrMsg,RoutineName)
+      RETURN
+    END IF
+    DstInputData%c_obj%pyForce_Len = SIZE(DstInputData%pyForce)
+    IF (DstInputData%c_obj%pyForce_Len > 0) &
+      DstInputData%c_obj%pyForce = C_LOC( DstInputData%pyForce(i1_l) ) 
+  END IF
+    DstInputData%pyForce = SrcInputData%pyForce
+ENDIF
+IF (ASSOCIATED(SrcInputData%pzForce)) THEN
+  i1_l = LBOUND(SrcInputData%pzForce,1)
+  i1_u = UBOUND(SrcInputData%pzForce,1)
+  IF (.NOT. ASSOCIATED(DstInputData%pzForce)) THEN 
+    ALLOCATE(DstInputData%pzForce(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstInputData%pzForce.', ErrStat, ErrMsg,RoutineName)
+      RETURN
+    END IF
+    DstInputData%c_obj%pzForce_Len = SIZE(DstInputData%pzForce)
+    IF (DstInputData%c_obj%pzForce_Len > 0) &
+      DstInputData%c_obj%pzForce = C_LOC( DstInputData%pzForce(i1_l) ) 
+  END IF
+    DstInputData%pzForce = SrcInputData%pzForce
 ENDIF
 IF (ASSOCIATED(SrcInputData%fx)) THEN
   i1_l = LBOUND(SrcInputData%fx,1)
@@ -1664,23 +1729,41 @@ ENDIF
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
-IF (ASSOCIATED(InputData%px)) THEN
-  DEALLOCATE(InputData%px)
-  InputData%px => NULL()
-  InputData%C_obj%px = C_NULL_PTR
-  InputData%C_obj%px_Len = 0
+IF (ASSOCIATED(InputData%pxVel)) THEN
+  DEALLOCATE(InputData%pxVel)
+  InputData%pxVel => NULL()
+  InputData%C_obj%pxVel = C_NULL_PTR
+  InputData%C_obj%pxVel_Len = 0
 ENDIF
-IF (ASSOCIATED(InputData%py)) THEN
-  DEALLOCATE(InputData%py)
-  InputData%py => NULL()
-  InputData%C_obj%py = C_NULL_PTR
-  InputData%C_obj%py_Len = 0
+IF (ASSOCIATED(InputData%pyVel)) THEN
+  DEALLOCATE(InputData%pyVel)
+  InputData%pyVel => NULL()
+  InputData%C_obj%pyVel = C_NULL_PTR
+  InputData%C_obj%pyVel_Len = 0
 ENDIF
-IF (ASSOCIATED(InputData%pz)) THEN
-  DEALLOCATE(InputData%pz)
-  InputData%pz => NULL()
-  InputData%C_obj%pz = C_NULL_PTR
-  InputData%C_obj%pz_Len = 0
+IF (ASSOCIATED(InputData%pzVel)) THEN
+  DEALLOCATE(InputData%pzVel)
+  InputData%pzVel => NULL()
+  InputData%C_obj%pzVel = C_NULL_PTR
+  InputData%C_obj%pzVel_Len = 0
+ENDIF
+IF (ASSOCIATED(InputData%pxForce)) THEN
+  DEALLOCATE(InputData%pxForce)
+  InputData%pxForce => NULL()
+  InputData%C_obj%pxForce = C_NULL_PTR
+  InputData%C_obj%pxForce_Len = 0
+ENDIF
+IF (ASSOCIATED(InputData%pyForce)) THEN
+  DEALLOCATE(InputData%pyForce)
+  InputData%pyForce => NULL()
+  InputData%C_obj%pyForce = C_NULL_PTR
+  InputData%C_obj%pyForce_Len = 0
+ENDIF
+IF (ASSOCIATED(InputData%pzForce)) THEN
+  DEALLOCATE(InputData%pzForce)
+  InputData%pzForce => NULL()
+  InputData%C_obj%pzForce = C_NULL_PTR
+  InputData%C_obj%pzForce_Len = 0
 ENDIF
 IF (ASSOCIATED(InputData%fx)) THEN
   DEALLOCATE(InputData%fx)
@@ -1743,20 +1826,35 @@ ENDIF
   Re_BufSz  = 0
   Db_BufSz  = 0
   Int_BufSz  = 0
-  Int_BufSz   = Int_BufSz   + 1     ! px allocated yes/no
-  IF ( ASSOCIATED(InData%px) ) THEN
-    Int_BufSz   = Int_BufSz   + 2*1  ! px upper/lower bounds for each dimension
-      Re_BufSz   = Re_BufSz   + SIZE(InData%px)  ! px
+  Int_BufSz   = Int_BufSz   + 1     ! pxVel allocated yes/no
+  IF ( ASSOCIATED(InData%pxVel) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! pxVel upper/lower bounds for each dimension
+      Re_BufSz   = Re_BufSz   + SIZE(InData%pxVel)  ! pxVel
   END IF
-  Int_BufSz   = Int_BufSz   + 1     ! py allocated yes/no
-  IF ( ASSOCIATED(InData%py) ) THEN
-    Int_BufSz   = Int_BufSz   + 2*1  ! py upper/lower bounds for each dimension
-      Re_BufSz   = Re_BufSz   + SIZE(InData%py)  ! py
+  Int_BufSz   = Int_BufSz   + 1     ! pyVel allocated yes/no
+  IF ( ASSOCIATED(InData%pyVel) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! pyVel upper/lower bounds for each dimension
+      Re_BufSz   = Re_BufSz   + SIZE(InData%pyVel)  ! pyVel
   END IF
-  Int_BufSz   = Int_BufSz   + 1     ! pz allocated yes/no
-  IF ( ASSOCIATED(InData%pz) ) THEN
-    Int_BufSz   = Int_BufSz   + 2*1  ! pz upper/lower bounds for each dimension
-      Re_BufSz   = Re_BufSz   + SIZE(InData%pz)  ! pz
+  Int_BufSz   = Int_BufSz   + 1     ! pzVel allocated yes/no
+  IF ( ASSOCIATED(InData%pzVel) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! pzVel upper/lower bounds for each dimension
+      Re_BufSz   = Re_BufSz   + SIZE(InData%pzVel)  ! pzVel
+  END IF
+  Int_BufSz   = Int_BufSz   + 1     ! pxForce allocated yes/no
+  IF ( ASSOCIATED(InData%pxForce) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! pxForce upper/lower bounds for each dimension
+      Re_BufSz   = Re_BufSz   + SIZE(InData%pxForce)  ! pxForce
+  END IF
+  Int_BufSz   = Int_BufSz   + 1     ! pyForce allocated yes/no
+  IF ( ASSOCIATED(InData%pyForce) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! pyForce upper/lower bounds for each dimension
+      Re_BufSz   = Re_BufSz   + SIZE(InData%pyForce)  ! pyForce
+  END IF
+  Int_BufSz   = Int_BufSz   + 1     ! pzForce allocated yes/no
+  IF ( ASSOCIATED(InData%pzForce) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! pzForce upper/lower bounds for each dimension
+      Re_BufSz   = Re_BufSz   + SIZE(InData%pzForce)  ! pzForce
   END IF
   Int_BufSz   = Int_BufSz   + 1     ! fx allocated yes/no
   IF ( ASSOCIATED(InData%fx) ) THEN
@@ -1807,44 +1905,83 @@ ENDIF
   Db_Xferred  = 1
   Int_Xferred = 1
 
-  IF ( .NOT. ASSOCIATED(InData%px) ) THEN
+  IF ( .NOT. ASSOCIATED(InData%pxVel) ) THEN
     IntKiBuf( Int_Xferred ) = 0
     Int_Xferred = Int_Xferred + 1
   ELSE
     IntKiBuf( Int_Xferred ) = 1
     Int_Xferred = Int_Xferred + 1
-    IntKiBuf( Int_Xferred    ) = LBOUND(InData%px,1)
-    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%px,1)
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%pxVel,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%pxVel,1)
     Int_Xferred = Int_Xferred + 2
 
-      IF (SIZE(InData%px)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%px))-1 ) = PACK(InData%px,.TRUE.)
-      Re_Xferred   = Re_Xferred   + SIZE(InData%px)
+      IF (SIZE(InData%pxVel)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%pxVel))-1 ) = PACK(InData%pxVel,.TRUE.)
+      Re_Xferred   = Re_Xferred   + SIZE(InData%pxVel)
   END IF
-  IF ( .NOT. ASSOCIATED(InData%py) ) THEN
+  IF ( .NOT. ASSOCIATED(InData%pyVel) ) THEN
     IntKiBuf( Int_Xferred ) = 0
     Int_Xferred = Int_Xferred + 1
   ELSE
     IntKiBuf( Int_Xferred ) = 1
     Int_Xferred = Int_Xferred + 1
-    IntKiBuf( Int_Xferred    ) = LBOUND(InData%py,1)
-    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%py,1)
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%pyVel,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%pyVel,1)
     Int_Xferred = Int_Xferred + 2
 
-      IF (SIZE(InData%py)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%py))-1 ) = PACK(InData%py,.TRUE.)
-      Re_Xferred   = Re_Xferred   + SIZE(InData%py)
+      IF (SIZE(InData%pyVel)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%pyVel))-1 ) = PACK(InData%pyVel,.TRUE.)
+      Re_Xferred   = Re_Xferred   + SIZE(InData%pyVel)
   END IF
-  IF ( .NOT. ASSOCIATED(InData%pz) ) THEN
+  IF ( .NOT. ASSOCIATED(InData%pzVel) ) THEN
     IntKiBuf( Int_Xferred ) = 0
     Int_Xferred = Int_Xferred + 1
   ELSE
     IntKiBuf( Int_Xferred ) = 1
     Int_Xferred = Int_Xferred + 1
-    IntKiBuf( Int_Xferred    ) = LBOUND(InData%pz,1)
-    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%pz,1)
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%pzVel,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%pzVel,1)
     Int_Xferred = Int_Xferred + 2
 
-      IF (SIZE(InData%pz)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%pz))-1 ) = PACK(InData%pz,.TRUE.)
-      Re_Xferred   = Re_Xferred   + SIZE(InData%pz)
+      IF (SIZE(InData%pzVel)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%pzVel))-1 ) = PACK(InData%pzVel,.TRUE.)
+      Re_Xferred   = Re_Xferred   + SIZE(InData%pzVel)
+  END IF
+  IF ( .NOT. ASSOCIATED(InData%pxForce) ) THEN
+    IntKiBuf( Int_Xferred ) = 0
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    IntKiBuf( Int_Xferred ) = 1
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%pxForce,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%pxForce,1)
+    Int_Xferred = Int_Xferred + 2
+
+      IF (SIZE(InData%pxForce)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%pxForce))-1 ) = PACK(InData%pxForce,.TRUE.)
+      Re_Xferred   = Re_Xferred   + SIZE(InData%pxForce)
+  END IF
+  IF ( .NOT. ASSOCIATED(InData%pyForce) ) THEN
+    IntKiBuf( Int_Xferred ) = 0
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    IntKiBuf( Int_Xferred ) = 1
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%pyForce,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%pyForce,1)
+    Int_Xferred = Int_Xferred + 2
+
+      IF (SIZE(InData%pyForce)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%pyForce))-1 ) = PACK(InData%pyForce,.TRUE.)
+      Re_Xferred   = Re_Xferred   + SIZE(InData%pyForce)
+  END IF
+  IF ( .NOT. ASSOCIATED(InData%pzForce) ) THEN
+    IntKiBuf( Int_Xferred ) = 0
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    IntKiBuf( Int_Xferred ) = 1
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%pzForce,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%pzForce,1)
+    Int_Xferred = Int_Xferred + 2
+
+      IF (SIZE(InData%pzForce)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%pzForce))-1 ) = PACK(InData%pzForce,.TRUE.)
+      Re_Xferred   = Re_Xferred   + SIZE(InData%pzForce)
   END IF
   IF ( .NOT. ASSOCIATED(InData%fx) ) THEN
     IntKiBuf( Int_Xferred ) = 0
@@ -1933,82 +2070,160 @@ ENDIF
   Re_Xferred  = 1
   Db_Xferred  = 1
   Int_Xferred  = 1
-  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! px not allocated
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! pxVel not allocated
     Int_Xferred = Int_Xferred + 1
   ELSE
     Int_Xferred = Int_Xferred + 1
     i1_l = IntKiBuf( Int_Xferred    )
     i1_u = IntKiBuf( Int_Xferred + 1)
     Int_Xferred = Int_Xferred + 2
-    IF (ASSOCIATED(OutData%px)) DEALLOCATE(OutData%px)
-    ALLOCATE(OutData%px(i1_l:i1_u),STAT=ErrStat2)
+    IF (ASSOCIATED(OutData%pxVel)) DEALLOCATE(OutData%pxVel)
+    ALLOCATE(OutData%pxVel(i1_l:i1_u),STAT=ErrStat2)
     IF (ErrStat2 /= 0) THEN 
-       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%px.', ErrStat, ErrMsg,RoutineName)
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%pxVel.', ErrStat, ErrMsg,RoutineName)
        RETURN
     END IF
-    OutData%c_obj%px_Len = SIZE(OutData%px)
-    IF (OutData%c_obj%px_Len > 0) &
-       OutData%c_obj%px = C_LOC( OutData%px(i1_l) ) 
+    OutData%c_obj%pxVel_Len = SIZE(OutData%pxVel)
+    IF (OutData%c_obj%pxVel_Len > 0) &
+       OutData%c_obj%pxVel = C_LOC( OutData%pxVel(i1_l) ) 
     ALLOCATE(mask1(i1_l:i1_u),STAT=ErrStat2)
     IF (ErrStat2 /= 0) THEN 
        CALL SetErrStat(ErrID_Fatal, 'Error allocating mask1.', ErrStat, ErrMsg,RoutineName)
        RETURN
     END IF
     mask1 = .TRUE. 
-      IF (SIZE(OutData%px)>0) OutData%px = REAL( UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%px))-1 ), mask1, 0.0_ReKi ), C_FLOAT)
-      Re_Xferred   = Re_Xferred   + SIZE(OutData%px)
+      IF (SIZE(OutData%pxVel)>0) OutData%pxVel = REAL( UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%pxVel))-1 ), mask1, 0.0_ReKi ), C_FLOAT)
+      Re_Xferred   = Re_Xferred   + SIZE(OutData%pxVel)
     DEALLOCATE(mask1)
   END IF
-  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! py not allocated
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! pyVel not allocated
     Int_Xferred = Int_Xferred + 1
   ELSE
     Int_Xferred = Int_Xferred + 1
     i1_l = IntKiBuf( Int_Xferred    )
     i1_u = IntKiBuf( Int_Xferred + 1)
     Int_Xferred = Int_Xferred + 2
-    IF (ASSOCIATED(OutData%py)) DEALLOCATE(OutData%py)
-    ALLOCATE(OutData%py(i1_l:i1_u),STAT=ErrStat2)
+    IF (ASSOCIATED(OutData%pyVel)) DEALLOCATE(OutData%pyVel)
+    ALLOCATE(OutData%pyVel(i1_l:i1_u),STAT=ErrStat2)
     IF (ErrStat2 /= 0) THEN 
-       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%py.', ErrStat, ErrMsg,RoutineName)
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%pyVel.', ErrStat, ErrMsg,RoutineName)
        RETURN
     END IF
-    OutData%c_obj%py_Len = SIZE(OutData%py)
-    IF (OutData%c_obj%py_Len > 0) &
-       OutData%c_obj%py = C_LOC( OutData%py(i1_l) ) 
+    OutData%c_obj%pyVel_Len = SIZE(OutData%pyVel)
+    IF (OutData%c_obj%pyVel_Len > 0) &
+       OutData%c_obj%pyVel = C_LOC( OutData%pyVel(i1_l) ) 
     ALLOCATE(mask1(i1_l:i1_u),STAT=ErrStat2)
     IF (ErrStat2 /= 0) THEN 
        CALL SetErrStat(ErrID_Fatal, 'Error allocating mask1.', ErrStat, ErrMsg,RoutineName)
        RETURN
     END IF
     mask1 = .TRUE. 
-      IF (SIZE(OutData%py)>0) OutData%py = REAL( UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%py))-1 ), mask1, 0.0_ReKi ), C_FLOAT)
-      Re_Xferred   = Re_Xferred   + SIZE(OutData%py)
+      IF (SIZE(OutData%pyVel)>0) OutData%pyVel = REAL( UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%pyVel))-1 ), mask1, 0.0_ReKi ), C_FLOAT)
+      Re_Xferred   = Re_Xferred   + SIZE(OutData%pyVel)
     DEALLOCATE(mask1)
   END IF
-  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! pz not allocated
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! pzVel not allocated
     Int_Xferred = Int_Xferred + 1
   ELSE
     Int_Xferred = Int_Xferred + 1
     i1_l = IntKiBuf( Int_Xferred    )
     i1_u = IntKiBuf( Int_Xferred + 1)
     Int_Xferred = Int_Xferred + 2
-    IF (ASSOCIATED(OutData%pz)) DEALLOCATE(OutData%pz)
-    ALLOCATE(OutData%pz(i1_l:i1_u),STAT=ErrStat2)
+    IF (ASSOCIATED(OutData%pzVel)) DEALLOCATE(OutData%pzVel)
+    ALLOCATE(OutData%pzVel(i1_l:i1_u),STAT=ErrStat2)
     IF (ErrStat2 /= 0) THEN 
-       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%pz.', ErrStat, ErrMsg,RoutineName)
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%pzVel.', ErrStat, ErrMsg,RoutineName)
        RETURN
     END IF
-    OutData%c_obj%pz_Len = SIZE(OutData%pz)
-    IF (OutData%c_obj%pz_Len > 0) &
-       OutData%c_obj%pz = C_LOC( OutData%pz(i1_l) ) 
+    OutData%c_obj%pzVel_Len = SIZE(OutData%pzVel)
+    IF (OutData%c_obj%pzVel_Len > 0) &
+       OutData%c_obj%pzVel = C_LOC( OutData%pzVel(i1_l) ) 
     ALLOCATE(mask1(i1_l:i1_u),STAT=ErrStat2)
     IF (ErrStat2 /= 0) THEN 
        CALL SetErrStat(ErrID_Fatal, 'Error allocating mask1.', ErrStat, ErrMsg,RoutineName)
        RETURN
     END IF
     mask1 = .TRUE. 
-      IF (SIZE(OutData%pz)>0) OutData%pz = REAL( UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%pz))-1 ), mask1, 0.0_ReKi ), C_FLOAT)
-      Re_Xferred   = Re_Xferred   + SIZE(OutData%pz)
+      IF (SIZE(OutData%pzVel)>0) OutData%pzVel = REAL( UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%pzVel))-1 ), mask1, 0.0_ReKi ), C_FLOAT)
+      Re_Xferred   = Re_Xferred   + SIZE(OutData%pzVel)
+    DEALLOCATE(mask1)
+  END IF
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! pxForce not allocated
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    Int_Xferred = Int_Xferred + 1
+    i1_l = IntKiBuf( Int_Xferred    )
+    i1_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    IF (ASSOCIATED(OutData%pxForce)) DEALLOCATE(OutData%pxForce)
+    ALLOCATE(OutData%pxForce(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%pxForce.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    OutData%c_obj%pxForce_Len = SIZE(OutData%pxForce)
+    IF (OutData%c_obj%pxForce_Len > 0) &
+       OutData%c_obj%pxForce = C_LOC( OutData%pxForce(i1_l) ) 
+    ALLOCATE(mask1(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating mask1.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    mask1 = .TRUE. 
+      IF (SIZE(OutData%pxForce)>0) OutData%pxForce = REAL( UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%pxForce))-1 ), mask1, 0.0_ReKi ), C_FLOAT)
+      Re_Xferred   = Re_Xferred   + SIZE(OutData%pxForce)
+    DEALLOCATE(mask1)
+  END IF
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! pyForce not allocated
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    Int_Xferred = Int_Xferred + 1
+    i1_l = IntKiBuf( Int_Xferred    )
+    i1_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    IF (ASSOCIATED(OutData%pyForce)) DEALLOCATE(OutData%pyForce)
+    ALLOCATE(OutData%pyForce(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%pyForce.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    OutData%c_obj%pyForce_Len = SIZE(OutData%pyForce)
+    IF (OutData%c_obj%pyForce_Len > 0) &
+       OutData%c_obj%pyForce = C_LOC( OutData%pyForce(i1_l) ) 
+    ALLOCATE(mask1(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating mask1.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    mask1 = .TRUE. 
+      IF (SIZE(OutData%pyForce)>0) OutData%pyForce = REAL( UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%pyForce))-1 ), mask1, 0.0_ReKi ), C_FLOAT)
+      Re_Xferred   = Re_Xferred   + SIZE(OutData%pyForce)
+    DEALLOCATE(mask1)
+  END IF
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! pzForce not allocated
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    Int_Xferred = Int_Xferred + 1
+    i1_l = IntKiBuf( Int_Xferred    )
+    i1_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    IF (ASSOCIATED(OutData%pzForce)) DEALLOCATE(OutData%pzForce)
+    ALLOCATE(OutData%pzForce(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%pzForce.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    OutData%c_obj%pzForce_Len = SIZE(OutData%pzForce)
+    IF (OutData%c_obj%pzForce_Len > 0) &
+       OutData%c_obj%pzForce = C_LOC( OutData%pzForce(i1_l) ) 
+    ALLOCATE(mask1(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating mask1.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    mask1 = .TRUE. 
+      IF (SIZE(OutData%pzForce)>0) OutData%pzForce = REAL( UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%pzForce))-1 ), mask1, 0.0_ReKi ), C_FLOAT)
+      Re_Xferred   = Re_Xferred   + SIZE(OutData%pzForce)
     DEALLOCATE(mask1)
   END IF
   IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! fx not allocated
@@ -2125,25 +2340,46 @@ ENDIF
     ErrStat = ErrID_None
     ErrMsg  = ""
 
-    ! -- px Input Data fields
-    IF ( .NOT. C_ASSOCIATED( InputData%C_obj%px ) ) THEN
-       NULLIFY( InputData%px )
+    ! -- pxVel Input Data fields
+    IF ( .NOT. C_ASSOCIATED( InputData%C_obj%pxVel ) ) THEN
+       NULLIFY( InputData%pxVel )
     ELSE
-       CALL C_F_POINTER(InputData%C_obj%px, InputData%px, (/InputData%C_obj%px_Len/))
+       CALL C_F_POINTER(InputData%C_obj%pxVel, InputData%pxVel, (/InputData%C_obj%pxVel_Len/))
     END IF
 
-    ! -- py Input Data fields
-    IF ( .NOT. C_ASSOCIATED( InputData%C_obj%py ) ) THEN
-       NULLIFY( InputData%py )
+    ! -- pyVel Input Data fields
+    IF ( .NOT. C_ASSOCIATED( InputData%C_obj%pyVel ) ) THEN
+       NULLIFY( InputData%pyVel )
     ELSE
-       CALL C_F_POINTER(InputData%C_obj%py, InputData%py, (/InputData%C_obj%py_Len/))
+       CALL C_F_POINTER(InputData%C_obj%pyVel, InputData%pyVel, (/InputData%C_obj%pyVel_Len/))
     END IF
 
-    ! -- pz Input Data fields
-    IF ( .NOT. C_ASSOCIATED( InputData%C_obj%pz ) ) THEN
-       NULLIFY( InputData%pz )
+    ! -- pzVel Input Data fields
+    IF ( .NOT. C_ASSOCIATED( InputData%C_obj%pzVel ) ) THEN
+       NULLIFY( InputData%pzVel )
     ELSE
-       CALL C_F_POINTER(InputData%C_obj%pz, InputData%pz, (/InputData%C_obj%pz_Len/))
+       CALL C_F_POINTER(InputData%C_obj%pzVel, InputData%pzVel, (/InputData%C_obj%pzVel_Len/))
+    END IF
+
+    ! -- pxForce Input Data fields
+    IF ( .NOT. C_ASSOCIATED( InputData%C_obj%pxForce ) ) THEN
+       NULLIFY( InputData%pxForce )
+    ELSE
+       CALL C_F_POINTER(InputData%C_obj%pxForce, InputData%pxForce, (/InputData%C_obj%pxForce_Len/))
+    END IF
+
+    ! -- pyForce Input Data fields
+    IF ( .NOT. C_ASSOCIATED( InputData%C_obj%pyForce ) ) THEN
+       NULLIFY( InputData%pyForce )
+    ELSE
+       CALL C_F_POINTER(InputData%C_obj%pyForce, InputData%pyForce, (/InputData%C_obj%pyForce_Len/))
+    END IF
+
+    ! -- pzForce Input Data fields
+    IF ( .NOT. C_ASSOCIATED( InputData%C_obj%pzForce ) ) THEN
+       NULLIFY( InputData%pzForce )
+    ELSE
+       CALL C_F_POINTER(InputData%C_obj%pzForce, InputData%pzForce, (/InputData%C_obj%pzForce_Len/))
     END IF
 
     ! -- fx Input Data fields
@@ -2751,27 +2987,51 @@ ENDIF
      CALL SetErrStat(ErrID_Fatal, 't(1) must not equal t(2) to avoid a division-by-zero error.', ErrStat, ErrMsg,RoutineName)
      RETURN
    END IF
-IF (ASSOCIATED(u_out%px) .AND. ASSOCIATED(u1%px)) THEN
-  ALLOCATE(b1(SIZE(u_out%px,1)))
-  ALLOCATE(c1(SIZE(u_out%px,1)))
-  b1 = -(u1%px - u2%px)/t(2)
-  u_out%px = u1%px + b1 * t_out
+IF (ASSOCIATED(u_out%pxVel) .AND. ASSOCIATED(u1%pxVel)) THEN
+  ALLOCATE(b1(SIZE(u_out%pxVel,1)))
+  ALLOCATE(c1(SIZE(u_out%pxVel,1)))
+  b1 = -(u1%pxVel - u2%pxVel)/t(2)
+  u_out%pxVel = u1%pxVel + b1 * t_out
   DEALLOCATE(b1)
   DEALLOCATE(c1)
 END IF ! check if allocated
-IF (ASSOCIATED(u_out%py) .AND. ASSOCIATED(u1%py)) THEN
-  ALLOCATE(b1(SIZE(u_out%py,1)))
-  ALLOCATE(c1(SIZE(u_out%py,1)))
-  b1 = -(u1%py - u2%py)/t(2)
-  u_out%py = u1%py + b1 * t_out
+IF (ASSOCIATED(u_out%pyVel) .AND. ASSOCIATED(u1%pyVel)) THEN
+  ALLOCATE(b1(SIZE(u_out%pyVel,1)))
+  ALLOCATE(c1(SIZE(u_out%pyVel,1)))
+  b1 = -(u1%pyVel - u2%pyVel)/t(2)
+  u_out%pyVel = u1%pyVel + b1 * t_out
   DEALLOCATE(b1)
   DEALLOCATE(c1)
 END IF ! check if allocated
-IF (ASSOCIATED(u_out%pz) .AND. ASSOCIATED(u1%pz)) THEN
-  ALLOCATE(b1(SIZE(u_out%pz,1)))
-  ALLOCATE(c1(SIZE(u_out%pz,1)))
-  b1 = -(u1%pz - u2%pz)/t(2)
-  u_out%pz = u1%pz + b1 * t_out
+IF (ASSOCIATED(u_out%pzVel) .AND. ASSOCIATED(u1%pzVel)) THEN
+  ALLOCATE(b1(SIZE(u_out%pzVel,1)))
+  ALLOCATE(c1(SIZE(u_out%pzVel,1)))
+  b1 = -(u1%pzVel - u2%pzVel)/t(2)
+  u_out%pzVel = u1%pzVel + b1 * t_out
+  DEALLOCATE(b1)
+  DEALLOCATE(c1)
+END IF ! check if allocated
+IF (ASSOCIATED(u_out%pxForce) .AND. ASSOCIATED(u1%pxForce)) THEN
+  ALLOCATE(b1(SIZE(u_out%pxForce,1)))
+  ALLOCATE(c1(SIZE(u_out%pxForce,1)))
+  b1 = -(u1%pxForce - u2%pxForce)/t(2)
+  u_out%pxForce = u1%pxForce + b1 * t_out
+  DEALLOCATE(b1)
+  DEALLOCATE(c1)
+END IF ! check if allocated
+IF (ASSOCIATED(u_out%pyForce) .AND. ASSOCIATED(u1%pyForce)) THEN
+  ALLOCATE(b1(SIZE(u_out%pyForce,1)))
+  ALLOCATE(c1(SIZE(u_out%pyForce,1)))
+  b1 = -(u1%pyForce - u2%pyForce)/t(2)
+  u_out%pyForce = u1%pyForce + b1 * t_out
+  DEALLOCATE(b1)
+  DEALLOCATE(c1)
+END IF ! check if allocated
+IF (ASSOCIATED(u_out%pzForce) .AND. ASSOCIATED(u1%pzForce)) THEN
+  ALLOCATE(b1(SIZE(u_out%pzForce,1)))
+  ALLOCATE(c1(SIZE(u_out%pzForce,1)))
+  b1 = -(u1%pzForce - u2%pzForce)/t(2)
+  u_out%pzForce = u1%pzForce + b1 * t_out
   DEALLOCATE(b1)
   DEALLOCATE(c1)
 END IF ! check if allocated
@@ -2861,30 +3121,57 @@ END IF ! check if allocated
      CALL SetErrStat(ErrID_Fatal, 't(1) must not equal t(3) to avoid a division-by-zero error.', ErrStat, ErrMsg,RoutineName)
      RETURN
    END IF
-IF (ASSOCIATED(u_out%px) .AND. ASSOCIATED(u1%px)) THEN
-  ALLOCATE(b1(SIZE(u_out%px,1)))
-  ALLOCATE(c1(SIZE(u_out%px,1)))
-  b1 = (t(3)**2*(u1%px - u2%px) + t(2)**2*(-u1%px + u3%px))/(t(2)*t(3)*(t(2) - t(3)))
-  c1 = ( (t(2)-t(3))*u1%px + t(3)*u2%px - t(2)*u3%px ) / (t(2)*t(3)*(t(2) - t(3)))
-  u_out%px = u1%px + b1 * t_out + c1 * t_out**2
+IF (ASSOCIATED(u_out%pxVel) .AND. ASSOCIATED(u1%pxVel)) THEN
+  ALLOCATE(b1(SIZE(u_out%pxVel,1)))
+  ALLOCATE(c1(SIZE(u_out%pxVel,1)))
+  b1 = (t(3)**2*(u1%pxVel - u2%pxVel) + t(2)**2*(-u1%pxVel + u3%pxVel))/(t(2)*t(3)*(t(2) - t(3)))
+  c1 = ( (t(2)-t(3))*u1%pxVel + t(3)*u2%pxVel - t(2)*u3%pxVel ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%pxVel = u1%pxVel + b1 * t_out + c1 * t_out**2
   DEALLOCATE(b1)
   DEALLOCATE(c1)
 END IF ! check if allocated
-IF (ASSOCIATED(u_out%py) .AND. ASSOCIATED(u1%py)) THEN
-  ALLOCATE(b1(SIZE(u_out%py,1)))
-  ALLOCATE(c1(SIZE(u_out%py,1)))
-  b1 = (t(3)**2*(u1%py - u2%py) + t(2)**2*(-u1%py + u3%py))/(t(2)*t(3)*(t(2) - t(3)))
-  c1 = ( (t(2)-t(3))*u1%py + t(3)*u2%py - t(2)*u3%py ) / (t(2)*t(3)*(t(2) - t(3)))
-  u_out%py = u1%py + b1 * t_out + c1 * t_out**2
+IF (ASSOCIATED(u_out%pyVel) .AND. ASSOCIATED(u1%pyVel)) THEN
+  ALLOCATE(b1(SIZE(u_out%pyVel,1)))
+  ALLOCATE(c1(SIZE(u_out%pyVel,1)))
+  b1 = (t(3)**2*(u1%pyVel - u2%pyVel) + t(2)**2*(-u1%pyVel + u3%pyVel))/(t(2)*t(3)*(t(2) - t(3)))
+  c1 = ( (t(2)-t(3))*u1%pyVel + t(3)*u2%pyVel - t(2)*u3%pyVel ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%pyVel = u1%pyVel + b1 * t_out + c1 * t_out**2
   DEALLOCATE(b1)
   DEALLOCATE(c1)
 END IF ! check if allocated
-IF (ASSOCIATED(u_out%pz) .AND. ASSOCIATED(u1%pz)) THEN
-  ALLOCATE(b1(SIZE(u_out%pz,1)))
-  ALLOCATE(c1(SIZE(u_out%pz,1)))
-  b1 = (t(3)**2*(u1%pz - u2%pz) + t(2)**2*(-u1%pz + u3%pz))/(t(2)*t(3)*(t(2) - t(3)))
-  c1 = ( (t(2)-t(3))*u1%pz + t(3)*u2%pz - t(2)*u3%pz ) / (t(2)*t(3)*(t(2) - t(3)))
-  u_out%pz = u1%pz + b1 * t_out + c1 * t_out**2
+IF (ASSOCIATED(u_out%pzVel) .AND. ASSOCIATED(u1%pzVel)) THEN
+  ALLOCATE(b1(SIZE(u_out%pzVel,1)))
+  ALLOCATE(c1(SIZE(u_out%pzVel,1)))
+  b1 = (t(3)**2*(u1%pzVel - u2%pzVel) + t(2)**2*(-u1%pzVel + u3%pzVel))/(t(2)*t(3)*(t(2) - t(3)))
+  c1 = ( (t(2)-t(3))*u1%pzVel + t(3)*u2%pzVel - t(2)*u3%pzVel ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%pzVel = u1%pzVel + b1 * t_out + c1 * t_out**2
+  DEALLOCATE(b1)
+  DEALLOCATE(c1)
+END IF ! check if allocated
+IF (ASSOCIATED(u_out%pxForce) .AND. ASSOCIATED(u1%pxForce)) THEN
+  ALLOCATE(b1(SIZE(u_out%pxForce,1)))
+  ALLOCATE(c1(SIZE(u_out%pxForce,1)))
+  b1 = (t(3)**2*(u1%pxForce - u2%pxForce) + t(2)**2*(-u1%pxForce + u3%pxForce))/(t(2)*t(3)*(t(2) - t(3)))
+  c1 = ( (t(2)-t(3))*u1%pxForce + t(3)*u2%pxForce - t(2)*u3%pxForce ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%pxForce = u1%pxForce + b1 * t_out + c1 * t_out**2
+  DEALLOCATE(b1)
+  DEALLOCATE(c1)
+END IF ! check if allocated
+IF (ASSOCIATED(u_out%pyForce) .AND. ASSOCIATED(u1%pyForce)) THEN
+  ALLOCATE(b1(SIZE(u_out%pyForce,1)))
+  ALLOCATE(c1(SIZE(u_out%pyForce,1)))
+  b1 = (t(3)**2*(u1%pyForce - u2%pyForce) + t(2)**2*(-u1%pyForce + u3%pyForce))/(t(2)*t(3)*(t(2) - t(3)))
+  c1 = ( (t(2)-t(3))*u1%pyForce + t(3)*u2%pyForce - t(2)*u3%pyForce ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%pyForce = u1%pyForce + b1 * t_out + c1 * t_out**2
+  DEALLOCATE(b1)
+  DEALLOCATE(c1)
+END IF ! check if allocated
+IF (ASSOCIATED(u_out%pzForce) .AND. ASSOCIATED(u1%pzForce)) THEN
+  ALLOCATE(b1(SIZE(u_out%pzForce,1)))
+  ALLOCATE(c1(SIZE(u_out%pzForce,1)))
+  b1 = (t(3)**2*(u1%pzForce - u2%pzForce) + t(2)**2*(-u1%pzForce + u3%pzForce))/(t(2)*t(3)*(t(2) - t(3)))
+  c1 = ( (t(2)-t(3))*u1%pzForce + t(3)*u2%pzForce - t(2)*u3%pzForce ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%pzForce = u1%pzForce + b1 * t_out + c1 * t_out**2
   DEALLOCATE(b1)
   DEALLOCATE(c1)
 END IF ! check if allocated

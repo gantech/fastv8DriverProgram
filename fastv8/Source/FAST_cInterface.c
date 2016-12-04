@@ -114,7 +114,7 @@ int FAST_cInterface::init() {
 
        if ( isDebug() ) {
 	 for (int iNode=0; iNode < get_numVelPts(iTurb); iNode++) {
-	   std::cout << "Node " << iNode << " Position = " << cDriver_Input_from_FAST[iTurb]->px[iNode] << " " << cDriver_Input_from_FAST[iTurb]->py[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pz[iNode] << " " << std::endl ;
+	   std::cout << "Node " << iNode << " Position = " << cDriver_Input_from_FAST[iTurb]->pxVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pyVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pzVel[iNode] << " " << std::endl ;
 	 }
        }
      }
@@ -200,7 +200,7 @@ int FAST_cInterface::step() {
 
      if ( isDebug() ) {
        for (int iNode=0; iNode < get_numVelPts(iTurb); iNode++) {
-	 std::cout << "Node " << iNode << " Position = " << cDriver_Input_from_FAST[iTurb]->px[iNode] << " " << cDriver_Input_from_FAST[iTurb]->py[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pz[iNode] << " " << std::endl ;
+	 std::cout << "Node " << iNode << " Position = " << cDriver_Input_from_FAST[iTurb]->pxVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pyVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pzVel[iNode] << " " << std::endl ;
        }
        for (int iNode=0; iNode < get_numVelPts(iTurb); iNode++) {
 	 std::cout << "Node " << iNode << " Type " << getNodeType(turbineMapProcToGlob[iTurb], iNode) << " Force = " << cDriver_Input_from_FAST[iTurb]->fx[iNode] << " " << cDriver_Input_from_FAST[iTurb]->fy[iNode] << " " << cDriver_Input_from_FAST[iTurb]->fz[iNode] << " " << std::endl ;
@@ -362,7 +362,7 @@ void FAST_cInterface::setOutputsToFAST(OpFM_InputType_t* cDriver_Input_from_FAST
    // routine sets the u-v-w wind speeds used in FAST and the SuperController inputs
 
    for (j = 0; j < cDriver_Output_to_FAST->u_Len; j++){
-      cDriver_Output_to_FAST->u[j] = (float) 10.0*pow((cDriver_Input_from_FAST->pz[j] / 90.0), 0.2); // 0.2 power law wind profile using reference 10 m/s at 90 meters
+      cDriver_Output_to_FAST->u[j] = (float) 10.0*pow((cDriver_Input_from_FAST->pzVel[j] / 90.0), 0.2); // 0.2 power law wind profile using reference 10 m/s at 90 meters
       cDriver_Output_to_FAST->v[j] = 0.0;
       cDriver_Output_to_FAST->w[j] = 0.0;
    }
@@ -380,9 +380,9 @@ void FAST_cInterface::setOutputsToFAST(OpFM_InputType_t* cDriver_Input_from_FAST
 void FAST_cInterface::getCoordinates(double *currentCoords, int iNode) {
 
   // Set coordinates at current node of current turbine - Only one turbine for now
-  currentCoords[0] = cDriver_Input_from_FAST[0]->px[iNode] ;
-  currentCoords[1] = cDriver_Input_from_FAST[0]->py[iNode] ;
-  currentCoords[2] = cDriver_Input_from_FAST[0]->pz[iNode] ;
+  currentCoords[0] = cDriver_Input_from_FAST[0]->pxVel[iNode] ;
+  currentCoords[1] = cDriver_Input_from_FAST[0]->pyVel[iNode] ;
+  currentCoords[2] = cDriver_Input_from_FAST[0]->pzVel[iNode] ;
 
 }
 

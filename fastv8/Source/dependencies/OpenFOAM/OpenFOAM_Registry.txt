@@ -35,12 +35,17 @@ typedef	^	^	MeshMapType	Line2_to_Point_Motions	{:}	-	-	"mapping data structure t
 
 # ..... Parameters ................................................................................................................
 typedef	OpenFOAM/OpFM	ParameterType	ReKi	AirDens	-	-	-	"Air density for normalization of loads sent to OpenFOAM"	kg/m^3
-typedef	OpenFOAM/OpFM	ParameterType	IntKi	Nnodes	-	-	-	"number of nodes on FAST v8-OpenFOAM interface"	-
+typedef	OpenFOAM/OpFM	ParameterType	IntKi	NnodesVel	-	-	-	"number of velocity nodes on FAST v8-OpenFOAM interface"	-
+typedef	OpenFOAM/OpFM	ParameterType	IntKi	NnodesForce	-	-	-	"number of force nodes on FAST v8-OpenFOAM interface"	-
+
 
 # ..... OpenFOAM_InputType data .......................................................................................................
-typedef	^	InputType	ReKi	px	{:}	-	-	"x position of interface nodes"	"m"
-typedef	^	InputType	ReKi	py	{:}	-	-	"y position of interface nodes"	"m"
-typedef	^	InputType	ReKi	pz	{:}	-	-	"z position of interface nodes"	"m"
+typedef	^	InputType	ReKi	pxVel	{:}	-	-	"x position of velocity interface (Aerodyn) nodes"	"m"
+typedef	^	InputType	ReKi	pyVel	{:}	-	-	"y position of velocity interface (Aerodyn) nodes"	"m"
+typedef	^	InputType	ReKi	pzVel	{:}	-	-	"z position of velocity interface (Aerodyn) nodes"	"m"
+typedef	^	InputType	ReKi	pxForce	{:}	-	-	"x position of velocity interface (Aerodyn) nodes"	"m"
+typedef	^	InputType	ReKi	pyForce	{:}	-	-	"y position of velocity interface (Aerodyn) nodes"	"m"
+typedef	^	InputType	ReKi	pzForce	{:}	-	-	"z position of velocity interface (Aerodyn) nodes"	"m"
 typedef	^	InputType	ReKi	fx	{:}	-	-	"normalized x force of interface nodes"	"N/kg/m^3"
 typedef	^	InputType	ReKi	fy	{:}	-	-	"normalized y force of interface nodes"	"N/kg/m^3"
 typedef	^	InputType	ReKi	fz	{:}	-	-	"normalized z force of interface nodes"	"N/kg/m^3"

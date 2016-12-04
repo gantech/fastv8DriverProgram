@@ -85,18 +85,18 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, InitInp_AD, y_AD, 
       
       ! number of nodes in the interface:
    
-   OpFM%p%Nnodes = 1  ! always want the hub point
+   OpFM%p%NnodesVel = 1  ! always want the hub point
    IF ( p_FAST%CompAero  == Module_AD14 ) THEN ! AeroDyn 14 needs these velocities
       NumBl    = SIZE(u_AD14%InputMarkers,1)
          
-      OpFM%p%Nnodes = OpFM%p%Nnodes + u_AD14%Twr_InputMarkers%NNodes          ! tower nodes (if any)
-      OpFM%p%Nnodes = OpFM%p%Nnodes + NumBl * u_AD14%InputMarkers(1)%Nnodes   ! blade nodes         
+      OpFM%p%NnodesVel = OpFM%p%NnodesVel + u_AD14%Twr_InputMarkers%NNodes          ! tower nodes (if any)
+      OpFM%p%NnodesVel = OpFM%p%NnodesVel + NumBl * u_AD14%InputMarkers(1)%Nnodes   ! blade nodes         
    ELSEIF ( p_FAST%CompAero  == Module_AD ) THEN ! AeroDyn 15 needs these velocities
       NumBl = SIZE( u_AD%BladeMotion, 1 )
          
-      OpFM%p%Nnodes = OpFM%p%Nnodes + u_AD%TowerMotion%NNodes                 ! tower nodes (if any)
+      OpFM%p%NnodesVel = OpFM%p%NnodesVel + u_AD%TowerMotion%NNodes                 ! tower nodes (if any)
       DO k=1,NumBl
-         OpFM%p%Nnodes = OpFM%p%Nnodes + u_AD%BladeMotion(k)%NNodes           ! blade nodes
+         OpFM%p%NnodesVel = OpFM%p%NnodesVel + u_AD%BladeMotion(k)%NNodes           ! blade nodes
       END DO
    END IF
    
@@ -109,12 +109,12 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, InitInp_AD, y_AD, 
       !............................................................................................
       ! Allocate arrays and define initial guesses for the OpenFOAM inputs here:
       !............................................................................................
-   CALL AllocPAry( OpFM%u%px, OpFM%p%Nnodes, 'px', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-   CALL AllocPAry( OpFM%u%py, OpFM%p%Nnodes, 'py', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-   CALL AllocPAry( OpFM%u%pz, OpFM%p%Nnodes, 'pz', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-   CALL AllocPAry( OpFM%u%fx, OpFM%p%Nnodes, 'fx', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-   CALL AllocPAry( OpFM%u%fy, OpFM%p%Nnodes, 'fy', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-   CALL AllocPAry( OpFM%u%fz, OpFM%p%Nnodes, 'fz', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+   CALL AllocPAry( OpFM%u%pxVel, OpFM%p%NnodesVel, 'pxVel', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+   CALL AllocPAry( OpFM%u%pyVel, OpFM%p%NnodesVel, 'pyVel', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+   CALL AllocPAry( OpFM%u%pzVel, OpFM%p%NnodesVel, 'pzVel', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+   CALL AllocPAry( OpFM%u%fx, OpFM%p%NnodesVel, 'fx', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+   CALL AllocPAry( OpFM%u%fy, OpFM%p%NnodesVel, 'fy', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+   CALL AllocPAry( OpFM%u%fz, OpFM%p%NnodesVel, 'fz', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
 
    IF (InitInp%NumCtrl2SC > 0) THEN
       CALL AllocPAry( OpFM%u%SuperController, InitInp%NumCtrl2SC, 'u%SuperController', ErrStat2, ErrMsg2 )
@@ -124,12 +124,12 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, InitInp_AD, y_AD, 
    IF (ErrStat >= AbortErrLev) RETURN
    
       ! make sure the C versions are synced with these arrays
-   OpFM%u%c_obj%px_Len = OpFM%p%Nnodes; OpFM%u%c_obj%px = C_LOC( OpFM%u%px(1) )
-   OpFM%u%c_obj%py_Len = OpFM%p%Nnodes; OpFM%u%c_obj%py = C_LOC( OpFM%u%py(1) )
-   OpFM%u%c_obj%pz_Len = OpFM%p%Nnodes; OpFM%u%c_obj%pz = C_LOC( OpFM%u%pz(1) )
-   OpFM%u%c_obj%fx_Len = OpFM%p%Nnodes; OpFM%u%c_obj%fx = C_LOC( OpFM%u%fx(1) )
-   OpFM%u%c_obj%fy_Len = OpFM%p%Nnodes; OpFM%u%c_obj%fy = C_LOC( OpFM%u%fy(1) )
-   OpFM%u%c_obj%fz_Len = OpFM%p%Nnodes; OpFM%u%c_obj%fz = C_LOC( OpFM%u%fz(1) ) 
+   OpFM%u%c_obj%pxVel_Len = OpFM%p%NnodesVel; OpFM%u%c_obj%pxVel = C_LOC( OpFM%u%pxVel(1) )
+   OpFM%u%c_obj%pyVel_Len = OpFM%p%NnodesVel; OpFM%u%c_obj%pyVel = C_LOC( OpFM%u%pyVel(1) )
+   OpFM%u%c_obj%pzVel_Len = OpFM%p%NnodesVel; OpFM%u%c_obj%pzVel = C_LOC( OpFM%u%pzVel(1) )
+   OpFM%u%c_obj%fx_Len = OpFM%p%NnodesVel; OpFM%u%c_obj%fx = C_LOC( OpFM%u%fx(1) )
+   OpFM%u%c_obj%fy_Len = OpFM%p%NnodesVel; OpFM%u%c_obj%fy = C_LOC( OpFM%u%fy(1) )
+   OpFM%u%c_obj%fz_Len = OpFM%p%NnodesVel; OpFM%u%c_obj%fz = C_LOC( OpFM%u%fz(1) ) 
    if (InitInp%NumCtrl2SC > 0) then
       OpFM%u%c_obj%SuperController_Len = InitInp%NumCtrl2SC
       OpFM%u%c_obj%SuperController     = C_LOC( OpFM%u%SuperController(1) )
@@ -259,9 +259,9 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, InitInp_AD, y_AD, 
       !............................................................................................
       ! Define system output initializations (set up mesh) here:
       !............................................................................................   
-   CALL AllocPAry( OpFM%y%u, OpFM%p%Nnodes, 'u', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-   CALL AllocPAry( OpFM%y%v, OpFM%p%Nnodes, 'v', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-   CALL AllocPAry( OpFM%y%w, OpFM%p%Nnodes, 'w', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+   CALL AllocPAry( OpFM%y%u, OpFM%p%NnodesVel, 'u', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+   CALL AllocPAry( OpFM%y%v, OpFM%p%NnodesVel, 'v', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+   CALL AllocPAry( OpFM%y%w, OpFM%p%NnodesVel, 'w', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
    if (InitInp%NumSC2Ctrl > 0) then
       CALL AllocPAry( OpFM%y%SuperController, InitInp%NumSC2Ctrl, 'y%SuperController', ErrStat2, ErrMsg2 )
       CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
@@ -270,9 +270,9 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, InitInp_AD, y_AD, 
    IF (ErrStat >= AbortErrLev) RETURN
                         
       ! make sure the C versions are synced with these arrays
-   OpFM%y%c_obj%u_Len = OpFM%p%Nnodes; OpFM%y%c_obj%u = C_LOC( OpFM%y%u(1) )
-   OpFM%y%c_obj%v_Len = OpFM%p%Nnodes; OpFM%y%c_obj%v = C_LOC( OpFM%y%v(1) )
-   OpFM%y%c_obj%w_Len = OpFM%p%Nnodes; OpFM%y%c_obj%w = C_LOC( OpFM%y%w(1) )
+   OpFM%y%c_obj%u_Len = OpFM%p%NnodesVel; OpFM%y%c_obj%u = C_LOC( OpFM%y%u(1) )
+   OpFM%y%c_obj%v_Len = OpFM%p%NnodesVel; OpFM%y%c_obj%v = C_LOC( OpFM%y%v(1) )
+   OpFM%y%c_obj%w_Len = OpFM%p%NnodesVel; OpFM%y%c_obj%w = C_LOC( OpFM%y%w(1) )
    
    if (InitInp%NumSC2Ctrl > 0) then
       OpFM%y%c_obj%SuperController_Len = InitInp%NumSC2Ctrl
@@ -363,9 +363,9 @@ SUBROUTINE SetOpFMPositions(p_FAST, u_AD14, u_AD, y_ED, OpFM)
       
    !-------------------------------------------------------------------------------------------------
    Node = 1   ! undisplaced hub position    ( Maybe we also want to use the displaced position (add y_ED%HubPtMotion%TranslationDisp) at some point in time.)
-   OpFM%u%px(Node) = y_ED%HubPtMotion%Position(1,1)  
-   OpFM%u%py(Node) = y_ED%HubPtMotion%Position(2,1) 
-   OpFM%u%pz(Node) = y_ED%HubPtMotion%Position(3,1) 
+   OpFM%u%pxVel(Node) = y_ED%HubPtMotion%Position(1,1)  
+   OpFM%u%pyVel(Node) = y_ED%HubPtMotion%Position(2,1) 
+   OpFM%u%pzVel(Node) = y_ED%HubPtMotion%Position(3,1) 
             
    
    IF (p_FAST%CompAero == MODULE_AD14) THEN   
@@ -374,18 +374,18 @@ SUBROUTINE SetOpFMPositions(p_FAST, u_AD14, u_AD, y_ED, OpFM)
       DO K = 1,SIZE(u_AD14%InputMarkers)
          DO J = 1,u_AD14%InputMarkers(K)%nnodes  !this mesh isn't properly set up (it's got the global [absolute] position and no reference position)
             Node = Node + 1
-            OpFM%u%px(Node) = u_AD14%InputMarkers(K)%Position(1,J)
-            OpFM%u%py(Node) = u_AD14%InputMarkers(K)%Position(2,J)
-            OpFM%u%pz(Node) = u_AD14%InputMarkers(K)%Position(3,J)
+            OpFM%u%pxVel(Node) = u_AD14%InputMarkers(K)%Position(1,J)
+            OpFM%u%pyVel(Node) = u_AD14%InputMarkers(K)%Position(2,J)
+            OpFM%u%pzVel(Node) = u_AD14%InputMarkers(K)%Position(3,J)
          END DO !J = 1,p%BldNodes ! Loop through the blade nodes / elements
       END DO !K = 1,p%NumBl         
                   
          ! tower nodes
       DO J=1,u_AD14%Twr_InputMarkers%nnodes
          Node = Node + 1      
-         OpFM%u%px(Node) = u_AD14%Twr_InputMarkers%TranslationDisp(1,J) + u_AD14%Twr_InputMarkers%Position(1,J)
-         OpFM%u%py(Node) = u_AD14%Twr_InputMarkers%TranslationDisp(2,J) + u_AD14%Twr_InputMarkers%Position(2,J)
-         OpFM%u%pz(Node) = u_AD14%Twr_InputMarkers%TranslationDisp(3,J) + u_AD14%Twr_InputMarkers%Position(3,J)
+         OpFM%u%pxVel(Node) = u_AD14%Twr_InputMarkers%TranslationDisp(1,J) + u_AD14%Twr_InputMarkers%Position(1,J)
+         OpFM%u%pyVel(Node) = u_AD14%Twr_InputMarkers%TranslationDisp(2,J) + u_AD14%Twr_InputMarkers%Position(2,J)
+         OpFM%u%pzVel(Node) = u_AD14%Twr_InputMarkers%TranslationDisp(3,J) + u_AD14%Twr_InputMarkers%Position(3,J)
       END DO      
          
    ELSEIF (p_FAST%CompAero == MODULE_AD) THEN               
@@ -395,9 +395,9 @@ SUBROUTINE SetOpFMPositions(p_FAST, u_AD14, u_AD, y_ED, OpFM)
          DO J = 1,u_AD%BladeMotion(k)%Nnodes
             
             Node = Node + 1
-            OpFM%u%px(Node) = u_AD%BladeMotion(k)%TranslationDisp(1,j) + u_AD%BladeMotion(k)%Position(1,j)
-            OpFM%u%py(Node) = u_AD%BladeMotion(k)%TranslationDisp(2,j) + u_AD%BladeMotion(k)%Position(2,j)
-            OpFM%u%pz(Node) = u_AD%BladeMotion(k)%TranslationDisp(3,j) + u_AD%BladeMotion(k)%Position(3,j)
+            OpFM%u%pxVel(Node) = u_AD%BladeMotion(k)%TranslationDisp(1,j) + u_AD%BladeMotion(k)%Position(1,j)
+            OpFM%u%pyVel(Node) = u_AD%BladeMotion(k)%TranslationDisp(2,j) + u_AD%BladeMotion(k)%Position(2,j)
+            OpFM%u%pzVel(Node) = u_AD%BladeMotion(k)%TranslationDisp(3,j) + u_AD%BladeMotion(k)%Position(3,j)
             
          END DO !J = 1,p%BldNodes ! Loop through the blade nodes / elements
       END DO !K = 1,p%NumBl         
@@ -405,9 +405,9 @@ SUBROUTINE SetOpFMPositions(p_FAST, u_AD14, u_AD, y_ED, OpFM)
          ! tower nodes
       DO J=1,u_AD%TowerMotion%nnodes
          Node = Node + 1      
-         OpFM%u%px(Node) = u_AD%TowerMotion%TranslationDisp(1,J) + u_AD%TowerMotion%Position(1,J)
-         OpFM%u%py(Node) = u_AD%TowerMotion%TranslationDisp(2,J) + u_AD%TowerMotion%Position(2,J)
-         OpFM%u%pz(Node) = u_AD%TowerMotion%TranslationDisp(3,J) + u_AD%TowerMotion%Position(3,J)
+         OpFM%u%pxVel(Node) = u_AD%TowerMotion%TranslationDisp(1,J) + u_AD%TowerMotion%Position(1,J)
+         OpFM%u%pyVel(Node) = u_AD%TowerMotion%TranslationDisp(2,J) + u_AD%TowerMotion%Position(2,J)
+         OpFM%u%pzVel(Node) = u_AD%TowerMotion%TranslationDisp(3,J) + u_AD%TowerMotion%Position(3,J)
       END DO      
                                           
    END IF

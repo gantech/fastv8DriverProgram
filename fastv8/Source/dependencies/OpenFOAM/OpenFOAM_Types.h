@@ -43,13 +43,17 @@
   typedef struct OpFM_ParameterType {
     void * object ;
     float AirDens ;
-    int Nnodes ;
+    int NnodesVel ;
+    int NnodesForce ;
   } OpFM_ParameterType_t ;
   typedef struct OpFM_InputType {
     void * object ;
-    float * px ;     int px_Len ;
-    float * py ;     int py_Len ;
-    float * pz ;     int pz_Len ;
+    float * pxVel ;     int pxVel_Len ;
+    float * pyVel ;     int pyVel_Len ;
+    float * pzVel ;     int pzVel_Len ;
+    float * pxForce ;     int pxForce_Len ;
+    float * pyForce ;     int pyForce_Len ;
+    float * pzForce ;     int pzForce_Len ;
     float * fx ;     int fx_Len ;
     float * fy ;     int fy_Len ;
     float * fz ;     int fz_Len ;
