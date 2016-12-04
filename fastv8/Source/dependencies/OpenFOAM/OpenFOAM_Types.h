@@ -24,6 +24,8 @@
     void * object ;
     int NumSC2Ctrl ;
     int NumCtrl2SC ;
+    int NumActForcePtsBlade ;
+    int NumActForcePtsTower ;
   } OpFM_InitInputType_t ;
   typedef struct OpFM_InitOutputType {
     void * object ;

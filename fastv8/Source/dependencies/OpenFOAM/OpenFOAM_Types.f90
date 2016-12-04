@@ -3,7 +3,7 @@
 ! WARNING This file is generated automatically by the FAST registry.
 ! Do not edit.  Your changes to this file will be lost.
 !
-! FAST Registry (v3.02.00, 22-Jun-2016)
+! FAST Registry (v3.02.00, 23-Jul-2016)
 !*********************************************************************************************************************************
 ! OpenFOAM_Types
 !.................................................................................................................................
@@ -39,11 +39,15 @@ IMPLICIT NONE
    TYPE(C_PTR) :: object = C_NULL_PTR
     INTEGER(KIND=C_INT) :: NumSC2Ctrl 
     INTEGER(KIND=C_INT) :: NumCtrl2SC 
+    INTEGER(KIND=C_INT) :: NumActForcePtsBlade 
+    INTEGER(KIND=C_INT) :: NumActForcePtsTower 
   END TYPE OpFM_InitInputType_C
   TYPE, PUBLIC :: OpFM_InitInputType
     TYPE( OpFM_InitInputType_C ) :: C_obj
     INTEGER(IntKi)  :: NumSC2Ctrl      !< number of controller inputs [from supercontroller] [-]
     INTEGER(IntKi)  :: NumCtrl2SC      !< number of controller outputs [to supercontroller] [-]
+    INTEGER(IntKi)  :: NumActForcePtsBlade      !< number of actuator line force points in blade [-]
+    INTEGER(IntKi)  :: NumActForcePtsTower      !< number of actuator line force points in tower [-]
   END TYPE OpFM_InitInputType
 ! =======================
 ! =========  OpFM_InitOutputType_C  =======
@@ -157,6 +161,10 @@ CONTAINS
     DstInitInputData%C_obj%NumSC2Ctrl = SrcInitInputData%C_obj%NumSC2Ctrl
     DstInitInputData%NumCtrl2SC = SrcInitInputData%NumCtrl2SC
     DstInitInputData%C_obj%NumCtrl2SC = SrcInitInputData%C_obj%NumCtrl2SC
+    DstInitInputData%NumActForcePtsBlade = SrcInitInputData%NumActForcePtsBlade
+    DstInitInputData%C_obj%NumActForcePtsBlade = SrcInitInputData%C_obj%NumActForcePtsBlade
+    DstInitInputData%NumActForcePtsTower = SrcInitInputData%NumActForcePtsTower
+    DstInitInputData%C_obj%NumActForcePtsTower = SrcInitInputData%C_obj%NumActForcePtsTower
  END SUBROUTINE OpFM_CopyInitInput
 
  SUBROUTINE OpFM_DestroyInitInput( InitInputData, ErrStat, ErrMsg )
@@ -207,6 +215,8 @@ CONTAINS
   Int_BufSz  = 0
       Int_BufSz  = Int_BufSz  + 1  ! NumSC2Ctrl
       Int_BufSz  = Int_BufSz  + 1  ! NumCtrl2SC
+      Int_BufSz  = Int_BufSz  + 1  ! NumActForcePtsBlade
+      Int_BufSz  = Int_BufSz  + 1  ! NumActForcePtsTower
   IF ( Re_BufSz  .GT. 0 ) THEN 
      ALLOCATE( ReKiBuf(  Re_BufSz  ), STAT=ErrStat2 )
      IF (ErrStat2 /= 0) THEN 
@@ -239,6 +249,10 @@ CONTAINS
       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NumSC2Ctrl
       Int_Xferred   = Int_Xferred   + 1
       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NumCtrl2SC
+      Int_Xferred   = Int_Xferred   + 1
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NumActForcePtsBlade
+      Int_Xferred   = Int_Xferred   + 1
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NumActForcePtsTower
       Int_Xferred   = Int_Xferred   + 1
  END SUBROUTINE OpFM_PackInitInput
 
@@ -281,6 +295,12 @@ CONTAINS
       OutData%NumCtrl2SC = IntKiBuf( Int_Xferred ) 
       Int_Xferred   = Int_Xferred + 1
       OutData%C_obj%NumCtrl2SC = OutData%NumCtrl2SC
+      OutData%NumActForcePtsBlade = IntKiBuf( Int_Xferred ) 
+      Int_Xferred   = Int_Xferred + 1
+      OutData%C_obj%NumActForcePtsBlade = OutData%NumActForcePtsBlade
+      OutData%NumActForcePtsTower = IntKiBuf( Int_Xferred ) 
+      Int_Xferred   = Int_Xferred + 1
+      OutData%C_obj%NumActForcePtsTower = OutData%NumActForcePtsTower
  END SUBROUTINE OpFM_UnPackInitInput
 
  SUBROUTINE OpFM_C2Fary_CopyInitInput( InitInputData, ErrStat, ErrMsg )
@@ -292,6 +312,8 @@ CONTAINS
     ErrMsg  = ""
     InitInputData%NumSC2Ctrl = InitInputData%C_obj%NumSC2Ctrl
     InitInputData%NumCtrl2SC = InitInputData%C_obj%NumCtrl2SC
+    InitInputData%NumActForcePtsBlade = InitInputData%C_obj%NumActForcePtsBlade
+    InitInputData%NumActForcePtsTower = InitInputData%C_obj%NumActForcePtsTower
  END SUBROUTINE OpFM_C2Fary_CopyInitInput
 
  SUBROUTINE OpFM_CopyInitOutput( SrcInitOutputData, DstInitOutputData, CtrlCode, ErrStat, ErrMsg )

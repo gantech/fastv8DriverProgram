@@ -45,7 +45,7 @@ MODULE OpenFOAM
    
 CONTAINS
 !----------------------------------------------------------------------------------------------------------------------------------
-SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, y_AD, y_ED, OpFM, InitOut, ErrStat, ErrMsg )
+SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, InitInp_AD, y_AD, y_ED, OpFM, InitOut, ErrStat, ErrMsg )
 !..................................................................................................................................
 
    TYPE(OpFM_InitInputType),        INTENT(IN   )  :: InitInp     ! Input data for initialization routine
@@ -53,6 +53,7 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, y_AD, y_ED, OpFM, 
    REAL(ReKi),                      INTENT(IN   )  :: AirDens     ! Air Density kg/m^3
    TYPE(AD14_InputType),            INTENT(IN   )  :: u_AD14      ! AeroDyn14 input data
    TYPE(AD_InputType),              INTENT(IN   )  :: u_AD        ! AeroDyn input data
+   TYPE(AD_InitInputType),          INTENT(IN   )  :: InitInp_AD  ! Input data for initialization routine of AeroDyn
    TYPE(AD_OutputType),             INTENT(IN   )  :: y_AD        ! AeroDyn output data (for mesh mapping)
    TYPE(ED_OutputType),             INTENT(IN)     :: y_ED        ! The outputs of the structural dynamics module
    TYPE(OpenFOAM_Data),             INTENT(INOUT)  :: OpFM        ! data for the OpenFOAM integration module
