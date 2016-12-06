@@ -310,6 +310,15 @@ void FAST_cInterface::setOutputsToFAST(OpFM_InputType_t* cDriver_Input_from_FAST
    return;
 }
 
+void FAST_cInterface::getHubShaftDirection(double *hubShftVec) {
+
+  // Get hub shaft direction of current turbine - Only one turbine for now
+  hubShftVec[0] = cDriver_Input_from_FAST[0]->hubShftVec[0] ;
+  hubShftVec[1] = cDriver_Input_from_FAST[0]->hubShftVec[1] ;
+  hubShftVec[2] = cDriver_Input_from_FAST[0]->hubShftVec[2];
+
+}
+
 void FAST_cInterface::getCoordinates(double *currentCoords, int iNode) {
 
   // Set coordinates at current node of current turbine - Only one turbine for now

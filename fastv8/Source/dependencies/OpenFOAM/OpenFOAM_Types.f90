@@ -3,7 +3,7 @@
 ! WARNING This file is generated automatically by the FAST registry.
 ! Do not edit.  Your changes to this file will be lost.
 !
-! FAST Registry (v3.02.00, 22-Jun-2016)
+! FAST Registry (v3.02.00, 23-Jul-2016)
 !*********************************************************************************************************************************
 ! OpenFOAM_Types
 !.................................................................................................................................
@@ -100,6 +100,8 @@ IMPLICIT NONE
     INTEGER(C_int) :: fy_Len = 0 
     TYPE(C_ptr) :: fz = C_NULL_PTR 
     INTEGER(C_int) :: fz_Len = 0 
+    TYPE(C_ptr) :: hubShftVec = C_NULL_PTR 
+    INTEGER(C_int) :: hubShftVec_Len = 0 
     TYPE(C_ptr) :: SuperController = C_NULL_PTR 
     INTEGER(C_int) :: SuperController_Len = 0 
   END TYPE OpFM_InputType_C
@@ -111,6 +113,7 @@ IMPLICIT NONE
     REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: fx => NULL()      !< normalized x force of interface nodes [N/kg/m^3]
     REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: fy => NULL()      !< normalized y force of interface nodes [N/kg/m^3]
     REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: fz => NULL()      !< normalized z force of interface nodes [N/kg/m^3]
+    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: hubShftVec => NULL()      !< direction vector pointing along hub shaft direction [-]
     REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: SuperController => NULL()      !< inputs to the super controller (from the turbine controller) [-]
   END TYPE OpFM_InputType
 ! =======================
@@ -1616,6 +1619,21 @@ IF (ASSOCIATED(SrcInputData%fz)) THEN
   END IF
     DstInputData%fz = SrcInputData%fz
 ENDIF
+IF (ASSOCIATED(SrcInputData%hubShftVec)) THEN
+  i1_l = LBOUND(SrcInputData%hubShftVec,1)
+  i1_u = UBOUND(SrcInputData%hubShftVec,1)
+  IF (.NOT. ASSOCIATED(DstInputData%hubShftVec)) THEN 
+    ALLOCATE(DstInputData%hubShftVec(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstInputData%hubShftVec.', ErrStat, ErrMsg,RoutineName)
+      RETURN
+    END IF
+    DstInputData%c_obj%hubShftVec_Len = SIZE(DstInputData%hubShftVec)
+    IF (DstInputData%c_obj%hubShftVec_Len > 0) &
+      DstInputData%c_obj%hubShftVec = C_LOC( DstInputData%hubShftVec(i1_l) ) 
+  END IF
+    DstInputData%hubShftVec = SrcInputData%hubShftVec
+ENDIF
 IF (ASSOCIATED(SrcInputData%SuperController)) THEN
   i1_l = LBOUND(SrcInputData%SuperController,1)
   i1_u = UBOUND(SrcInputData%SuperController,1)
@@ -1677,6 +1695,12 @@ IF (ASSOCIATED(InputData%fz)) THEN
   InputData%fz => NULL()
   InputData%C_obj%fz = C_NULL_PTR
   InputData%C_obj%fz_Len = 0
+ENDIF
+IF (ASSOCIATED(InputData%hubShftVec)) THEN
+  DEALLOCATE(InputData%hubShftVec)
+  InputData%hubShftVec => NULL()
+  InputData%C_obj%hubShftVec = C_NULL_PTR
+  InputData%C_obj%hubShftVec_Len = 0
 ENDIF
 IF (ASSOCIATED(InputData%SuperController)) THEN
   DEALLOCATE(InputData%SuperController)
@@ -1750,6 +1774,11 @@ ENDIF
   IF ( ASSOCIATED(InData%fz) ) THEN
     Int_BufSz   = Int_BufSz   + 2*1  ! fz upper/lower bounds for each dimension
       Re_BufSz   = Re_BufSz   + SIZE(InData%fz)  ! fz
+  END IF
+  Int_BufSz   = Int_BufSz   + 1     ! hubShftVec allocated yes/no
+  IF ( ASSOCIATED(InData%hubShftVec) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! hubShftVec upper/lower bounds for each dimension
+      Re_BufSz   = Re_BufSz   + SIZE(InData%hubShftVec)  ! hubShftVec
   END IF
   Int_BufSz   = Int_BufSz   + 1     ! SuperController allocated yes/no
   IF ( ASSOCIATED(InData%SuperController) ) THEN
@@ -1862,6 +1891,19 @@ ENDIF
 
       IF (SIZE(InData%fz)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%fz))-1 ) = PACK(InData%fz,.TRUE.)
       Re_Xferred   = Re_Xferred   + SIZE(InData%fz)
+  END IF
+  IF ( .NOT. ASSOCIATED(InData%hubShftVec) ) THEN
+    IntKiBuf( Int_Xferred ) = 0
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    IntKiBuf( Int_Xferred ) = 1
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%hubShftVec,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%hubShftVec,1)
+    Int_Xferred = Int_Xferred + 2
+
+      IF (SIZE(InData%hubShftVec)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%hubShftVec))-1 ) = PACK(InData%hubShftVec,.TRUE.)
+      Re_Xferred   = Re_Xferred   + SIZE(InData%hubShftVec)
   END IF
   IF ( .NOT. ASSOCIATED(InData%SuperController) ) THEN
     IntKiBuf( Int_Xferred ) = 0
@@ -2067,6 +2109,32 @@ ENDIF
       Re_Xferred   = Re_Xferred   + SIZE(OutData%fz)
     DEALLOCATE(mask1)
   END IF
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! hubShftVec not allocated
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    Int_Xferred = Int_Xferred + 1
+    i1_l = IntKiBuf( Int_Xferred    )
+    i1_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    IF (ASSOCIATED(OutData%hubShftVec)) DEALLOCATE(OutData%hubShftVec)
+    ALLOCATE(OutData%hubShftVec(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%hubShftVec.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    OutData%c_obj%hubShftVec_Len = SIZE(OutData%hubShftVec)
+    IF (OutData%c_obj%hubShftVec_Len > 0) &
+       OutData%c_obj%hubShftVec = C_LOC( OutData%hubShftVec(i1_l) ) 
+    ALLOCATE(mask1(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating mask1.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    mask1 = .TRUE. 
+      IF (SIZE(OutData%hubShftVec)>0) OutData%hubShftVec = REAL( UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%hubShftVec))-1 ), mask1, 0.0_ReKi ), C_FLOAT)
+      Re_Xferred   = Re_Xferred   + SIZE(OutData%hubShftVec)
+    DEALLOCATE(mask1)
+  END IF
   IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! SuperController not allocated
     Int_Xferred = Int_Xferred + 1
   ELSE
@@ -2143,6 +2211,13 @@ ENDIF
        NULLIFY( InputData%fz )
     ELSE
        CALL C_F_POINTER(InputData%C_obj%fz, InputData%fz, (/InputData%C_obj%fz_Len/))
+    END IF
+
+    ! -- hubShftVec Input Data fields
+    IF ( .NOT. C_ASSOCIATED( InputData%C_obj%hubShftVec ) ) THEN
+       NULLIFY( InputData%hubShftVec )
+    ELSE
+       CALL C_F_POINTER(InputData%C_obj%hubShftVec, InputData%hubShftVec, (/InputData%C_obj%hubShftVec_Len/))
     END IF
 
     ! -- SuperController Input Data fields
@@ -2777,6 +2852,14 @@ IF (ASSOCIATED(u_out%fz) .AND. ASSOCIATED(u1%fz)) THEN
   DEALLOCATE(b1)
   DEALLOCATE(c1)
 END IF ! check if allocated
+IF (ASSOCIATED(u_out%hubShftVec) .AND. ASSOCIATED(u1%hubShftVec)) THEN
+  ALLOCATE(b1(SIZE(u_out%hubShftVec,1)))
+  ALLOCATE(c1(SIZE(u_out%hubShftVec,1)))
+  b1 = -(u1%hubShftVec - u2%hubShftVec)/t(2)
+  u_out%hubShftVec = u1%hubShftVec + b1 * t_out
+  DEALLOCATE(b1)
+  DEALLOCATE(c1)
+END IF ! check if allocated
 IF (ASSOCIATED(u_out%SuperController) .AND. ASSOCIATED(u1%SuperController)) THEN
   ALLOCATE(b1(SIZE(u_out%SuperController,1)))
   ALLOCATE(c1(SIZE(u_out%SuperController,1)))
@@ -2890,6 +2973,15 @@ IF (ASSOCIATED(u_out%fz) .AND. ASSOCIATED(u1%fz)) THEN
   b1 = (t(3)**2*(u1%fz - u2%fz) + t(2)**2*(-u1%fz + u3%fz))/(t(2)*t(3)*(t(2) - t(3)))
   c1 = ( (t(2)-t(3))*u1%fz + t(3)*u2%fz - t(2)*u3%fz ) / (t(2)*t(3)*(t(2) - t(3)))
   u_out%fz = u1%fz + b1 * t_out + c1 * t_out**2
+  DEALLOCATE(b1)
+  DEALLOCATE(c1)
+END IF ! check if allocated
+IF (ASSOCIATED(u_out%hubShftVec) .AND. ASSOCIATED(u1%hubShftVec)) THEN
+  ALLOCATE(b1(SIZE(u_out%hubShftVec,1)))
+  ALLOCATE(c1(SIZE(u_out%hubShftVec,1)))
+  b1 = (t(3)**2*(u1%hubShftVec - u2%hubShftVec) + t(2)**2*(-u1%hubShftVec + u3%hubShftVec))/(t(2)*t(3)*(t(2) - t(3)))
+  c1 = ( (t(2)-t(3))*u1%hubShftVec + t(3)*u2%hubShftVec - t(2)*u3%hubShftVec ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%hubShftVec = u1%hubShftVec + b1 * t_out + c1 * t_out**2
   DEALLOCATE(b1)
   DEALLOCATE(c1)
 END IF ! check if allocated

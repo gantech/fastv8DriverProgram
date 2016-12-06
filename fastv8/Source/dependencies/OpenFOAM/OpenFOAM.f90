@@ -114,6 +114,7 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, y_AD, y_ED, OpFM, 
    CALL AllocPAry( OpFM%u%fx, OpFM%p%Nnodes, 'fx', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
    CALL AllocPAry( OpFM%u%fy, OpFM%p%Nnodes, 'fy', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
    CALL AllocPAry( OpFM%u%fz, OpFM%p%Nnodes, 'fz', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+   CALL AllocPAry( OpFM%u%hubShftVec, 3, 'hubShftVec', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
 
    IF (InitInp%NumCtrl2SC > 0) THEN
       CALL AllocPAry( OpFM%u%SuperController, InitInp%NumCtrl2SC, 'u%SuperController', ErrStat2, ErrMsg2 )
@@ -128,7 +129,8 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, y_AD, y_ED, OpFM, 
    OpFM%u%c_obj%pz_Len = OpFM%p%Nnodes; OpFM%u%c_obj%pz = C_LOC( OpFM%u%pz(1) )
    OpFM%u%c_obj%fx_Len = OpFM%p%Nnodes; OpFM%u%c_obj%fx = C_LOC( OpFM%u%fx(1) )
    OpFM%u%c_obj%fy_Len = OpFM%p%Nnodes; OpFM%u%c_obj%fy = C_LOC( OpFM%u%fy(1) )
-   OpFM%u%c_obj%fz_Len = OpFM%p%Nnodes; OpFM%u%c_obj%fz = C_LOC( OpFM%u%fz(1) ) 
+   OpFM%u%c_obj%fz_Len = OpFM%p%Nnodes; OpFM%u%c_obj%fz = C_LOC( OpFM%u%fz(1) )
+   OpFM%u%c_obj%hubShftVec_Len = 3; OpFM%u%c_obj%hubShftVec = C_LOC( OpFM%u%hubShftVec(1) ) 
    if (InitInp%NumCtrl2SC > 0) then
       OpFM%u%c_obj%SuperController_Len = InitInp%NumCtrl2SC
       OpFM%u%c_obj%SuperController     = C_LOC( OpFM%u%SuperController(1) )
@@ -358,7 +360,12 @@ SUBROUTINE SetOpFMPositions(p_FAST, u_AD14, u_AD, y_ED, OpFM)
    INTEGER(IntKi)                                  :: K           ! Loops through blades.
    INTEGER(IntKi)                                  :: Node        ! Node number for blade/node on mesh
 
-     
+
+   ! Get vector pointing along the hub shaft direction. This will be (1,0,0) in the hub co-ordinate system expressed in the global co-ordinate system
+   OpFM%u%hubShftVec(1) = y_ED%HubPtMotion%Orientation(1,1,1) 
+   OpFM%u%hubShftVec(2) = y_ED%HubPtMotion%Orientation(2,1,1)
+   OpFM%u%hubShftVec(3) = y_ED%HubPtMotion%Orientation(3,1,1)
+   
       
    !-------------------------------------------------------------------------------------------------
    Node = 1   ! undisplaced hub position    ( Maybe we also want to use the displaced position (add y_ED%HubPtMotion%TranslationDisp) at some point in time.)

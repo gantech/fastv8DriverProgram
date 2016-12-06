@@ -51,6 +51,7 @@
     float * fx ;     int fx_Len ;
     float * fy ;     int fy_Len ;
     float * fz ;     int fz_Len ;
+    float * hubShftVec ;     int hubShftVec_Len ;
     float * SuperController ;     int SuperController_Len ;
   } OpFM_InputType_t ;
   typedef struct OpFM_OutputType {

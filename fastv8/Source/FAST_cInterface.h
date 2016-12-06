@@ -107,6 +107,7 @@ class FAST_cInterface {
   int init();
   int solution0();
   int step();
+  void getHubShaftDirection(double *hubShftVec);
   void getCoordinates(double *currentCoords, int iNode);
   void getForce(std::vector<double> & force, int iNode);
   void setVelocity(std::vector<double> & velocity, int iNode);

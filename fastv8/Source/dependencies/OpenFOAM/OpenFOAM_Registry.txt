@@ -41,7 +41,9 @@ typedef	^	InputType	ReKi	pz	{:}	-	-	"z position of interface nodes"	"m"
 typedef	^	InputType	ReKi	fx	{:}	-	-	"normalized x force of interface nodes"	"N/kg/m^3"
 typedef	^	InputType	ReKi	fy	{:}	-	-	"normalized y force of interface nodes"	"N/kg/m^3"
 typedef	^	InputType	ReKi	fz	{:}	-	-	"normalized z force of interface nodes"	"N/kg/m^3"
+typedef ^       InputType       ReKi    hubShftVec  {:}        -       -       "direction vector pointing along hub shaft direction"
 typedef	^	InputType	ReKi	SuperController	{:}	-	-	"inputs to the super controller (from the turbine controller)"	-
+
 
 # ..... OpenFOAM_OutputType data .......................................................................................................
 typedef	OpenFOAM/OpFM	OutputType	ReKi	u	{:}	-	-	"U-component wind speed (in the X-direction) at interface nodes"	m/s
