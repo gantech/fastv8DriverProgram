@@ -65,6 +65,37 @@ IMPLICIT NONE
     TYPE(ProgDesc)  :: Ver      !< This module's name, version, and date [-]
   END TYPE OpFM_InitOutputType
 ! =======================
+! =========  OpFM_BladePropsType_C  =======
+  TYPE, BIND(C) :: OpFM_BladePropsType_C
+   TYPE(C_PTR) :: object = C_NULL_PTR
+    INTEGER(KIND=C_INT) :: NumBlNds 
+    TYPE(C_ptr) :: BlSpn = C_NULL_PTR 
+    INTEGER(C_int) :: BlSpn_Len = 0 
+    TYPE(C_ptr) :: BlCrvAC = C_NULL_PTR 
+    INTEGER(C_int) :: BlCrvAC_Len = 0 
+    TYPE(C_ptr) :: BlSwpAC = C_NULL_PTR 
+    INTEGER(C_int) :: BlSwpAC_Len = 0 
+    TYPE(C_ptr) :: BlCrvAng = C_NULL_PTR 
+    INTEGER(C_int) :: BlCrvAng_Len = 0 
+    TYPE(C_ptr) :: BlTwist = C_NULL_PTR 
+    INTEGER(C_int) :: BlTwist_Len = 0 
+    TYPE(C_ptr) :: BlChord = C_NULL_PTR 
+    INTEGER(C_int) :: BlChord_Len = 0 
+    TYPE(C_ptr) :: BlAFID = C_NULL_PTR 
+    INTEGER(C_int) :: BlAFID_Len = 0 
+  END TYPE OpFM_BladePropsType_C
+  TYPE, PUBLIC :: OpFM_BladePropsType
+    TYPE( OpFM_BladePropsType_C ) :: C_obj
+    INTEGER(IntKi)  :: NumBlNds      !< Number of blade nodes used in the analysis [-]
+    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: BlSpn => NULL()      !< Span at blade node [m]
+    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: BlCrvAC => NULL()      !< Curve at blade node [m]
+    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: BlSwpAC => NULL()      !< Sweep at blade node [m]
+    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: BlCrvAng => NULL()      !< Curve angle at blade node [radians]
+    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: BlTwist => NULL()      !< Twist at blade node [radians]
+    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: BlChord => NULL()      !< Chord at blade node [m]
+    INTEGER(KIND=C_INT) , DIMENSION(:), POINTER  :: BlAFID => NULL()      !< ID of Airfoil at blade node [-]
+  END TYPE OpFM_BladePropsType
+! =======================
 ! =========  OpFM_MiscVarType_C  =======
   TYPE, BIND(C) :: OpFM_MiscVarType_C
    TYPE(C_PTR) :: object = C_NULL_PTR
@@ -75,6 +106,7 @@ IMPLICIT NONE
     TYPE(MeshType) , DIMENSION(:), ALLOCATABLE  :: AeroMotions      !< point mesh for transferring AeroDyn distributed loads to OpenFOAM (needs translationDisp) [-]
     TYPE(MeshMapType) , DIMENSION(:), ALLOCATABLE  :: Line2_to_Point_Loads      !< mapping data structure to convert line2 loads to point loads [-]
     TYPE(MeshMapType) , DIMENSION(:), ALLOCATABLE  :: Line2_to_Point_Motions      !< mapping data structure to convert line2 loads to point loads [-]
+    TYPE(OpFM_BladePropsType) , DIMENSION(:), ALLOCATABLE  :: BladeProps      !< blade property information from blade input files [-]
   END TYPE OpFM_MiscVarType
 ! =======================
 ! =========  OpFM_ParameterType_C  =======
@@ -683,6 +715,657 @@ ENDIF
     ErrMsg  = ""
  END SUBROUTINE OpFM_C2Fary_CopyInitOutput
 
+ SUBROUTINE OpFM_CopyBladePropsType( SrcBladePropsTypeData, DstBladePropsTypeData, CtrlCode, ErrStat, ErrMsg )
+   TYPE(OpFM_BladePropsType), INTENT(IN) :: SrcBladePropsTypeData
+   TYPE(OpFM_BladePropsType), INTENT(INOUT) :: DstBladePropsTypeData
+   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
+   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+! Local 
+   INTEGER(IntKi)                 :: i,j,k
+   INTEGER(IntKi)                 :: i1, i1_l, i1_u  !  bounds (upper/lower) for an array dimension 1
+   INTEGER(IntKi)                 :: ErrStat2
+   CHARACTER(ErrMsgLen)           :: ErrMsg2
+   CHARACTER(*), PARAMETER        :: RoutineName = 'OpFM_CopyBladePropsType'
+! 
+   ErrStat = ErrID_None
+   ErrMsg  = ""
+    DstBladePropsTypeData%NumBlNds = SrcBladePropsTypeData%NumBlNds
+    DstBladePropsTypeData%C_obj%NumBlNds = SrcBladePropsTypeData%C_obj%NumBlNds
+IF (ASSOCIATED(SrcBladePropsTypeData%BlSpn)) THEN
+  i1_l = LBOUND(SrcBladePropsTypeData%BlSpn,1)
+  i1_u = UBOUND(SrcBladePropsTypeData%BlSpn,1)
+  IF (.NOT. ASSOCIATED(DstBladePropsTypeData%BlSpn)) THEN 
+    ALLOCATE(DstBladePropsTypeData%BlSpn(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstBladePropsTypeData%BlSpn.', ErrStat, ErrMsg,RoutineName)
+      RETURN
+    END IF
+    DstBladePropsTypeData%c_obj%BlSpn_Len = SIZE(DstBladePropsTypeData%BlSpn)
+    IF (DstBladePropsTypeData%c_obj%BlSpn_Len > 0) &
+      DstBladePropsTypeData%c_obj%BlSpn = C_LOC( DstBladePropsTypeData%BlSpn(i1_l) ) 
+  END IF
+    DstBladePropsTypeData%BlSpn = SrcBladePropsTypeData%BlSpn
+ENDIF
+IF (ASSOCIATED(SrcBladePropsTypeData%BlCrvAC)) THEN
+  i1_l = LBOUND(SrcBladePropsTypeData%BlCrvAC,1)
+  i1_u = UBOUND(SrcBladePropsTypeData%BlCrvAC,1)
+  IF (.NOT. ASSOCIATED(DstBladePropsTypeData%BlCrvAC)) THEN 
+    ALLOCATE(DstBladePropsTypeData%BlCrvAC(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstBladePropsTypeData%BlCrvAC.', ErrStat, ErrMsg,RoutineName)
+      RETURN
+    END IF
+    DstBladePropsTypeData%c_obj%BlCrvAC_Len = SIZE(DstBladePropsTypeData%BlCrvAC)
+    IF (DstBladePropsTypeData%c_obj%BlCrvAC_Len > 0) &
+      DstBladePropsTypeData%c_obj%BlCrvAC = C_LOC( DstBladePropsTypeData%BlCrvAC(i1_l) ) 
+  END IF
+    DstBladePropsTypeData%BlCrvAC = SrcBladePropsTypeData%BlCrvAC
+ENDIF
+IF (ASSOCIATED(SrcBladePropsTypeData%BlSwpAC)) THEN
+  i1_l = LBOUND(SrcBladePropsTypeData%BlSwpAC,1)
+  i1_u = UBOUND(SrcBladePropsTypeData%BlSwpAC,1)
+  IF (.NOT. ASSOCIATED(DstBladePropsTypeData%BlSwpAC)) THEN 
+    ALLOCATE(DstBladePropsTypeData%BlSwpAC(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstBladePropsTypeData%BlSwpAC.', ErrStat, ErrMsg,RoutineName)
+      RETURN
+    END IF
+    DstBladePropsTypeData%c_obj%BlSwpAC_Len = SIZE(DstBladePropsTypeData%BlSwpAC)
+    IF (DstBladePropsTypeData%c_obj%BlSwpAC_Len > 0) &
+      DstBladePropsTypeData%c_obj%BlSwpAC = C_LOC( DstBladePropsTypeData%BlSwpAC(i1_l) ) 
+  END IF
+    DstBladePropsTypeData%BlSwpAC = SrcBladePropsTypeData%BlSwpAC
+ENDIF
+IF (ASSOCIATED(SrcBladePropsTypeData%BlCrvAng)) THEN
+  i1_l = LBOUND(SrcBladePropsTypeData%BlCrvAng,1)
+  i1_u = UBOUND(SrcBladePropsTypeData%BlCrvAng,1)
+  IF (.NOT. ASSOCIATED(DstBladePropsTypeData%BlCrvAng)) THEN 
+    ALLOCATE(DstBladePropsTypeData%BlCrvAng(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstBladePropsTypeData%BlCrvAng.', ErrStat, ErrMsg,RoutineName)
+      RETURN
+    END IF
+    DstBladePropsTypeData%c_obj%BlCrvAng_Len = SIZE(DstBladePropsTypeData%BlCrvAng)
+    IF (DstBladePropsTypeData%c_obj%BlCrvAng_Len > 0) &
+      DstBladePropsTypeData%c_obj%BlCrvAng = C_LOC( DstBladePropsTypeData%BlCrvAng(i1_l) ) 
+  END IF
+    DstBladePropsTypeData%BlCrvAng = SrcBladePropsTypeData%BlCrvAng
+ENDIF
+IF (ASSOCIATED(SrcBladePropsTypeData%BlTwist)) THEN
+  i1_l = LBOUND(SrcBladePropsTypeData%BlTwist,1)
+  i1_u = UBOUND(SrcBladePropsTypeData%BlTwist,1)
+  IF (.NOT. ASSOCIATED(DstBladePropsTypeData%BlTwist)) THEN 
+    ALLOCATE(DstBladePropsTypeData%BlTwist(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstBladePropsTypeData%BlTwist.', ErrStat, ErrMsg,RoutineName)
+      RETURN
+    END IF
+    DstBladePropsTypeData%c_obj%BlTwist_Len = SIZE(DstBladePropsTypeData%BlTwist)
+    IF (DstBladePropsTypeData%c_obj%BlTwist_Len > 0) &
+      DstBladePropsTypeData%c_obj%BlTwist = C_LOC( DstBladePropsTypeData%BlTwist(i1_l) ) 
+  END IF
+    DstBladePropsTypeData%BlTwist = SrcBladePropsTypeData%BlTwist
+ENDIF
+IF (ASSOCIATED(SrcBladePropsTypeData%BlChord)) THEN
+  i1_l = LBOUND(SrcBladePropsTypeData%BlChord,1)
+  i1_u = UBOUND(SrcBladePropsTypeData%BlChord,1)
+  IF (.NOT. ASSOCIATED(DstBladePropsTypeData%BlChord)) THEN 
+    ALLOCATE(DstBladePropsTypeData%BlChord(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstBladePropsTypeData%BlChord.', ErrStat, ErrMsg,RoutineName)
+      RETURN
+    END IF
+    DstBladePropsTypeData%c_obj%BlChord_Len = SIZE(DstBladePropsTypeData%BlChord)
+    IF (DstBladePropsTypeData%c_obj%BlChord_Len > 0) &
+      DstBladePropsTypeData%c_obj%BlChord = C_LOC( DstBladePropsTypeData%BlChord(i1_l) ) 
+  END IF
+    DstBladePropsTypeData%BlChord = SrcBladePropsTypeData%BlChord
+ENDIF
+IF (ASSOCIATED(SrcBladePropsTypeData%BlAFID)) THEN
+  i1_l = LBOUND(SrcBladePropsTypeData%BlAFID,1)
+  i1_u = UBOUND(SrcBladePropsTypeData%BlAFID,1)
+  IF (.NOT. ASSOCIATED(DstBladePropsTypeData%BlAFID)) THEN 
+    ALLOCATE(DstBladePropsTypeData%BlAFID(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstBladePropsTypeData%BlAFID.', ErrStat, ErrMsg,RoutineName)
+      RETURN
+    END IF
+    DstBladePropsTypeData%c_obj%BlAFID_Len = SIZE(DstBladePropsTypeData%BlAFID)
+    IF (DstBladePropsTypeData%c_obj%BlAFID_Len > 0) &
+      DstBladePropsTypeData%c_obj%BlAFID = C_LOC( DstBladePropsTypeData%BlAFID(i1_l) ) 
+  END IF
+    DstBladePropsTypeData%BlAFID = SrcBladePropsTypeData%BlAFID
+ENDIF
+ END SUBROUTINE OpFM_CopyBladePropsType
+
+ SUBROUTINE OpFM_DestroyBladePropsType( BladePropsTypeData, ErrStat, ErrMsg )
+  TYPE(OpFM_BladePropsType), INTENT(INOUT) :: BladePropsTypeData
+  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+  CHARACTER(*),    PARAMETER :: RoutineName = 'OpFM_DestroyBladePropsType'
+  INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5 
+! 
+  ErrStat = ErrID_None
+  ErrMsg  = ""
+IF (ASSOCIATED(BladePropsTypeData%BlSpn)) THEN
+  DEALLOCATE(BladePropsTypeData%BlSpn)
+  BladePropsTypeData%BlSpn => NULL()
+  BladePropsTypeData%C_obj%BlSpn = C_NULL_PTR
+  BladePropsTypeData%C_obj%BlSpn_Len = 0
+ENDIF
+IF (ASSOCIATED(BladePropsTypeData%BlCrvAC)) THEN
+  DEALLOCATE(BladePropsTypeData%BlCrvAC)
+  BladePropsTypeData%BlCrvAC => NULL()
+  BladePropsTypeData%C_obj%BlCrvAC = C_NULL_PTR
+  BladePropsTypeData%C_obj%BlCrvAC_Len = 0
+ENDIF
+IF (ASSOCIATED(BladePropsTypeData%BlSwpAC)) THEN
+  DEALLOCATE(BladePropsTypeData%BlSwpAC)
+  BladePropsTypeData%BlSwpAC => NULL()
+  BladePropsTypeData%C_obj%BlSwpAC = C_NULL_PTR
+  BladePropsTypeData%C_obj%BlSwpAC_Len = 0
+ENDIF
+IF (ASSOCIATED(BladePropsTypeData%BlCrvAng)) THEN
+  DEALLOCATE(BladePropsTypeData%BlCrvAng)
+  BladePropsTypeData%BlCrvAng => NULL()
+  BladePropsTypeData%C_obj%BlCrvAng = C_NULL_PTR
+  BladePropsTypeData%C_obj%BlCrvAng_Len = 0
+ENDIF
+IF (ASSOCIATED(BladePropsTypeData%BlTwist)) THEN
+  DEALLOCATE(BladePropsTypeData%BlTwist)
+  BladePropsTypeData%BlTwist => NULL()
+  BladePropsTypeData%C_obj%BlTwist = C_NULL_PTR
+  BladePropsTypeData%C_obj%BlTwist_Len = 0
+ENDIF
+IF (ASSOCIATED(BladePropsTypeData%BlChord)) THEN
+  DEALLOCATE(BladePropsTypeData%BlChord)
+  BladePropsTypeData%BlChord => NULL()
+  BladePropsTypeData%C_obj%BlChord = C_NULL_PTR
+  BladePropsTypeData%C_obj%BlChord_Len = 0
+ENDIF
+IF (ASSOCIATED(BladePropsTypeData%BlAFID)) THEN
+  DEALLOCATE(BladePropsTypeData%BlAFID)
+  BladePropsTypeData%BlAFID => NULL()
+  BladePropsTypeData%C_obj%BlAFID = C_NULL_PTR
+  BladePropsTypeData%C_obj%BlAFID_Len = 0
+ENDIF
+ END SUBROUTINE OpFM_DestroyBladePropsType
+
+ SUBROUTINE OpFM_PackBladePropsType( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
+  REAL(ReKi),       ALLOCATABLE, INTENT(  OUT) :: ReKiBuf(:)
+  REAL(DbKi),       ALLOCATABLE, INTENT(  OUT) :: DbKiBuf(:)
+  INTEGER(IntKi),   ALLOCATABLE, INTENT(  OUT) :: IntKiBuf(:)
+  TYPE(OpFM_BladePropsType),  INTENT(IN) :: InData
+  INTEGER(IntKi),   INTENT(  OUT) :: ErrStat
+  CHARACTER(*),     INTENT(  OUT) :: ErrMsg
+  LOGICAL,OPTIONAL, INTENT(IN   ) :: SizeOnly
+    ! Local variables
+  INTEGER(IntKi)                 :: Re_BufSz
+  INTEGER(IntKi)                 :: Re_Xferred
+  INTEGER(IntKi)                 :: Db_BufSz
+  INTEGER(IntKi)                 :: Db_Xferred
+  INTEGER(IntKi)                 :: Int_BufSz
+  INTEGER(IntKi)                 :: Int_Xferred
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
+  LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
+  INTEGER(IntKi)                 :: ErrStat2
+  CHARACTER(ErrMsgLen)           :: ErrMsg2
+  CHARACTER(*), PARAMETER        :: RoutineName = 'OpFM_PackBladePropsType'
+ ! buffers to store subtypes, if any
+  REAL(ReKi),      ALLOCATABLE   :: Re_Buf(:)
+  REAL(DbKi),      ALLOCATABLE   :: Db_Buf(:)
+  INTEGER(IntKi),  ALLOCATABLE   :: Int_Buf(:)
+
+  OnlySize = .FALSE.
+  IF ( PRESENT(SizeOnly) ) THEN
+    OnlySize = SizeOnly
+  ENDIF
+    !
+  ErrStat = ErrID_None
+  ErrMsg  = ""
+  Re_BufSz  = 0
+  Db_BufSz  = 0
+  Int_BufSz  = 0
+      Int_BufSz  = Int_BufSz  + 1  ! NumBlNds
+  Int_BufSz   = Int_BufSz   + 1     ! BlSpn allocated yes/no
+  IF ( ASSOCIATED(InData%BlSpn) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! BlSpn upper/lower bounds for each dimension
+      Re_BufSz   = Re_BufSz   + SIZE(InData%BlSpn)  ! BlSpn
+  END IF
+  Int_BufSz   = Int_BufSz   + 1     ! BlCrvAC allocated yes/no
+  IF ( ASSOCIATED(InData%BlCrvAC) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! BlCrvAC upper/lower bounds for each dimension
+      Re_BufSz   = Re_BufSz   + SIZE(InData%BlCrvAC)  ! BlCrvAC
+  END IF
+  Int_BufSz   = Int_BufSz   + 1     ! BlSwpAC allocated yes/no
+  IF ( ASSOCIATED(InData%BlSwpAC) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! BlSwpAC upper/lower bounds for each dimension
+      Re_BufSz   = Re_BufSz   + SIZE(InData%BlSwpAC)  ! BlSwpAC
+  END IF
+  Int_BufSz   = Int_BufSz   + 1     ! BlCrvAng allocated yes/no
+  IF ( ASSOCIATED(InData%BlCrvAng) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! BlCrvAng upper/lower bounds for each dimension
+      Re_BufSz   = Re_BufSz   + SIZE(InData%BlCrvAng)  ! BlCrvAng
+  END IF
+  Int_BufSz   = Int_BufSz   + 1     ! BlTwist allocated yes/no
+  IF ( ASSOCIATED(InData%BlTwist) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! BlTwist upper/lower bounds for each dimension
+      Re_BufSz   = Re_BufSz   + SIZE(InData%BlTwist)  ! BlTwist
+  END IF
+  Int_BufSz   = Int_BufSz   + 1     ! BlChord allocated yes/no
+  IF ( ASSOCIATED(InData%BlChord) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! BlChord upper/lower bounds for each dimension
+      Re_BufSz   = Re_BufSz   + SIZE(InData%BlChord)  ! BlChord
+  END IF
+  Int_BufSz   = Int_BufSz   + 1     ! BlAFID allocated yes/no
+  IF ( ASSOCIATED(InData%BlAFID) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! BlAFID upper/lower bounds for each dimension
+      Int_BufSz  = Int_BufSz  + SIZE(InData%BlAFID)  ! BlAFID
+  END IF
+  IF ( Re_BufSz  .GT. 0 ) THEN 
+     ALLOCATE( ReKiBuf(  Re_BufSz  ), STAT=ErrStat2 )
+     IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating ReKiBuf.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+     END IF
+  END IF
+  IF ( Db_BufSz  .GT. 0 ) THEN 
+     ALLOCATE( DbKiBuf(  Db_BufSz  ), STAT=ErrStat2 )
+     IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating DbKiBuf.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+     END IF
+  END IF
+  IF ( Int_BufSz  .GT. 0 ) THEN 
+     ALLOCATE( IntKiBuf(  Int_BufSz  ), STAT=ErrStat2 )
+     IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating IntKiBuf.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+     END IF
+  END IF
+  IF(OnlySize) RETURN ! return early if only trying to allocate buffers (not pack them)
+
+  IF (C_ASSOCIATED(InData%C_obj%object)) CALL SetErrStat(ErrID_Severe,'C_obj%object cannot be packed.',ErrStat,ErrMsg,RoutineName)
+
+  Re_Xferred  = 1
+  Db_Xferred  = 1
+  Int_Xferred = 1
+
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NumBlNds
+      Int_Xferred   = Int_Xferred   + 1
+  IF ( .NOT. ASSOCIATED(InData%BlSpn) ) THEN
+    IntKiBuf( Int_Xferred ) = 0
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    IntKiBuf( Int_Xferred ) = 1
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%BlSpn,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%BlSpn,1)
+    Int_Xferred = Int_Xferred + 2
+
+      IF (SIZE(InData%BlSpn)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%BlSpn))-1 ) = PACK(InData%BlSpn,.TRUE.)
+      Re_Xferred   = Re_Xferred   + SIZE(InData%BlSpn)
+  END IF
+  IF ( .NOT. ASSOCIATED(InData%BlCrvAC) ) THEN
+    IntKiBuf( Int_Xferred ) = 0
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    IntKiBuf( Int_Xferred ) = 1
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%BlCrvAC,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%BlCrvAC,1)
+    Int_Xferred = Int_Xferred + 2
+
+      IF (SIZE(InData%BlCrvAC)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%BlCrvAC))-1 ) = PACK(InData%BlCrvAC,.TRUE.)
+      Re_Xferred   = Re_Xferred   + SIZE(InData%BlCrvAC)
+  END IF
+  IF ( .NOT. ASSOCIATED(InData%BlSwpAC) ) THEN
+    IntKiBuf( Int_Xferred ) = 0
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    IntKiBuf( Int_Xferred ) = 1
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%BlSwpAC,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%BlSwpAC,1)
+    Int_Xferred = Int_Xferred + 2
+
+      IF (SIZE(InData%BlSwpAC)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%BlSwpAC))-1 ) = PACK(InData%BlSwpAC,.TRUE.)
+      Re_Xferred   = Re_Xferred   + SIZE(InData%BlSwpAC)
+  END IF
+  IF ( .NOT. ASSOCIATED(InData%BlCrvAng) ) THEN
+    IntKiBuf( Int_Xferred ) = 0
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    IntKiBuf( Int_Xferred ) = 1
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%BlCrvAng,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%BlCrvAng,1)
+    Int_Xferred = Int_Xferred + 2
+
+      IF (SIZE(InData%BlCrvAng)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%BlCrvAng))-1 ) = PACK(InData%BlCrvAng,.TRUE.)
+      Re_Xferred   = Re_Xferred   + SIZE(InData%BlCrvAng)
+  END IF
+  IF ( .NOT. ASSOCIATED(InData%BlTwist) ) THEN
+    IntKiBuf( Int_Xferred ) = 0
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    IntKiBuf( Int_Xferred ) = 1
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%BlTwist,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%BlTwist,1)
+    Int_Xferred = Int_Xferred + 2
+
+      IF (SIZE(InData%BlTwist)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%BlTwist))-1 ) = PACK(InData%BlTwist,.TRUE.)
+      Re_Xferred   = Re_Xferred   + SIZE(InData%BlTwist)
+  END IF
+  IF ( .NOT. ASSOCIATED(InData%BlChord) ) THEN
+    IntKiBuf( Int_Xferred ) = 0
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    IntKiBuf( Int_Xferred ) = 1
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%BlChord,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%BlChord,1)
+    Int_Xferred = Int_Xferred + 2
+
+      IF (SIZE(InData%BlChord)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%BlChord))-1 ) = PACK(InData%BlChord,.TRUE.)
+      Re_Xferred   = Re_Xferred   + SIZE(InData%BlChord)
+  END IF
+  IF ( .NOT. ASSOCIATED(InData%BlAFID) ) THEN
+    IntKiBuf( Int_Xferred ) = 0
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    IntKiBuf( Int_Xferred ) = 1
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%BlAFID,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%BlAFID,1)
+    Int_Xferred = Int_Xferred + 2
+
+      IF (SIZE(InData%BlAFID)>0) IntKiBuf ( Int_Xferred:Int_Xferred+(SIZE(InData%BlAFID))-1 ) = PACK(InData%BlAFID,.TRUE.)
+      Int_Xferred   = Int_Xferred   + SIZE(InData%BlAFID)
+  END IF
+ END SUBROUTINE OpFM_PackBladePropsType
+
+ SUBROUTINE OpFM_UnPackBladePropsType( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+  REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
+  REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
+  INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
+  TYPE(OpFM_BladePropsType), INTENT(INOUT) :: OutData
+  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+    ! Local variables
+  INTEGER(IntKi)                 :: Buf_size
+  INTEGER(IntKi)                 :: Re_Xferred
+  INTEGER(IntKi)                 :: Db_Xferred
+  INTEGER(IntKi)                 :: Int_Xferred
+  INTEGER(IntKi)                 :: i
+  LOGICAL                        :: mask0
+  LOGICAL, ALLOCATABLE           :: mask1(:)
+  LOGICAL, ALLOCATABLE           :: mask2(:,:)
+  LOGICAL, ALLOCATABLE           :: mask3(:,:,:)
+  LOGICAL, ALLOCATABLE           :: mask4(:,:,:,:)
+  LOGICAL, ALLOCATABLE           :: mask5(:,:,:,:,:)
+  INTEGER(IntKi)                 :: i1, i1_l, i1_u  !  bounds (upper/lower) for an array dimension 1
+  INTEGER(IntKi)                 :: ErrStat2
+  CHARACTER(ErrMsgLen)           :: ErrMsg2
+  CHARACTER(*), PARAMETER        :: RoutineName = 'OpFM_UnPackBladePropsType'
+ ! buffers to store meshes, if any
+  REAL(ReKi),      ALLOCATABLE   :: Re_Buf(:)
+  REAL(DbKi),      ALLOCATABLE   :: Db_Buf(:)
+  INTEGER(IntKi),  ALLOCATABLE   :: Int_Buf(:)
+    !
+  ErrStat = ErrID_None
+  ErrMsg  = ""
+  Re_Xferred  = 1
+  Db_Xferred  = 1
+  Int_Xferred  = 1
+      OutData%NumBlNds = IntKiBuf( Int_Xferred ) 
+      Int_Xferred   = Int_Xferred + 1
+      OutData%C_obj%NumBlNds = OutData%NumBlNds
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! BlSpn not allocated
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    Int_Xferred = Int_Xferred + 1
+    i1_l = IntKiBuf( Int_Xferred    )
+    i1_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    IF (ASSOCIATED(OutData%BlSpn)) DEALLOCATE(OutData%BlSpn)
+    ALLOCATE(OutData%BlSpn(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%BlSpn.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    OutData%c_obj%BlSpn_Len = SIZE(OutData%BlSpn)
+    IF (OutData%c_obj%BlSpn_Len > 0) &
+       OutData%c_obj%BlSpn = C_LOC( OutData%BlSpn(i1_l) ) 
+    ALLOCATE(mask1(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating mask1.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    mask1 = .TRUE. 
+      IF (SIZE(OutData%BlSpn)>0) OutData%BlSpn = REAL( UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%BlSpn))-1 ), mask1, 0.0_ReKi ), C_FLOAT)
+      Re_Xferred   = Re_Xferred   + SIZE(OutData%BlSpn)
+    DEALLOCATE(mask1)
+  END IF
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! BlCrvAC not allocated
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    Int_Xferred = Int_Xferred + 1
+    i1_l = IntKiBuf( Int_Xferred    )
+    i1_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    IF (ASSOCIATED(OutData%BlCrvAC)) DEALLOCATE(OutData%BlCrvAC)
+    ALLOCATE(OutData%BlCrvAC(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%BlCrvAC.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    OutData%c_obj%BlCrvAC_Len = SIZE(OutData%BlCrvAC)
+    IF (OutData%c_obj%BlCrvAC_Len > 0) &
+       OutData%c_obj%BlCrvAC = C_LOC( OutData%BlCrvAC(i1_l) ) 
+    ALLOCATE(mask1(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating mask1.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    mask1 = .TRUE. 
+      IF (SIZE(OutData%BlCrvAC)>0) OutData%BlCrvAC = REAL( UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%BlCrvAC))-1 ), mask1, 0.0_ReKi ), C_FLOAT)
+      Re_Xferred   = Re_Xferred   + SIZE(OutData%BlCrvAC)
+    DEALLOCATE(mask1)
+  END IF
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! BlSwpAC not allocated
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    Int_Xferred = Int_Xferred + 1
+    i1_l = IntKiBuf( Int_Xferred    )
+    i1_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    IF (ASSOCIATED(OutData%BlSwpAC)) DEALLOCATE(OutData%BlSwpAC)
+    ALLOCATE(OutData%BlSwpAC(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%BlSwpAC.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    OutData%c_obj%BlSwpAC_Len = SIZE(OutData%BlSwpAC)
+    IF (OutData%c_obj%BlSwpAC_Len > 0) &
+       OutData%c_obj%BlSwpAC = C_LOC( OutData%BlSwpAC(i1_l) ) 
+    ALLOCATE(mask1(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating mask1.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    mask1 = .TRUE. 
+      IF (SIZE(OutData%BlSwpAC)>0) OutData%BlSwpAC = REAL( UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%BlSwpAC))-1 ), mask1, 0.0_ReKi ), C_FLOAT)
+      Re_Xferred   = Re_Xferred   + SIZE(OutData%BlSwpAC)
+    DEALLOCATE(mask1)
+  END IF
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! BlCrvAng not allocated
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    Int_Xferred = Int_Xferred + 1
+    i1_l = IntKiBuf( Int_Xferred    )
+    i1_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    IF (ASSOCIATED(OutData%BlCrvAng)) DEALLOCATE(OutData%BlCrvAng)
+    ALLOCATE(OutData%BlCrvAng(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%BlCrvAng.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    OutData%c_obj%BlCrvAng_Len = SIZE(OutData%BlCrvAng)
+    IF (OutData%c_obj%BlCrvAng_Len > 0) &
+       OutData%c_obj%BlCrvAng = C_LOC( OutData%BlCrvAng(i1_l) ) 
+    ALLOCATE(mask1(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating mask1.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    mask1 = .TRUE. 
+      IF (SIZE(OutData%BlCrvAng)>0) OutData%BlCrvAng = REAL( UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%BlCrvAng))-1 ), mask1, 0.0_ReKi ), C_FLOAT)
+      Re_Xferred   = Re_Xferred   + SIZE(OutData%BlCrvAng)
+    DEALLOCATE(mask1)
+  END IF
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! BlTwist not allocated
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    Int_Xferred = Int_Xferred + 1
+    i1_l = IntKiBuf( Int_Xferred    )
+    i1_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    IF (ASSOCIATED(OutData%BlTwist)) DEALLOCATE(OutData%BlTwist)
+    ALLOCATE(OutData%BlTwist(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%BlTwist.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    OutData%c_obj%BlTwist_Len = SIZE(OutData%BlTwist)
+    IF (OutData%c_obj%BlTwist_Len > 0) &
+       OutData%c_obj%BlTwist = C_LOC( OutData%BlTwist(i1_l) ) 
+    ALLOCATE(mask1(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating mask1.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    mask1 = .TRUE. 
+      IF (SIZE(OutData%BlTwist)>0) OutData%BlTwist = REAL( UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%BlTwist))-1 ), mask1, 0.0_ReKi ), C_FLOAT)
+      Re_Xferred   = Re_Xferred   + SIZE(OutData%BlTwist)
+    DEALLOCATE(mask1)
+  END IF
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! BlChord not allocated
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    Int_Xferred = Int_Xferred + 1
+    i1_l = IntKiBuf( Int_Xferred    )
+    i1_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    IF (ASSOCIATED(OutData%BlChord)) DEALLOCATE(OutData%BlChord)
+    ALLOCATE(OutData%BlChord(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%BlChord.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    OutData%c_obj%BlChord_Len = SIZE(OutData%BlChord)
+    IF (OutData%c_obj%BlChord_Len > 0) &
+       OutData%c_obj%BlChord = C_LOC( OutData%BlChord(i1_l) ) 
+    ALLOCATE(mask1(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating mask1.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    mask1 = .TRUE. 
+      IF (SIZE(OutData%BlChord)>0) OutData%BlChord = REAL( UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%BlChord))-1 ), mask1, 0.0_ReKi ), C_FLOAT)
+      Re_Xferred   = Re_Xferred   + SIZE(OutData%BlChord)
+    DEALLOCATE(mask1)
+  END IF
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! BlAFID not allocated
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    Int_Xferred = Int_Xferred + 1
+    i1_l = IntKiBuf( Int_Xferred    )
+    i1_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    IF (ASSOCIATED(OutData%BlAFID)) DEALLOCATE(OutData%BlAFID)
+    ALLOCATE(OutData%BlAFID(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%BlAFID.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    OutData%c_obj%BlAFID_Len = SIZE(OutData%BlAFID)
+    IF (OutData%c_obj%BlAFID_Len > 0) &
+       OutData%c_obj%BlAFID = C_LOC( OutData%BlAFID(i1_l) ) 
+    ALLOCATE(mask1(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating mask1.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    mask1 = .TRUE. 
+      IF (SIZE(OutData%BlAFID)>0) OutData%BlAFID = UNPACK( IntKiBuf ( Int_Xferred:Int_Xferred+(SIZE(OutData%BlAFID))-1 ), mask1, 0_IntKi )
+      Int_Xferred   = Int_Xferred   + SIZE(OutData%BlAFID)
+    DEALLOCATE(mask1)
+  END IF
+ END SUBROUTINE OpFM_UnPackBladePropsType
+
+ SUBROUTINE OpFM_C2Fary_CopyBladePropsType( BladePropsTypeData, ErrStat, ErrMsg )
+    TYPE(OpFM_BladePropsType), INTENT(INOUT) :: BladePropsTypeData
+    INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+    CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+    ! 
+    ErrStat = ErrID_None
+    ErrMsg  = ""
+    BladePropsTypeData%NumBlNds = BladePropsTypeData%C_obj%NumBlNds
+
+    ! -- BlSpn BladePropsType Data fields
+    IF ( .NOT. C_ASSOCIATED( BladePropsTypeData%C_obj%BlSpn ) ) THEN
+       NULLIFY( BladePropsTypeData%BlSpn )
+    ELSE
+       CALL C_F_POINTER(BladePropsTypeData%C_obj%BlSpn, BladePropsTypeData%BlSpn, (/BladePropsTypeData%C_obj%BlSpn_Len/))
+    END IF
+
+    ! -- BlCrvAC BladePropsType Data fields
+    IF ( .NOT. C_ASSOCIATED( BladePropsTypeData%C_obj%BlCrvAC ) ) THEN
+       NULLIFY( BladePropsTypeData%BlCrvAC )
+    ELSE
+       CALL C_F_POINTER(BladePropsTypeData%C_obj%BlCrvAC, BladePropsTypeData%BlCrvAC, (/BladePropsTypeData%C_obj%BlCrvAC_Len/))
+    END IF
+
+    ! -- BlSwpAC BladePropsType Data fields
+    IF ( .NOT. C_ASSOCIATED( BladePropsTypeData%C_obj%BlSwpAC ) ) THEN
+       NULLIFY( BladePropsTypeData%BlSwpAC )
+    ELSE
+       CALL C_F_POINTER(BladePropsTypeData%C_obj%BlSwpAC, BladePropsTypeData%BlSwpAC, (/BladePropsTypeData%C_obj%BlSwpAC_Len/))
+    END IF
+
+    ! -- BlCrvAng BladePropsType Data fields
+    IF ( .NOT. C_ASSOCIATED( BladePropsTypeData%C_obj%BlCrvAng ) ) THEN
+       NULLIFY( BladePropsTypeData%BlCrvAng )
+    ELSE
+       CALL C_F_POINTER(BladePropsTypeData%C_obj%BlCrvAng, BladePropsTypeData%BlCrvAng, (/BladePropsTypeData%C_obj%BlCrvAng_Len/))
+    END IF
+
+    ! -- BlTwist BladePropsType Data fields
+    IF ( .NOT. C_ASSOCIATED( BladePropsTypeData%C_obj%BlTwist ) ) THEN
+       NULLIFY( BladePropsTypeData%BlTwist )
+    ELSE
+       CALL C_F_POINTER(BladePropsTypeData%C_obj%BlTwist, BladePropsTypeData%BlTwist, (/BladePropsTypeData%C_obj%BlTwist_Len/))
+    END IF
+
+    ! -- BlChord BladePropsType Data fields
+    IF ( .NOT. C_ASSOCIATED( BladePropsTypeData%C_obj%BlChord ) ) THEN
+       NULLIFY( BladePropsTypeData%BlChord )
+    ELSE
+       CALL C_F_POINTER(BladePropsTypeData%C_obj%BlChord, BladePropsTypeData%BlChord, (/BladePropsTypeData%C_obj%BlChord_Len/))
+    END IF
+
+    ! -- BlAFID BladePropsType Data fields
+    IF ( .NOT. C_ASSOCIATED( BladePropsTypeData%C_obj%BlAFID ) ) THEN
+       NULLIFY( BladePropsTypeData%BlAFID )
+    ELSE
+       CALL C_F_POINTER(BladePropsTypeData%C_obj%BlAFID, BladePropsTypeData%BlAFID, (/BladePropsTypeData%C_obj%BlAFID_Len/))
+    END IF
+ END SUBROUTINE OpFM_C2Fary_CopyBladePropsType
+
  SUBROUTINE OpFM_CopyMisc( SrcMiscData, DstMiscData, CtrlCode, ErrStat, ErrMsg )
    TYPE(OpFM_MiscVarType), INTENT(INOUT) :: SrcMiscData
    TYPE(OpFM_MiscVarType), INTENT(INOUT) :: DstMiscData
@@ -762,6 +1445,22 @@ IF (ALLOCATED(SrcMiscData%Line2_to_Point_Motions)) THEN
          IF (ErrStat>=AbortErrLev) RETURN
     ENDDO
 ENDIF
+IF (ALLOCATED(SrcMiscData%BladeProps)) THEN
+  i1_l = LBOUND(SrcMiscData%BladeProps,1)
+  i1_u = UBOUND(SrcMiscData%BladeProps,1)
+  IF (.NOT. ALLOCATED(DstMiscData%BladeProps)) THEN 
+    ALLOCATE(DstMiscData%BladeProps(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstMiscData%BladeProps.', ErrStat, ErrMsg,RoutineName)
+      RETURN
+    END IF
+  END IF
+    DO i1 = LBOUND(SrcMiscData%BladeProps,1), UBOUND(SrcMiscData%BladeProps,1)
+      CALL OpFM_Copybladepropstype( SrcMiscData%BladeProps(i1), DstMiscData%BladeProps(i1), CtrlCode, ErrStat2, ErrMsg2 )
+         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
+         IF (ErrStat>=AbortErrLev) RETURN
+    ENDDO
+ENDIF
  END SUBROUTINE OpFM_CopyMisc
 
  SUBROUTINE OpFM_DestroyMisc( MiscData, ErrStat, ErrMsg )
@@ -796,6 +1495,12 @@ DO i1 = LBOUND(MiscData%Line2_to_Point_Motions,1), UBOUND(MiscData%Line2_to_Poin
   CALL NWTC_Library_Destroymeshmaptype( MiscData%Line2_to_Point_Motions(i1), ErrStat, ErrMsg )
 ENDDO
   DEALLOCATE(MiscData%Line2_to_Point_Motions)
+ENDIF
+IF (ALLOCATED(MiscData%BladeProps)) THEN
+DO i1 = LBOUND(MiscData%BladeProps,1), UBOUND(MiscData%BladeProps,1)
+  CALL OpFM_Destroybladepropstype( MiscData%BladeProps(i1), ErrStat, ErrMsg )
+ENDDO
+  DEALLOCATE(MiscData%BladeProps)
 ENDIF
  END SUBROUTINE OpFM_DestroyMisc
 
@@ -922,6 +1627,29 @@ ENDIF
          DEALLOCATE(Db_Buf)
       END IF
       IF(ALLOCATED(Int_Buf)) THEN ! Line2_to_Point_Motions
+         Int_BufSz = Int_BufSz + SIZE( Int_Buf )
+         DEALLOCATE(Int_Buf)
+      END IF
+    END DO
+  END IF
+  Int_BufSz   = Int_BufSz   + 1     ! BladeProps allocated yes/no
+  IF ( ALLOCATED(InData%BladeProps) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! BladeProps upper/lower bounds for each dimension
+    DO i1 = LBOUND(InData%BladeProps,1), UBOUND(InData%BladeProps,1)
+      Int_BufSz   = Int_BufSz + 3  ! BladeProps: size of buffers for each call to pack subtype
+      CALL OpFM_Packbladepropstype( Re_Buf, Db_Buf, Int_Buf, InData%BladeProps(i1), ErrStat2, ErrMsg2, .TRUE. ) ! BladeProps 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf)) THEN ! BladeProps
+         Re_BufSz  = Re_BufSz  + SIZE( Re_Buf  )
+         DEALLOCATE(Re_Buf)
+      END IF
+      IF(ALLOCATED(Db_Buf)) THEN ! BladeProps
+         Db_BufSz  = Db_BufSz  + SIZE( Db_Buf  )
+         DEALLOCATE(Db_Buf)
+      END IF
+      IF(ALLOCATED(Int_Buf)) THEN ! BladeProps
          Int_BufSz = Int_BufSz + SIZE( Int_Buf )
          DEALLOCATE(Int_Buf)
       END IF
@@ -1091,6 +1819,47 @@ ENDIF
 
     DO i1 = LBOUND(InData%Line2_to_Point_Motions,1), UBOUND(InData%Line2_to_Point_Motions,1)
       CALL NWTC_Library_Packmeshmaptype( Re_Buf, Db_Buf, Int_Buf, InData%Line2_to_Point_Motions(i1), ErrStat2, ErrMsg2, OnlySize ) ! Line2_to_Point_Motions 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Re_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Re_Buf) > 0) ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_Buf)-1 ) = Re_Buf
+        Re_Xferred = Re_Xferred + SIZE(Re_Buf)
+        DEALLOCATE(Re_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      IF(ALLOCATED(Db_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Db_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Db_Buf) > 0) DbKiBuf( Db_Xferred:Db_Xferred+SIZE(Db_Buf)-1 ) = Db_Buf
+        Db_Xferred = Db_Xferred + SIZE(Db_Buf)
+        DEALLOCATE(Db_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      IF(ALLOCATED(Int_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Int_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Int_Buf) > 0) IntKiBuf( Int_Xferred:Int_Xferred+SIZE(Int_Buf)-1 ) = Int_Buf
+        Int_Xferred = Int_Xferred + SIZE(Int_Buf)
+        DEALLOCATE(Int_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+    END DO
+  END IF
+  IF ( .NOT. ALLOCATED(InData%BladeProps) ) THEN
+    IntKiBuf( Int_Xferred ) = 0
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    IntKiBuf( Int_Xferred ) = 1
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%BladeProps,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%BladeProps,1)
+    Int_Xferred = Int_Xferred + 2
+
+    DO i1 = LBOUND(InData%BladeProps,1), UBOUND(InData%BladeProps,1)
+      CALL OpFM_Packbladepropstype( Re_Buf, Db_Buf, Int_Buf, InData%BladeProps(i1), ErrStat2, ErrMsg2, OnlySize ) ! BladeProps 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
         IF (ErrStat >= AbortErrLev) RETURN
 
@@ -1371,6 +2140,62 @@ ENDIF
         Int_Xferred = Int_Xferred + Buf_size
       END IF
       CALL NWTC_Library_Unpackmeshmaptype( Re_Buf, Db_Buf, Int_Buf, OutData%Line2_to_Point_Motions(i1), ErrStat2, ErrMsg2 ) ! Line2_to_Point_Motions 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf )) DEALLOCATE(Re_Buf )
+      IF(ALLOCATED(Db_Buf )) DEALLOCATE(Db_Buf )
+      IF(ALLOCATED(Int_Buf)) DEALLOCATE(Int_Buf)
+    END DO
+  END IF
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! BladeProps not allocated
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    Int_Xferred = Int_Xferred + 1
+    i1_l = IntKiBuf( Int_Xferred    )
+    i1_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    IF (ALLOCATED(OutData%BladeProps)) DEALLOCATE(OutData%BladeProps)
+    ALLOCATE(OutData%BladeProps(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%BladeProps.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    DO i1 = LBOUND(OutData%BladeProps,1), UBOUND(OutData%BladeProps,1)
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Re_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Re_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Re_Buf = ReKiBuf( Re_Xferred:Re_Xferred+Buf_size-1 )
+        Re_Xferred = Re_Xferred + Buf_size
+      END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Db_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Db_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Db_Buf = DbKiBuf( Db_Xferred:Db_Xferred+Buf_size-1 )
+        Db_Xferred = Db_Xferred + Buf_size
+      END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Int_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Int_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Int_Buf = IntKiBuf( Int_Xferred:Int_Xferred+Buf_size-1 )
+        Int_Xferred = Int_Xferred + Buf_size
+      END IF
+      CALL OpFM_Unpackbladepropstype( Re_Buf, Db_Buf, Int_Buf, OutData%BladeProps(i1), ErrStat2, ErrMsg2 ) ! BladeProps 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
         IF (ErrStat >= AbortErrLev) RETURN
 

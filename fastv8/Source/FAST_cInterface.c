@@ -246,7 +246,7 @@ int FAST_cInterface::readInputFile(std::string cInterfaceInputFile ) {
       tEnd = cDriverInp["tEnd"].as<double>();
       tMax = cDriverInp["tMax"].as<double>();
       nEveryCheckPoint = cDriverInp["nEveryCheckPoint"].as<int>();
-      
+
       loadSuperController(cDriverInp);
 
       if (restart == false) {
@@ -453,16 +453,23 @@ void FAST_cInterface::allocateInputData() {
 void FAST_cInterface::readTurbineData(int iTurb, YAML::Node turbNode) {
 
   //Read turbine data for a given turbine using the YAML node
-  
+  std::cout << "Came here" << std::endl ;
   TurbID[iTurb] = turbNode["turb_id"].as<int>();
   std::strcpy(FASTInputFileName[iTurb], turbNode["FAST_input_filename"].as<std::string>().c_str()) ;
+  std::cout << "Came here" << std::endl ;
   std::strcpy(CheckpointFileRoot[iTurb], turbNode["restart_filename"].as<std::string>().c_str() );
+  std::cout << "Came here" << std::endl ;
   if (turbNode["turbine_pos"].IsSequence() ) {
     std::vector<double> tp = turbNode["turbine_pos"].as<std::vector<double> >() ;
     for(int i=0;i<3;i++) {
       TurbinePos[iTurb][i] = tp[i];
     }
   }
+  std::cout << "Came here" << std::endl ;
+  numForcePtsBlade[iTurb] = turbNode["num_force_pts_blade"].as<int>();
+  std::cout << "Came here" << std::endl ;
+  numForcePtsTwr[iTurb] = turbNode["num_force_pts_tower"].as<int>();
+  std::cout << "Came here" << std::endl ;
 
   return ;
 }
@@ -546,6 +553,8 @@ void FAST_cInterface::end() {
     delete[] numBlades;
     delete[] numVelPtsBlade;
     delete[] numVelPtsTwr;
+    delete[] numForcePtsBlade;
+    delete[] numForcePtsTwr;
     
     if ( !dryRun ) {
       for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {

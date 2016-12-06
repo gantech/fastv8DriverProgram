@@ -33,8 +33,20 @@
     char * WriteOutputUnt ;     int WriteOutputUnt_Len ;
 
   } OpFM_InitOutputType_t ;
+  typedef struct OpFM_BladePropsType {
+    void * object ;
+    int NumBlNds ;
+    float * BlSpn ;     int BlSpn_Len ;
+    float * BlCrvAC ;     int BlCrvAC_Len ;
+    float * BlSwpAC ;     int BlSwpAC_Len ;
+    float * BlCrvAng ;     int BlCrvAng_Len ;
+    float * BlTwist ;     int BlTwist_Len ;
+    float * BlChord ;     int BlChord_Len ;
+    int * BlAFID ;     int BlAFID_Len ;
+  } OpFM_BladePropsType_t ;
   typedef struct OpFM_MiscVarType {
     void * object ;
+
 
 
 
