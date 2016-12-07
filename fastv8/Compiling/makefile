@@ -43,13 +43,13 @@ FAST_driver = FAST_Library
 #================================================================================#
 
 ifeq ($(COMPILER),gnu)
-	FFLAGS  = -pg -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -DDOUBLE_PRECISION  -fdefault-real-8 $(OPT_OPTIONS)
+	FFLAGS  = -pg -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -DDOUBLE_PRECISION  -fdefault-real-8 $(OPT_OPTIONS) -DFPE_TRAP_ENABLED
 	LDFLAGS = -pg -m$(BITS) -fbacktrace $(OPT_OPTIONS)
 else ifeq ($(COMPILER),intel)
-	FFLAGS  = -fpp -threads $(OPT_OPTIONS) -fp-model strict -xhost -mkl:sequential -finline-functions -real-size 64 -double-size 128 -DDOUBLE_PRECISION 
+	FFLAGS  = -fpp -threads $(OPT_OPTIONS) -fp-model strict -xhost -mkl:sequential -finline-functions -real-size 64 -double-size 128 -DDOUBLE_PRECISION -DFPE_TRAP_ENABLED
 	LDFLAGS = -fpp -threads $(OPT_OPTIONS) -fp-model strict -xhost -mkl:sequential -finline-functions -real-size 64 -double-size 128
 else ifeq ($(COMPILER),intelPhi)
-	FFLAGS  = -fpp -threads $(OPT_OPTIONS) -fp-model strict -mmic -mkl:sequential -finline-functions -real-size 64 -double-size 128 -DDOUBLE_PRECISION 
+	FFLAGS  = -fpp -threads $(OPT_OPTIONS) -fp-model strict -mmic -mkl:sequential -finline-functions -real-size 64 -double-size 128 -DDOUBLE_PRECISION -DFPE_TRAP_ENABLED
 	LDFLAGS = -fpp -threads $(OPT_OPTIONS) -fp-model strict -mmic -mkl:sequential -finline-functions -real-size 64 -double-size 128
 endif
 
@@ -160,7 +160,7 @@ else
 
   # some options to dynamically load .so libraries (loaded when called in ServoDyn) for DLL control
   # the dl library (-ldl) is used for dynamic libraries; needs to be used in conjunction with preprocessor directive USE_DLL_INTERFACE
-  FFLAGS := $(FFLAGS) -DUSE_DLL_INTERFACE -DLOAD_SUPERCONTROLLER
+  FFLAGS := $(FFLAGS) -DUSE_DLL_INTERFACE 
   LAPACK_LINK := $(LAPACK_LINK) -ldl
 
 endif
