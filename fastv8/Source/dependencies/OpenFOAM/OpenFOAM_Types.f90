@@ -112,8 +112,8 @@ IMPLICIT NONE
   TYPE, BIND(C) :: OpFM_ParameterType_C
    TYPE(C_PTR) :: object = C_NULL_PTR
     REAL(KIND=C_FLOAT) :: AirDens 
-    REAL(KIND=C_FLOAT) :: NumBl 
-    REAL(KIND=C_FLOAT) :: NMappings 
+    INTEGER(KIND=C_INT) :: NumBl 
+    INTEGER(KIND=C_INT) :: NMappings 
     INTEGER(KIND=C_INT) :: NnodesVel 
     INTEGER(KIND=C_INT) :: NnodesForce 
     INTEGER(KIND=C_INT) :: NnodesForceBlade 
@@ -122,8 +122,8 @@ IMPLICIT NONE
   TYPE, PUBLIC :: OpFM_ParameterType
     TYPE( OpFM_ParameterType_C ) :: C_obj
     REAL(ReKi)  :: AirDens      !< Air density for normalization of loads sent to OpenFOAM [kg/m^3]
-    REAL(ReKi)  :: NumBl      !< Number of blades [-]
-    REAL(ReKi)  :: NMappings      !< Number of mappings [-]
+    INTEGER(IntKi)  :: NumBl      !< Number of blades [-]
+    INTEGER(IntKi)  :: NMappings      !< Number of mappings [-]
     INTEGER(IntKi)  :: NnodesVel      !< number of velocity nodes on FAST v8-OpenFOAM interface [-]
     INTEGER(IntKi)  :: NnodesForce      !< number of force nodes on FAST v8-OpenFOAM interface [-]
     INTEGER(IntKi)  :: NnodesForceBlade      !< number of force nodes on FAST v8-OpenFOAM interface [-]
@@ -2157,8 +2157,8 @@ ENDIF
   Db_BufSz  = 0
   Int_BufSz  = 0
       Re_BufSz   = Re_BufSz   + 1  ! AirDens
-      Re_BufSz   = Re_BufSz   + 1  ! NumBl
-      Re_BufSz   = Re_BufSz   + 1  ! NMappings
+      Int_BufSz  = Int_BufSz  + 1  ! NumBl
+      Int_BufSz  = Int_BufSz  + 1  ! NMappings
       Int_BufSz  = Int_BufSz  + 1  ! NnodesVel
       Int_BufSz  = Int_BufSz  + 1  ! NnodesForce
       Int_BufSz  = Int_BufSz  + 1  ! NnodesForceBlade
@@ -2194,10 +2194,10 @@ ENDIF
 
       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%AirDens
       Re_Xferred   = Re_Xferred   + 1
-      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%NumBl
-      Re_Xferred   = Re_Xferred   + 1
-      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%NMappings
-      Re_Xferred   = Re_Xferred   + 1
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NumBl
+      Int_Xferred   = Int_Xferred   + 1
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NMappings
+      Int_Xferred   = Int_Xferred   + 1
       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NnodesVel
       Int_Xferred   = Int_Xferred   + 1
       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NnodesForce
@@ -2243,11 +2243,11 @@ ENDIF
       OutData%AirDens = ReKiBuf( Re_Xferred )
       Re_Xferred   = Re_Xferred + 1
       OutData%C_obj%AirDens = OutData%AirDens
-      OutData%NumBl = ReKiBuf( Re_Xferred )
-      Re_Xferred   = Re_Xferred + 1
+      OutData%NumBl = IntKiBuf( Int_Xferred ) 
+      Int_Xferred   = Int_Xferred + 1
       OutData%C_obj%NumBl = OutData%NumBl
-      OutData%NMappings = ReKiBuf( Re_Xferred )
-      Re_Xferred   = Re_Xferred + 1
+      OutData%NMappings = IntKiBuf( Int_Xferred ) 
+      Int_Xferred   = Int_Xferred + 1
       OutData%C_obj%NMappings = OutData%NMappings
       OutData%NnodesVel = IntKiBuf( Int_Xferred ) 
       Int_Xferred   = Int_Xferred + 1

@@ -158,7 +158,7 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, y_AD, y_ED, OpFM, 
 
       ! initialize the arrays:
 !   call ReadInputFiles( InitInp_AD%InputFile, OpFM%m, NumBl, ErrStat2, ErrMsg2 )
-   call OpFM_CreateActForceMotionsMesh( InitInp, p_FAST, u_AD14, u_AD, y_ED, y_AD, OpFM, ErrStat2, ErrMsg2)
+   call OpFM_CreateActForceMotionsMesh( p_FAST, y_ED, OpFM, ErrStat2, ErrMsg2)
    call SetOpFMPositions(p_FAST, u_AD14, u_AD, y_ED, OpFM)
    OpFM%u%fx = 0.0_ReKi
    OpFM%u%fy = 0.0_ReKi
@@ -504,9 +504,6 @@ SUBROUTINE OpFM_CreateActForceMotionsMesh( p_FAST, y_ED, OpFM, ErrStat, ErrMsg )
    ErrStat = ErrID_None
    ErrMsg  = ""
 
-   NumBl   = 0
-
-
    IF ( p_FAST%CompAero  == Module_AD14 ) THEN 
 
       CALL SetErrStat(ErrID_Fatal, 'Error AeroDyn14 is not supported yet with different number of velocity and force actuator nodes', ErrStat, ErrMsg, RoutineName)
@@ -584,7 +581,7 @@ SUBROUTINE OpFM_CreateTmpActForceMotionsMesh( p_FAST, y_ED, p_OpFM, tmpActForceM
    TYPE(FAST_ParameterType),        INTENT(IN   )  :: p_FAST      ! Parameters for the glue code
    TYPE(ED_OutputType),             INTENT(IN   )  :: y_ED        ! The outputs of the structural dynamics module
    TYPE(OpFM_ParameterType),        INTENT(IN   )  :: p_OpFM        ! data for the OpenFOAM integration module
-   TYPE(MeshType),                  INTENT(INOUT)  :: tmpActForceMotions ! temporary mesh to create the actuator force nodes
+   TYPE(MeshType),                  INTENT(INOUT)  :: tmpActForceMotions(:) ! temporary mesh to create the actuator force nodes
    INTEGER(IntKi),                  INTENT(  OUT)  :: ErrStat     ! Error status of the operation
    CHARACTER(*),                    INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
 
@@ -624,7 +621,7 @@ SUBROUTINE OpFM_CreateTmpActForceMotionsMesh( p_FAST, y_ED, p_OpFM, tmpActForceM
    END IF
 
    ! create meshes to map:
-   ALLOCATE(forceNodePositions(3,NnodesForceBlade)) ! Allocate space to create new positions
+   ALLOCATE(forceNodePositions(3,p_OpFM%NnodesForceBlade)) ! Allocate space to create new positions
    DO k=1,p_OpFM%NumBl
       call MeshCreate ( BlankMesh = tmpActForceMotions(k)         &
            ,IOS       = COMPONENT_INPUT             &
@@ -653,13 +650,13 @@ SUBROUTINE OpFM_CreateTmpActForceMotionsMesh( p_FAST, y_ED, p_OpFM, tmpActForceM
    end do
    DEALLOCATE(forceNodePositions) ! Free space
 
-   ALLOCATE(forceNodePositions(3,NnodesForceTower)) ! Allocate space to create new positions
+   ALLOCATE(forceNodePositions(3,p_OpFM%NnodesForceTower)) ! Allocate space to create new positions
    DO k=p_OpFM%NumBl+1,p_OpFM%NMappings   
       call CalcForceActuatorPositions(p_OpFM%NnodesForceTower, tmp_StructModelMesh(k)%position, forceNodePositions, errStat2, errMsg2)
 
       call MeshCreate ( BlankMesh = tmpActForceMotions(k)        &
            ,IOS       = COMPONENT_INPUT             &
-           ,Nnodes    = InitInp%NumActForcePtsTower &
+           ,Nnodes    = p_OpFM%NnodesForceTower &
            ,ErrStat   = ErrStat2                    &
            ,ErrMess   = ErrMsg2                     &
            ,force     = .false.                     &
@@ -669,9 +666,8 @@ SUBROUTINE OpFM_CreateTmpActForceMotionsMesh( p_FAST, y_ED, p_OpFM, tmpActForceM
       CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
       IF (ErrStat >= AbortErrLev) RETURN
       
-      do j=1,InitInp%NumActForcePtsTower
-         call MeshPositionNode(tmpActForceMotions(k), j, forceNodePositions(:,j), errStat2, errMsg2,&
-              orient=y_AD%TowerLoad%RefOrientation(:,:,j))
+      do j=1,p_OpFM%NnodesForceTower
+         call MeshPositionNode(tmpActForceMotions(k), j, forceNodePositions(:,j), errStat2, errMsg2)
          call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
          
          call MeshConstructElement( tmpActForceMotions(k), ELEMENT_POINT, errStat2, errMsg2, p1=j )
@@ -686,21 +682,19 @@ SUBROUTINE OpFM_CreateTmpActForceMotionsMesh( p_FAST, y_ED, p_OpFM, tmpActForceM
    
    ! create the mapping data structures:
    DO k=1,p_OpFM%NumBl
-      call MeshMapCreate( u_AD%BladeMotion(k), tmpActForceMotions(k), tmp_line2_to_point_Motions(k),  ErrStat2, ErrMsg2 );
+      call MeshMapCreate( tmp_StructModelMesh(k), tmpActForceMotions(k), tmp_line2_to_point_Motions(k),  ErrStat2, ErrMsg2 );
       call SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
    END DO
    
    DO k=p_OpFM%NumBl+1,p_OpFM%NMappings
-      if ( y_AD%TowerLoad%nnodes > 0 ) then ! we can have an input mesh on the tower without having an output mesh.
-         call MeshMapCreate( u_AD%TowerMotion, tmpActForceMotions(k), tmp_line2_to_point_Motions(k),  ErrStat2, ErrMsg2 );
-         call SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-      end if
+      call MeshMapCreate( tmp_StructModelMesh(k), tmpActForceMotions(k), tmp_line2_to_point_Motions(k),  ErrStat2, ErrMsg2 );
+      call SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
    END DO
    
    ! Map the orientation
    DO K = 1,p_OpFM%NMappings
       ! mesh mapping from line2 mesh to point mesh
-      call Transfer_Line2_to_Point( tmp_StructModelMesh(k), tmpActForceMotions(k), velocity_to_force_nodes_Motions(k), ErrStat2, ErrMsg2 )
+      call Transfer_Line2_to_Point( tmp_StructModelMesh(k), tmpActForceMotions(k), tmp_line2_to_point_Motions(k), ErrStat2, ErrMsg2 )
       call SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
       
    END DO
@@ -715,7 +709,7 @@ SUBROUTINE CreateTmpStructModelMesh(p_FAST, y_ED, p_OpFM, tmpStructModelMesh, Er
   TYPE(FAST_ParameterType),        INTENT(IN   )  :: p_FAST      ! Parameters for the glue code
   TYPE(ED_OutputType),             INTENT(IN   )  :: y_ED        ! The outputs of the structural dynamics module
   TYPE(OpFM_ParameterType),        INTENT(IN   )  :: p_OpFM      ! Parameters of the OpenFOAM integration module
-  TYPE(MeshType),                  INTENT(INOUT)  :: tmpStructModelMesh ! temporary copy of structural model mesh
+  TYPE(MeshType),                  INTENT(INOUT)  :: tmpStructModelMesh(:) ! temporary copy of structural model mesh
   INTEGER(IntKi),                  INTENT(  OUT)  :: ErrStat     ! Error status of the operation
   CHARACTER(*),                    INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
 
@@ -723,22 +717,25 @@ SUBROUTINE CreateTmpStructModelMesh(p_FAST, y_ED, p_OpFM, tmpStructModelMesh, Er
   !Local variables
   INTEGER(IntKi)                                  :: nNodesStructModel ! Number of nodes (tower/blade) in the structural model mesh
 
+  INTEGER(IntKi)                                  :: i,j          ! node counter
+  INTEGER(IntKi)                                  :: k            ! blade counter
+  INTEGER(IntKi)                                  :: ErrStat2    ! temporary Error status of the operation
+  CHARACTER(ErrMsgLen)                            :: ErrMsg2     ! temporary Error message if ErrStat /= ErrID_None
+
+  CHARACTER(*),   PARAMETER                       :: RoutineName = 'CreateTmpStructModelMesh'
+  
 
   IF (p_FAST%CompElast == Module_ED ) THEN
 
 
      DO K = 1,p_OpFM%NumBl
 
-        nNodesStuctModel = SIZE(y_ED%BladeLn2Mesh(K)%positions(1,:))
+        nNodesStructModel = SIZE(y_ED%BladeLn2Mesh(K)%position(1,:))
          
-        CALL MeshCreate( BlankMesh       = tmpStructModelMesh(K)      &
-                       , NNodes          = nNodesStructModel          &
-                       , IOS             = COMPONENT_OUTPUT       .                 &
+        CALL MeshCreate( BlankMesh       = tmpStructModelMesh(K)  &
+                       , NNodes          = nNodesStructModel      &
+                       , IOS             = COMPONENT_OUTPUT       &
                        , Orientation     = .TRUE.                 &
-                       , RotationVel     = .TRUE.                 &
-                       , TranslationVel  = .TRUE.                 &
-                       , RotationAcc     = .TRUE.                 &
-                       , TranslationAcc  = .TRUE.                 &
                        , ErrStat         = ErrStat2               &
                        , ErrMess         = ErrMsg2                )
         CALL CheckError( ErrStat2, ErrMsg2 )
@@ -751,7 +748,7 @@ SUBROUTINE CreateTmpStructModelMesh(p_FAST, y_ED, p_OpFM, tmpStructModelMesh, Er
         END DO
         
         ! create elements:      
-        DO J = 2,nNodesStuctModel-1
+        DO J = 2,nNodesStructModel-1
            
            CALL MeshConstructElement ( Mesh      = tmpStructModelMesh(K)  &
                                                  , Xelement = ELEMENT_LINE2      &
@@ -784,11 +781,11 @@ SUBROUTINE CreateTmpStructModelMesh(p_FAST, y_ED, p_OpFM, tmpStructModelMesh, Er
      
      DO K = p_OpFM%NumBl+1, p_OpFM%NMappings
         
-        nNodesStuctModel = SIZE(y_ED%TowerLn2Mesh(K)%positions(1,:))
+        nNodesStructModel = SIZE(y_ED%TowerLn2Mesh%position(1,:))
 
         CALL MeshCreate( BlankMesh       = tmpStructModelMesh(K)      &
                        , NNodes          = nNodesStructModel          &
-                       , IOS             = COMPONENT_OUTPUT       .                 &
+                       , IOS             = COMPONENT_OUTPUT           &
                        , Orientation     = .TRUE.                 &
                        , TranslationAcc  = .TRUE.                 &
                        , ErrStat         = ErrStat2               &
@@ -797,13 +794,13 @@ SUBROUTINE CreateTmpStructModelMesh(p_FAST, y_ED, p_OpFM, tmpStructModelMesh, Er
         IF (ErrStat >= AbortErrLev) RETURN
 
         DO J = 1,nNodesStructModel
-           CALL MeshPositionNode ( tmpStructModelMesh(K), J, y_ED%TowerLn2Mesh(K)%Position(:,J), ErrStat2, ErrMsg2 )
+           CALL MeshPositionNode ( tmpStructModelMesh(K), J, y_ED%TowerLn2Mesh%Position(:,J), ErrStat2, ErrMsg2 )
            CALL CheckError( ErrStat2, ErrMsg2 )
            IF (ErrStat >= AbortErrLev) RETURN
         END DO
         
         ! create elements:      
-        DO J = 2,nNodesStuctModel-1
+        DO J = 2,nNodesStructModel-1
            
            CALL MeshConstructElement ( Mesh      = tmpStructModelMesh(K)  &
                                                  , Xelement = ELEMENT_LINE2      &

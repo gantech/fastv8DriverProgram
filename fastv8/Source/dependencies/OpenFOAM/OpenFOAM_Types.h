@@ -54,8 +54,8 @@
   typedef struct OpFM_ParameterType {
     void * object ;
     float AirDens ;
-    float NumBl ;
-    float NMappings ;
+    int NumBl ;
+    int NMappings ;
     int NnodesVel ;
     int NnodesForce ;
     int NnodesForceBlade ;

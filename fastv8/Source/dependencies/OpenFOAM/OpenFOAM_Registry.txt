@@ -46,8 +46,8 @@ typedef	^	^	MeshMapType	Line2_to_Point_Motions	{:}	-	-	"mapping data structure t
 
 # ..... Parameters ................................................................................................................
 typedef	OpenFOAM/OpFM	ParameterType	ReKi	AirDens	-	-	-	"Air density for normalization of loads sent to OpenFOAM"	kg/m^3
-typedef	OpenFOAM/OpFM	ParameterType	ReKi	NumBl	-	-	-	"Number of blades"	-
-typedef	OpenFOAM/OpFM	ParameterType	ReKi	NMappings	-	-	-	"Number of mappings"	-
+typedef	OpenFOAM/OpFM	ParameterType	IntKi	NumBl	-	-	-	"Number of blades"	-
+typedef	OpenFOAM/OpFM	ParameterType	IntKi	NMappings	-	-	-	"Number of mappings"	-
 typedef	OpenFOAM/OpFM	ParameterType	IntKi	NnodesVel	-	-	-	"number of velocity nodes on FAST v8-OpenFOAM interface"	-
 typedef	OpenFOAM/OpFM	ParameterType	IntKi	NnodesForce	-	-	-	"number of force nodes on FAST v8-OpenFOAM interface"	-
 typedef	OpenFOAM/OpFM	ParameterType	IntKi	NnodesForceBlade	-	-	-	"number of force nodes on FAST v8-OpenFOAM interface"	-
