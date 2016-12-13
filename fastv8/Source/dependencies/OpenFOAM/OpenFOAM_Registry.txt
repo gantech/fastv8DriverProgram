@@ -28,7 +28,7 @@ typedef	^	InitOutputType	CHARACTER(ChanLen)	WriteOutputUnt	{:}	-	-	"Units of the
 typedef	^	InitOutputType	ProgDesc	Ver	-	-	-	"This module's name, version, and date"	-
 
 # ..... Blade Input file data .....................................................................................................
-# This is data defined in the Input File for the AeroDyn module 
+# This is data defined in the Input File for the AeroDyn module
 typedef	^	OpFM_BladePropsType	IntKi	NumBlNds	-	-	-	"Number of blade nodes used in the analysis"	-
 typedef	^	OpFM_BladePropsType	ReKi	BlSpn	{:}	-	-	"Span at blade node"	m
 typedef	^	OpFM_BladePropsType	ReKi	BlCrvAC	{:}	-	-	"Curve at blade node"	m
@@ -39,16 +39,19 @@ typedef	^	OpFM_BladePropsType	ReKi	BlChord	{:}	-	-	"Chord at blade node"	m
 typedef	^	OpFM_BladePropsType	IntKi	BlAFID	{:}	-	-	"ID of Airfoil at blade node"	-
 
 # ..... MiscVars ................................................................................................................
-typedef	OpenFOAM/OpFM	OpFM_MiscVarType	MeshType	AeroLoads	{:}	-	-	"point mesh for transferring AeroDyn distributed loads to OpenFOAM"	-
-typedef	^	^	MeshType	AeroMotions	{:}	-	-	"point mesh for transferring AeroDyn distributed loads to OpenFOAM (needs translationDisp)"	-
+typedef	OpenFOAM/OpFM	OpFM_MiscVarType	MeshType	ActForceLoads	{:}	-	-	"point mesh for transferring AeroDyn distributed loads to OpenFOAM"	-
+typedef	^	^	MeshType	ActForceMotions	{:}	-	-	"point mesh for transferring AeroDyn distributed loads to OpenFOAM (needs translationDisp)"	-
 typedef	^	^	MeshMapType	Line2_to_Point_Loads	{:}	-	-	"mapping data structure to convert line2 loads to point loads"	-
 typedef	^	^	MeshMapType	Line2_to_Point_Motions	{:}	-	-	"mapping data structure to convert line2 loads to point loads"	-
-typedef ^	^	OpFM_BladePropsType	BladeProps	{:}	-	-	"blade property information from blade input files"	-
 
 # ..... Parameters ................................................................................................................
 typedef	OpenFOAM/OpFM	ParameterType	ReKi	AirDens	-	-	-	"Air density for normalization of loads sent to OpenFOAM"	kg/m^3
+typedef	OpenFOAM/OpFM	ParameterType	ReKi	NumBl	-	-	-	"Number of blades"	-
+typedef	OpenFOAM/OpFM	ParameterType	ReKi	NMappings	-	-	-	"Number of mappings"	-
 typedef	OpenFOAM/OpFM	ParameterType	IntKi	NnodesVel	-	-	-	"number of velocity nodes on FAST v8-OpenFOAM interface"	-
 typedef	OpenFOAM/OpFM	ParameterType	IntKi	NnodesForce	-	-	-	"number of force nodes on FAST v8-OpenFOAM interface"	-
+typedef	OpenFOAM/OpFM	ParameterType	IntKi	NnodesForceBlade	-	-	-	"number of force nodes on FAST v8-OpenFOAM interface"	-
+typedef	OpenFOAM/OpFM	ParameterType	IntKi	NnodesForceTower	-	-	-	"number of force nodes on FAST v8-OpenFOAM interface"	-
 
 
 # ..... OpenFOAM_InputType data .......................................................................................................

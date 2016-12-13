@@ -1,31 +1,7 @@
-!**********************************************************************************************************************************
-! LICENSING
-! Copyright (C) 2015  National Renewable Energy Laboratory
-!
-!    Lidar module, a submodule of InflowWind
-!
-! Licensed under the Apache License, Version 2.0 (the "License");
-! you may not use this file except in compliance with the License.
-! You may obtain a copy of the License at
-!
-!     http://www.apache.org/licenses/LICENSE-2.0
-!
-! Unless required by applicable law or agreed to in writing, software
-! distributed under the License is distributed on an "AS IS" BASIS,
-! WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-! See the License for the specific language governing permissions and
-! limitations under the License.
-!
-!**********************************************************************************************************************************
-! File last committed: $Date: $
-! (File) Revision #: $Rev: $
-! URL: $HeadURL: $
-!**********************************************************************************************************************************
 MODULE OpenFOAM
 
 ! This is a pseudo module used to couple FAST v8 with OpenFOAM; it is considered part of the FAST glue code
    USE FAST_Types
-!   USE OpenFOAM_IO
 
    IMPLICIT NONE
 
@@ -40,20 +16,21 @@ MODULE OpenFOAM
       ! ..... Public Subroutines ...................................................................................................
 
    PUBLIC :: Init_OpFM                           ! Initialization routine
+   PUBLIC :: OpFM_CreateActForceNodesMesh        ! Routine to create the mesh containing the actuator force nodes
    PUBLIC :: OpFM_SetInputs                      ! Glue-code routine to update inputs for OpenFOAM
    PUBLIC :: OpFM_SetWriteOutput
 
 
 CONTAINS
 !----------------------------------------------------------------------------------------------------------------------------------
-SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, y_AD, y_ED, OpFM, InitOut, ErrStat, ErrMsg )
+SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, InitInp_AD, y_AD, y_ED, OpFM, InitOut, ErrStat, ErrMsg )
 !..................................................................................................................................
 
    TYPE(OpFM_InitInputType),        INTENT(IN   )  :: InitInp     ! Input data for initialization routine
    TYPE(FAST_ParameterType),        INTENT(IN   )  :: p_FAST      ! Parameters for the glue code
-   REAL(ReKi),                      INTENT(IN   )  :: AirDens     ! Air Density kg/m^3
    TYPE(AD14_InputType),            INTENT(IN   )  :: u_AD14      ! AeroDyn14 input data
    TYPE(AD_InputType),              INTENT(INOUT)  :: u_AD        ! AeroDyn input data
+   TYPE(AD_InitInputType),          INTENT(IN   )  :: InitInp_AD  ! Input data for initialization routine of AeroDyn
    TYPE(AD_OutputType),             INTENT(IN   )  :: y_AD        ! AeroDyn output data (for mesh mapping)
    TYPE(ED_OutputType),             INTENT(IN)     :: y_ED        ! The outputs of the structural dynamics module
    TYPE(OpenFOAM_Data),             INTENT(INOUT)  :: OpFM        ! data for the OpenFOAM integration module
@@ -62,8 +39,6 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, y_AD, y_ED, OpFM, 
    CHARACTER(*),                    INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
 
       ! local variables
-   INTEGER(IntKi)                                   :: NMappings  ! number of blades
-   INTEGER(IntKi)                                   :: NumBl      ! number of blades
    INTEGER(IntKi)                                   :: k          ! blade loop counter
    INTEGER(IntKi)                                   :: j          ! node counter
 
@@ -76,8 +51,6 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, y_AD, y_ED, OpFM, 
 
    ErrStat = ErrID_None
    ErrMsg  = ""
-
-   NumBl   = 0
 
       !............................................................................................
       ! Define parameters here:
@@ -112,57 +85,10 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, y_AD, y_ED, OpFM, 
          OpFM%p%NMappings = OpFM%p%NumBl
       end if
    END IF
-
-   OpFM%p%NnodesForce = 1 + NumBl * InitInp%NumActForcePtsBlade + InitInp%NumActForcePtsTower
-
-      ! air density, required for normalizing values sent to OpenFOAM:
-   OpFM%p%AirDens = AirDens
-   if ( EqualRealNos( AirDens, 0.0_ReKi ) ) &
-      CALL SetErrStat( ErrID_Fatal, 'Air density cannot be zero for OpenFOAM integration. Check that AeroDyn is used and that air density is set properly', ErrStat,ErrMsg,RoutineName)
-
-      !............................................................................................
-      ! Allocate arrays and define initial guesses for the OpenFOAM inputs here:
-      !............................................................................................
-   CALL AllocPAry( OpFM%u%pxVel, OpFM%p%NnodesVel, 'pxVel', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-   CALL AllocPAry( OpFM%u%pyVel, OpFM%p%NnodesVel, 'pyVel', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-   CALL AllocPAry( OpFM%u%pzVel, OpFM%p%NnodesVel, 'pzVel', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-   CALL AllocPAry( OpFM%u%pxForce, OpFM%p%NnodesForce, 'pxForce', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-   CALL AllocPAry( OpFM%u%pyForce, OpFM%p%NnodesForce, 'pyForce', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-   CALL AllocPAry( OpFM%u%pzForce, OpFM%p%NnodesForce, 'pzForce', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-   CALL AllocPAry( OpFM%u%fx, OpFM%p%NnodesForce, 'fx', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-   CALL AllocPAry( OpFM%u%fy, OpFM%p%NnodesForce, 'fy', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-   CALL AllocPAry( OpFM%u%fz, OpFM%p%NnodesForce, 'fz', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-
-   IF (InitInp%NumCtrl2SC > 0) THEN
-      CALL AllocPAry( OpFM%u%SuperController, InitInp%NumCtrl2SC, 'u%SuperController', ErrStat2, ErrMsg2 )
-      CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-   END IF
-
-   IF (ErrStat >= AbortErrLev) RETURN
-
-      ! make sure the C versions are synced with these arrays
-   OpFM%u%c_obj%pxVel_Len = OpFM%p%NnodesVel; OpFM%u%c_obj%pxVel = C_LOC( OpFM%u%pxVel(1) )
-   OpFM%u%c_obj%pyVel_Len = OpFM%p%NnodesVel; OpFM%u%c_obj%pyVel = C_LOC( OpFM%u%pyVel(1) )
-   OpFM%u%c_obj%pzVel_Len = OpFM%p%NnodesVel; OpFM%u%c_obj%pzVel = C_LOC( OpFM%u%pzVel(1) )
-   OpFM%u%c_obj%pxForce_Len = OpFM%p%NnodesForce; OpFM%u%c_obj%pxForce = C_LOC( OpFM%u%pxForce(1) )
-   OpFM%u%c_obj%pyForce_Len = OpFM%p%NnodesForce; OpFM%u%c_obj%pyForce = C_LOC( OpFM%u%pyForce(1) )
-   OpFM%u%c_obj%pzForce_Len = OpFM%p%NnodesForce; OpFM%u%c_obj%pzForce = C_LOC( OpFM%u%pzForce(1) )
-   OpFM%u%c_obj%fx_Len = OpFM%p%NnodesForce; OpFM%u%c_obj%fx = C_LOC( OpFM%u%fx(1) )
-   OpFM%u%c_obj%fy_Len = OpFM%p%NnodesForce; OpFM%u%c_obj%fy = C_LOC( OpFM%u%fy(1) )
-   OpFM%u%c_obj%fz_Len = OpFM%p%NnodesForce; OpFM%u%c_obj%fz = C_LOC( OpFM%u%fz(1) )
-   if (InitInp%NumCtrl2SC > 0) then
-      OpFM%u%c_obj%SuperController_Len = InitInp%NumCtrl2SC
-      OpFM%u%c_obj%SuperController     = C_LOC( OpFM%u%SuperController(1) )
-      OpFM%u%SuperController = 0.0_ReKi
-   end if
-
-      ! initialize the arrays:
-!   call ReadInputFiles( InitInp_AD%InputFile, OpFM%m, NumBl, ErrStat2, ErrMsg2 )
+   
+   ! initialize the arrays:
    call OpFM_CreateActForceMotionsMesh( InitInp, p_FAST, u_AD14, u_AD, y_ED, y_AD, OpFM, ErrStat2, ErrMsg2)
    call SetOpFMPositions(p_FAST, u_AD14, u_AD, y_ED, OpFM)
-   OpFM%u%fx = 0.0_ReKi
-   OpFM%u%fy = 0.0_ReKi
-   OpFM%u%fz = 0.0_ReKi
 
       !............................................................................................
    ! Allocate arrays and set up mappings to point loads (for AD15 only):
@@ -192,7 +118,7 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, y_AD, y_ED, OpFM, 
          IF (p_FAST%CompElast == Module_ED ) THEN
             call MeshMapCreate( y_ED%BladeLn2Mesh(k), OpFM%m%ActForceMotions(k), OpFM%m%Line2_to_Point_Motions(k),  ErrStat2, ErrMsg2 );
          ELSEIF (p_FAST%CompElast == Module_BD ) THEN
-!            call MeshMapCreate( BD%y(k)%BldMotion, OpFM%m%ActForceMotions(k), OpFM%m%Line2_to_Point_Motions(k),  ErrStat2, ErrMsg2 );
+            call MeshMapCreate( BD%y(k)%BldMotion, OpFM%m%ActForceMotions(k), OpFM%m%Line2_to_Point_Motions(k),  ErrStat2, ErrMsg2 );
          END IF
          call MeshMapCreate( y_AD%BladeLoad(k), OpFM%m%ActForceLoads(k), OpFM%m%Line2_to_Point_Loads(k),  ErrStat2, ErrMsg2 );
       END DO
@@ -207,50 +133,6 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, y_AD, y_ED, OpFM, 
       end do
 
    END IF
-
-      !............................................................................................
-      ! Define system output initializations (set up mesh) here:
-      !............................................................................................
-   CALL AllocPAry( OpFM%y%u, OpFM%p%NnodesVel, 'u', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-   CALL AllocPAry( OpFM%y%v, OpFM%p%NnodesVel, 'v', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-   CALL AllocPAry( OpFM%y%w, OpFM%p%NnodesVel, 'w', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-   if (InitInp%NumSC2Ctrl > 0) then
-      CALL AllocPAry( OpFM%y%SuperController, InitInp%NumSC2Ctrl, 'y%SuperController', ErrStat2, ErrMsg2 )
-      CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
-   end if
-
-   IF (ErrStat >= AbortErrLev) RETURN
-
-      ! make sure the C versions are synced with these arrays
-   OpFM%y%c_obj%u_Len = OpFM%p%NnodesVel; OpFM%y%c_obj%u = C_LOC( OpFM%y%u(1) )
-   OpFM%y%c_obj%v_Len = OpFM%p%NnodesVel; OpFM%y%c_obj%v = C_LOC( OpFM%y%v(1) )
-   OpFM%y%c_obj%w_Len = OpFM%p%NnodesVel; OpFM%y%c_obj%w = C_LOC( OpFM%y%w(1) )
-
-   if (InitInp%NumSC2Ctrl > 0) then
-      OpFM%y%c_obj%SuperController_Len = InitInp%NumSC2Ctrl
-      OpFM%y%c_obj%SuperController     = C_LOC( OpFM%y%SuperController(1) )
-   end if
-
-
-
-      !............................................................................................
-      ! Define initialization-routine output (including writeOutput array) here:
-      !............................................................................................
-
-   CALL AllocAry( InitOut%WriteOutputHdr, 3, 'WriteOutputHdr', ErrStat2, ErrMsg2 )
-      CALL SetErrStat(ErrStat2,ErrMsg2,ErrStat,ErrMsg,RoutineName)
-   CALL AllocAry( InitOut%WriteOutputUnt, 3, 'WriteOutputUnt', ErrStat2, ErrMsg2 )
-      CALL SetErrStat(ErrStat2,ErrMsg2,ErrStat,ErrMsg,RoutineName)
-   CALL AllocAry( OpFM%y%WriteOutput, 3, 'WriteOutput', ErrStat2, ErrMsg2 )
-      CALL SetErrStat(ErrStat2,ErrMsg2,ErrStat,ErrMsg,RoutineName)
-      IF (ErrStat >= AbortErrLev) RETURN
-
-   InitOut%WriteOutputHdr(1) = 'Wind1VelX'; InitOut%WriteOutputUnt(1) = '(m/s)'
-   InitOut%WriteOutputHdr(2) = 'Wind1VelY'; InitOut%WriteOutputUnt(2) = '(m/s)'
-   InitOut%WriteOutputHdr(3) = 'Wind1VelZ'; InitOut%WriteOutputUnt(3) = '(m/s)'
-   OpFM%y%WriteOutput = 0.0_ReKi
-
-   InitOut%Ver = OpFM_Ver
 
    RETURN
 
@@ -323,14 +205,14 @@ SUBROUTINE SetOpFMPositions(p_FAST, u_AD14, u_AD, y_ED, OpFM)
    IF (p_FAST%CompAero == MODULE_AD14) THEN
 
          ! blade nodes
-      DO K = 1,SIZE(u_AD14%InputMarkers)
+      DO K = 1,OpFM%p%NumBl
          DO J = 1,u_AD14%InputMarkers(K)%nnodes  !this mesh isn't properly set up (it's got the global [absolute] position and no reference position)
             Node = Node + 1
             OpFM%u%pxVel(Node) = u_AD14%InputMarkers(K)%Position(1,J)
             OpFM%u%pyVel(Node) = u_AD14%InputMarkers(K)%Position(2,J)
             OpFM%u%pzVel(Node) = u_AD14%InputMarkers(K)%Position(3,J)
          END DO !J = 1,p%BldNodes ! Loop through the blade nodes / elements
-      END DO !K = 1,p%NumBl
+      END DO !K = 1,OpFM%p%NumBl
 
          ! tower nodes
       DO J=1,u_AD14%Twr_InputMarkers%nnodes
@@ -343,7 +225,7 @@ SUBROUTINE SetOpFMPositions(p_FAST, u_AD14, u_AD, y_ED, OpFM)
    ELSEIF (p_FAST%CompAero == MODULE_AD) THEN
 
          ! blade nodes
-      DO K = 1,SIZE(u_AD%BladeMotion)
+      DO K = 1,OpFM%p%NumBl
          DO J = 1,u_AD%BladeMotion(k)%Nnodes
 
             Node = Node + 1
@@ -352,7 +234,7 @@ SUBROUTINE SetOpFMPositions(p_FAST, u_AD14, u_AD, y_ED, OpFM)
             OpFM%u%pzVel(Node) = u_AD%BladeMotion(k)%TranslationDisp(3,j) + u_AD%BladeMotion(k)%Position(3,j)
 
          END DO !J = 1,p%BldNodes ! Loop through the blade nodes / elements
-      END DO !K = 1,p%NumBl
+      END DO !K = 1,p%OpFM%p%NumBl
 
          ! tower nodes
       DO J=1,u_AD%TowerMotion%nnodes
@@ -423,16 +305,16 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
          IF (p_FAST%CompElast == Module_ED ) THEN
             call Transfer_Line2_to_Point( y_ED%BladeLn2Mesh(k), OpFM%m%ActForceMotions(k), OpFM%m%Line2_to_Point_Motions(k), ErrStat2, ErrMsg2 )
          ELSEIF (p_FAST%CompElast == Module_BD ) THEN
-!            call Transfer_Line2_to_Point( BD%y(k)%BldMotion, OpFM%m%ActForceMotions(k), OpFM%m%Line2_to_Point_Motions(k), ErrStat2, ErrMsg2 )
+            call Transfer_Line2_to_Point( BD%y(k)%BldMotion, OpFM%m%ActForceMotions(k), OpFM%m%Line2_to_Point_Motions(k), ErrStat2, ErrMsg2 )
          END IF
 
-         call Transfer_Line2_to_Point( y_AD%BladeLoad(k), OpFM%m%ActForceLoads(k), OpFM%m%Line2_to_Point_Loads(k), ErrStat2, ErrMsg2 )
+         call Transfer_Line2_to_Point( y_AD%BladeLoad(k), OpFM%m%ActForceLoads(k), OpFM%m%Line2_to_Point_Loads(k), ErrStat2, ErrMsg2, u_AD%BladeMotion(k), OpFM%m%AeroMotions(k) )
 
          DO J = 1, OpFM%p%NnodesForceBlade
             Node = Node + 1
-            OpFM%u%fx(Node) = OpFM%m%ActForceLoads(k)%Force(1,j) / OpFM%p%AirDens
-            OpFM%u%fy(Node) = OpFM%m%ActForceLoads(k)%Force(2,j) / OpFM%p%AirDens
-            OpFM%u%fz(Node) = OpFM%m%ActForceLoads(k)%Force(3,j) / OpFM%p%AirDens
+            OpFM%u%fx(Node) = OpFM%m%AeroLoads(k)%Force(1,j) / OpFM%p%AirDens
+            OpFM%u%fy(Node) = OpFM%m%AeroLoads(k)%Force(2,j) / OpFM%p%AirDens
+            OpFM%u%fz(Node) = OpFM%m%AeroLoads(k)%Force(3,j) / OpFM%p%AirDens
          END DO !J = 1,p%BldNodes ! Loop through the blade nodes / elements
 
       END DO !K = 1,OpFM%p%NumBl
@@ -446,39 +328,18 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
 
       call Transfer_Line2_to_Point( y_ED%TowerLn2Mesh, OpFM%m%ActForceMotions(k), OpFM%m%Line2_to_Point_Motions(k), ErrStat2, ErrMsg2 )
 
-      call Transfer_Line2_to_Point( y_AD%TowerLoad, OpFM%m%ActForceLoads(k), OpFM%m%Line2_to_Point_Loads(k), ErrStat2, ErrMsg2 )
+      call Transfer_Line2_to_Point( y_AD%TowerLoad, OpFM%m%ActForceLoads(k), OpFM%m%Line2_to_Point_Loads(k), ErrStat2, ErrMsg2, u_AD%TowerMotion, OpFM%m%AeroMotions(k) )
 
       DO J=1,OpFM%p%NnodesForceTower
          Node = Node + 1
-         OpFM%u%fx(Node) = OpFM%m%ActForceLoads(k)%Force(1,j) / OpFM%p%AirDens
-         OpFM%u%fy(Node) = OpFM%m%ActForceLoads(k)%Force(2,j) / OpFM%p%AirDens
-         OpFM%u%fz(Node) = OpFM%m%ActForceLoads(k)%Force(3,j) / OpFM%p%AirDens
+         OpFM%u%fx(Node) = OpFM%m%AeroLoads(k)%Force(1,j) / OpFM%p%AirDens
+         OpFM%u%fy(Node) = OpFM%m%AeroLoads(k)%Force(2,j) / OpFM%p%AirDens
+         OpFM%u%fz(Node) = OpFM%m%AeroLoads(k)%Force(3,j) / OpFM%p%AirDens
       END DO
 
    END IF
 
-
-
 END SUBROUTINE SetOpFMForces
-!----------------------------------------------------------------------------------------------------------------------------------
-SUBROUTINE OpFM_SetWriteOutput( OpFM )
-!..................................................................................................................................
-
-   TYPE(OpenFOAM_Data),            INTENT(INOUT)   :: OpFM        ! data for the OpenFOAM integration module
-
-
-      ! set the hub-height wind speeds
-   IF ( ALLOCATED( OpFM%y%WriteOutput ) ) THEN
-      IF ( ASSOCIATED( OpFM%y%u ) ) then
-         OpFM%y%WriteOutput(1) = OpFM%y%u(1)
-         OpFM%y%WriteOutput(2) = OpFM%y%v(1)
-         OpFM%y%WriteOutput(3) = OpFM%y%w(1)
-      END IF
-   END IF
-
-
-
-END SUBROUTINE OpFM_SetWriteOutput
 !----------------------------------------------------------------------------------------------------------------------------------
 SUBROUTINE OpFM_CreateActForceMotionsMesh( p_FAST, y_ED, OpFM, ErrStat, ErrMsg )
 !..................................................................................................................................
@@ -526,7 +387,7 @@ SUBROUTINE OpFM_CreateActForceMotionsMesh( p_FAST, y_ED, OpFM, ErrStat, ErrMsg )
       DO k=1,OpFM%p%NumBl
          call MeshCreate ( BlankMesh = OpFM%m%ActForceMotions(k)         &
                           ,IOS       = COMPONENT_INPUT             &
-                          ,Nnodes    = OpFM%p%NnodesForceBlade &
+                          ,Nnodes    = OpFM%p%NnodeForceBlade &
                           ,ErrStat   = ErrStat2                    &
                           ,ErrMess   = ErrMsg2                     &
                           
@@ -536,14 +397,14 @@ SUBROUTINE OpFM_CreateActForceMotionsMesh( p_FAST, y_ED, OpFM, ErrStat, ErrMsg )
 
          do j=1,OpFM%p%NnodesForceBlade
             call MeshPositionNode(OpFM%m%ActForceMotions(k), j, tmpActForceMotionsMesh(k)%position(:,j), errStat2, errMsg2, &
-                                  orient=tmpActForceMotionsMesh(k)%Orientation(:,:,j) )
+                                  orient=tmpActForceMotionsMesh(k)%irentation(:,:,j) )
                call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
 
             call MeshConstructElement(OpFM%m%ActForceMotions(k), ELEMENT_POINT, errStat2, errMsg2, p1=j )
                call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
          end do !j
 
-         call MeshCommit(OpFM%m%ActForceMotions(k), errStat2, errMsg2 )
+         call MeshCommit(OpFM%m%ActForceMotions(k)), errStat2, errMsg2 )
             call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
             if (errStat >= AbortErrLev) return
       END DO
@@ -551,7 +412,7 @@ SUBROUTINE OpFM_CreateActForceMotionsMesh( p_FAST, y_ED, OpFM, ErrStat, ErrMsg )
       DO k=OpFM%p%NumBl+1,OpFM%p%NMappings !Tower if present
          call MeshCreate ( BlankMesh = OpFM%m%ActForceMotions(k)         &
                           ,IOS       = COMPONENT_INPUT             &
-                          ,Nnodes    = OpFM%p%NnodesForceTower &
+                          ,Nnodes    = OpFM%p%NnodeForceBlade &
                           ,ErrStat   = ErrStat2                    &
                           ,ErrMess   = ErrMsg2                     &
                           
@@ -561,14 +422,14 @@ SUBROUTINE OpFM_CreateActForceMotionsMesh( p_FAST, y_ED, OpFM, ErrStat, ErrMsg )
 
          do j=1,OpFM%p%NnodesForceTower
             call MeshPositionNode(OpFM%m%ActForceMotions(k), j, tmpActForceMotionsMesh(k)%position(:,j), errStat2, errMsg2, &
-                                  orient=tmpActForceMotionsMesh(k)%Orientation(:,:,j) )
+                                  orient=tmpActForceMotionsMesh(k)%irentation(:,:,j) )
                call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
 
             call MeshConstructElement(OpFM%m%ActForceMotions(k), ELEMENT_POINT, errStat2, errMsg2, p1=j )
                call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
          end do !j
 
-         call MeshCommit(OpFM%m%ActForceMotions(k), errStat2, errMsg2 )
+         call MeshCommit(OpFM%m%ActForceMotions(k)), errStat2, errMsg2 )
             call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
             if (errStat >= AbortErrLev) return
       END DO
@@ -583,14 +444,14 @@ SUBROUTINE OpFM_CreateTmpActForceMotionsMesh( p_FAST, y_ED, p_OpFM, tmpActForceM
 
    TYPE(FAST_ParameterType),        INTENT(IN   )  :: p_FAST      ! Parameters for the glue code
    TYPE(ED_OutputType),             INTENT(IN   )  :: y_ED        ! The outputs of the structural dynamics module
-   TYPE(OpFM_ParameterType),        INTENT(IN   )  :: p_OpFM        ! data for the OpenFOAM integration module
+   TYPE(OpFM_ParameterType),        INTENT(IN   )  :: OpFM        ! data for the OpenFOAM integration module
    TYPE(MeshType),                  INTENT(INOUT)  :: tmpActForceMotions ! temporary mesh to create the actuator force nodes
    INTEGER(IntKi),                  INTENT(  OUT)  :: ErrStat     ! Error status of the operation
    CHARACTER(*),                    INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
 
       ! local variables
    TYPE(MeshMapType) , DIMENSION(:), ALLOCATABLE   :: tmp_line2_to_point_Motions    !< mapping data structure to convert orientation of structural nodes to actuator force nodes [-]
-   TYPE(MeshType) , DIMENSION(:), ALLOCATABLE      :: tmp_StructModelMesh   !< temporary mesh copying Structural model mesh
+   TYPE(MeshType) , DIMENSION(:), ALLOCATABLE      :: tmp_StructModel_Mesh   !< temporary mesh copying Structural model mesh
    REAL(ReKi), DIMENSION(:,:), ALLOCATABLE         :: forceNodePositions  ! new positions for the force actuator nodes
    INTEGER(IntKi)                                  :: NumBl      ! number of blades
    INTEGER(IntKi)                                  :: k          ! blade loop counter
@@ -607,7 +468,7 @@ SUBROUTINE OpFM_CreateTmpActForceMotionsMesh( p_FAST, y_ED, p_OpFM, tmpActForceM
    ErrMsg  = ""
 
    ! Make a copy of the Structural model mesh with the reference orientation set to zero
-   ALLOCATE(tmp_StructModelMesh(p_OpFM%NMappings) , STAT=ErrStat2)
+   ALLOCATE(tmp_StructModel_Mesh(OpFM%p%NMappings) , STAT=ErrStat2)
    IF (ErrStat2 /= 0) THEN
       CALL SetErrStat(ErrID_Fatal, 'Error allocating temporary copy of ElastoDyn mesh type', ErrStat, ErrMsg, RoutineName)
       RETURN
@@ -617,7 +478,7 @@ SUBROUTINE OpFM_CreateTmpActForceMotionsMesh( p_FAST, y_ED, p_OpFM, tmpActForceM
    IF (ErrStat >= AbortErrLev) RETURN
  
    ! Allocate space for mapping data structures
-   ALLOCATE( tmp_line2_to_point_Motions(p_OpFM%NMappings),STAT=ErrStat2)
+   ALLOCATE( tmp_line2_to_point_Motions(OpFM%p%NMappings),STAT=ErrStat2)
    IF (ErrStat2 /= 0) THEN
       CALL SetErrStat(ErrID_Fatal, 'Error allocating temporary actuator force mesh mapping types', ErrStat, ErrMsg, RoutineName)
       RETURN
@@ -625,10 +486,10 @@ SUBROUTINE OpFM_CreateTmpActForceMotionsMesh( p_FAST, y_ED, p_OpFM, tmpActForceM
 
    ! create meshes to map:
    ALLOCATE(forceNodePositions(3,NnodesForceBlade)) ! Allocate space to create new positions
-   DO k=1,p_OpFM%NumBl
+   DO k=1,OpFM%p%NumBl
       call MeshCreate ( BlankMesh = tmpActForceMotions(k)         &
            ,IOS       = COMPONENT_INPUT             &
-           ,Nnodes    = p_OpFM%NnodesForceBlade &
+           ,Nnodes    = InitInp%NumActForcePtsBlade &
            ,ErrStat   = ErrStat2                    &
            ,ErrMess   = ErrMsg2                     &
            ,force     = .false.                     &
@@ -654,7 +515,7 @@ SUBROUTINE OpFM_CreateTmpActForceMotionsMesh( p_FAST, y_ED, p_OpFM, tmpActForceM
    DEALLOCATE(forceNodePositions) ! Free space
 
    ALLOCATE(forceNodePositions(3,NnodesForceTower)) ! Allocate space to create new positions
-   DO k=p_OpFM%NumBl+1,p_OpFM%NMappings   
+   DO k=OpFM%p%NumBl+1,OpFM%p%NMappings   
       call CalcForceActuatorPositions(p_OpFM%NnodesForceTower, tmp_StructModelMesh(k)%position, forceNodePositions, errStat2, errMsg2)
 
       call MeshCreate ( BlankMesh = tmpActForceMotions(k)        &
@@ -685,12 +546,12 @@ SUBROUTINE OpFM_CreateTmpActForceMotionsMesh( p_FAST, y_ED, p_OpFM, tmpActForceM
    DEALLOCATE(forceNodePositions) ! Free space
    
    ! create the mapping data structures:
-   DO k=1,p_OpFM%NumBl
+   DO k=1,OpFM%p%NumBl
       call MeshMapCreate( u_AD%BladeMotion(k), tmpActForceMotions(k), tmp_line2_to_point_Motions(k),  ErrStat2, ErrMsg2 );
       call SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
    END DO
    
-   DO k=p_OpFM%NumBl+1,p_OpFM%NMappings
+   DO k=OpFM%p%NumBl+1,OpFM%p%NMappings
       if ( y_AD%TowerLoad%nnodes > 0 ) then ! we can have an input mesh on the tower without having an output mesh.
          call MeshMapCreate( u_AD%TowerMotion, tmpActForceMotions(k), tmp_line2_to_point_Motions(k),  ErrStat2, ErrMsg2 );
          call SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
@@ -844,7 +705,7 @@ SUBROUTINE CreateTmpStructModelMesh(p_FAST, y_ED, p_OpFM, tmpStructModelMesh, Er
 
   RETURN 
 END SUBROUTINE CreateTmpStructModelMesh
-!----------------------------------------------------------------------------------------------------------------------------------
+
 SUBROUTINE CalcForceActuatorPositions(numForcePts, velPositions, forceNodePositions, ErrStat2, ErrMsg2)
 
   INTEGER(IntKi),         INTENT(IN   )  :: numForcePts              ! number of force actuator nodes desired
@@ -895,6 +756,7 @@ SUBROUTINE CalcForceActuatorPositions(numForcePts, velPositions, forceNodePositi
   RETURN
 
 END SUBROUTINE CalcForceActuatorPositions
+
 
 
 END MODULE OpenFOAM

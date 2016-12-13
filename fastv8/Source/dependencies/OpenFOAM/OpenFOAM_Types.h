@@ -50,13 +50,16 @@
 
 
 
-
   } OpFM_MiscVarType_t ;
   typedef struct OpFM_ParameterType {
     void * object ;
     float AirDens ;
+    float NumBl ;
+    float NMappings ;
     int NnodesVel ;
     int NnodesForce ;
+    int NnodesForceBlade ;
+    int NnodesForceTower ;
   } OpFM_ParameterType_t ;
   typedef struct OpFM_InputType {
     void * object ;
