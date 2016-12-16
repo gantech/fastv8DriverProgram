@@ -126,6 +126,9 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, y_AD, y_ED, OpFM, 
    CALL AllocPAry( OpFM%u%fx, OpFM%p%NnodesForce, 'fx', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
    CALL AllocPAry( OpFM%u%fy, OpFM%p%NnodesForce, 'fy', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
    CALL AllocPAry( OpFM%u%fz, OpFM%p%NnodesForce, 'fz', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+   CALL AllocPAry( OpFM%u%momentx, OpFM%p%NnodesForce, 'momentx', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+   CALL AllocPAry( OpFM%u%momenty, OpFM%p%NnodesForce, 'momenty', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+   CALL AllocPAry( OpFM%u%momentz, OpFM%p%NnodesForce, 'momentz', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
 
    
    IF (InitInp%NumCtrl2SC > 0) THEN
@@ -146,6 +149,9 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, y_AD, y_ED, OpFM, 
    OpFM%u%c_obj%fx_Len = OpFM%p%NnodesForce; OpFM%u%c_obj%fx = C_LOC( OpFM%u%fx(1) )
    OpFM%u%c_obj%fy_Len = OpFM%p%NnodesForce; OpFM%u%c_obj%fy = C_LOC( OpFM%u%fy(1) )
    OpFM%u%c_obj%fz_Len = OpFM%p%NnodesForce; OpFM%u%c_obj%fz = C_LOC( OpFM%u%fz(1) )
+   OpFM%u%c_obj%momentx_Len = OpFM%p%NnodesForce; OpFM%u%c_obj%momentx = C_LOC( OpFM%u%momentx(1) )
+   OpFM%u%c_obj%momenty_Len = OpFM%p%NnodesForce; OpFM%u%c_obj%momenty = C_LOC( OpFM%u%momenty(1) )
+   OpFM%u%c_obj%momentz_Len = OpFM%p%NnodesForce; OpFM%u%c_obj%momentz = C_LOC( OpFM%u%momentz(1) )
    if (InitInp%NumCtrl2SC > 0) then
       OpFM%u%c_obj%SuperController_Len = InitInp%NumCtrl2SC
       OpFM%u%c_obj%SuperController     = C_LOC( OpFM%u%SuperController(1) )
@@ -452,6 +458,9 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
          OpFM%u%fx(Node) = OpFM%m%ActForceLoads(k)%Force(1,j) / OpFM%p%AirDens
          OpFM%u%fy(Node) = OpFM%m%ActForceLoads(k)%Force(2,j) / OpFM%p%AirDens
          OpFM%u%fz(Node) = OpFM%m%ActForceLoads(k)%Force(3,j) / OpFM%p%AirDens
+         OpFM%u%momentx(Node) = OpFM%m%ActForceLoads(k)%Moment(1,j) / OpFM%p%AirDens
+         OpFM%u%momenty(Node) = OpFM%m%ActForceLoads(k)%Moment(2,j) / OpFM%p%AirDens
+         OpFM%u%momentz(Node) = OpFM%m%ActForceLoads(k)%Moment(3,j) / OpFM%p%AirDens
          
       END DO !J = 1,p%BldNodes ! Loop through the blade nodes / elements
       
@@ -471,6 +480,9 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
       OpFM%u%fx(Node) = OpFM%m%ActForceLoads(k)%Force(1,j) / OpFM%p%AirDens
       OpFM%u%fy(Node) = OpFM%m%ActForceLoads(k)%Force(2,j) / OpFM%p%AirDens
       OpFM%u%fz(Node) = OpFM%m%ActForceLoads(k)%Force(3,j) / OpFM%p%AirDens
+      OpFM%u%momentx(Node) = OpFM%m%ActForceLoads(k)%Moment(1,j) / OpFM%p%AirDens
+      OpFM%u%momenty(Node) = OpFM%m%ActForceLoads(k)%Moment(2,j) / OpFM%p%AirDens
+      OpFM%u%momentz(Node) = OpFM%m%ActForceLoads(k)%Moment(3,j) / OpFM%p%AirDens
    END DO
    
 END SUBROUTINE SetOpFMForces

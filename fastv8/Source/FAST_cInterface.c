@@ -444,9 +444,9 @@ void FAST_cInterface::computeTorqueThrust(int iTurbGlob, double * torque, double
             relLoc[1] = cDriver_Input_from_FAST[iTurbLoc]->pyForce[iNode] - cDriver_Input_from_FAST[iTurbLoc]->pyForce[0];
             relLoc[2] = cDriver_Input_from_FAST[iTurbLoc]->pzForce[iNode] - cDriver_Input_from_FAST[iTurbLoc]->pzForce[0];            
 
-            torque[0] = torque[0] + relLoc[1] * cDriver_Input_from_FAST[iTurbLoc]->fz[iNode] - relLoc[2] * cDriver_Input_from_FAST[iTurbLoc]->fy[iNode] ;
-            torque[1] = torque[1] + relLoc[2] * cDriver_Input_from_FAST[iTurbLoc]->fx[iNode] - relLoc[0] * cDriver_Input_from_FAST[iTurbLoc]->fz[iNode] ;
-            torque[2] = torque[2] + relLoc[0] * cDriver_Input_from_FAST[iTurbLoc]->fy[iNode] - relLoc[1] * cDriver_Input_from_FAST[iTurbLoc]->fx[iNode] ;
+            torque[0] = torque[0] + relLoc[1] * cDriver_Input_from_FAST[iTurbLoc]->fz[iNode] - relLoc[2] * cDriver_Input_from_FAST[iTurbLoc]->fy[iNode] + cDriver_Input_from_FAST[iTurbLoc]->momentx[iNode] ;
+            torque[1] = torque[1] + relLoc[2] * cDriver_Input_from_FAST[iTurbLoc]->fx[iNode] - relLoc[0] * cDriver_Input_from_FAST[iTurbLoc]->fz[iNode] + cDriver_Input_from_FAST[iTurbLoc]->momenty[iNode] ;
+            torque[2] = torque[2] + relLoc[0] * cDriver_Input_from_FAST[iTurbLoc]->fy[iNode] - relLoc[1] * cDriver_Input_from_FAST[iTurbLoc]->fx[iNode] + cDriver_Input_from_FAST[iTurbLoc]->momentz[iNode] ;
             
         }
     }

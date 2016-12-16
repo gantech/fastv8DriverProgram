@@ -153,6 +153,12 @@ IMPLICIT NONE
     INTEGER(C_int) :: fy_Len = 0 
     TYPE(C_ptr) :: fz = C_NULL_PTR 
     INTEGER(C_int) :: fz_Len = 0 
+    TYPE(C_ptr) :: momentx = C_NULL_PTR 
+    INTEGER(C_int) :: momentx_Len = 0 
+    TYPE(C_ptr) :: momenty = C_NULL_PTR 
+    INTEGER(C_int) :: momenty_Len = 0 
+    TYPE(C_ptr) :: momentz = C_NULL_PTR 
+    INTEGER(C_int) :: momentz_Len = 0 
     TYPE(C_ptr) :: SuperController = C_NULL_PTR 
     INTEGER(C_int) :: SuperController_Len = 0 
   END TYPE OpFM_InputType_C
@@ -168,6 +174,9 @@ IMPLICIT NONE
     REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: fx => NULL()      !< normalized x force at actuator force nodes [N/kg/m^3]
     REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: fy => NULL()      !< normalized y force at actuator force nodes [N/kg/m^3]
     REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: fz => NULL()      !< normalized z force at actuator force nodes [N/kg/m^3]
+    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: momentx => NULL()      !< normalized x moment at actuator force nodes [Nm/kg/m^3]
+    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: momenty => NULL()      !< normalized y moment at actuator force nodes [Nm/kg/m^3]
+    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: momentz => NULL()      !< normalized z moment at actuator force nodes [Nm/kg/m^3]
     REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: SuperController => NULL()      !< inputs to the super controller (from the turbine controller) [-]
   END TYPE OpFM_InputType
 ! =======================
@@ -2447,6 +2456,51 @@ IF (ASSOCIATED(SrcInputData%fz)) THEN
   END IF
     DstInputData%fz = SrcInputData%fz
 ENDIF
+IF (ASSOCIATED(SrcInputData%momentx)) THEN
+  i1_l = LBOUND(SrcInputData%momentx,1)
+  i1_u = UBOUND(SrcInputData%momentx,1)
+  IF (.NOT. ASSOCIATED(DstInputData%momentx)) THEN 
+    ALLOCATE(DstInputData%momentx(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstInputData%momentx.', ErrStat, ErrMsg,RoutineName)
+      RETURN
+    END IF
+    DstInputData%c_obj%momentx_Len = SIZE(DstInputData%momentx)
+    IF (DstInputData%c_obj%momentx_Len > 0) &
+      DstInputData%c_obj%momentx = C_LOC( DstInputData%momentx(i1_l) ) 
+  END IF
+    DstInputData%momentx = SrcInputData%momentx
+ENDIF
+IF (ASSOCIATED(SrcInputData%momenty)) THEN
+  i1_l = LBOUND(SrcInputData%momenty,1)
+  i1_u = UBOUND(SrcInputData%momenty,1)
+  IF (.NOT. ASSOCIATED(DstInputData%momenty)) THEN 
+    ALLOCATE(DstInputData%momenty(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstInputData%momenty.', ErrStat, ErrMsg,RoutineName)
+      RETURN
+    END IF
+    DstInputData%c_obj%momenty_Len = SIZE(DstInputData%momenty)
+    IF (DstInputData%c_obj%momenty_Len > 0) &
+      DstInputData%c_obj%momenty = C_LOC( DstInputData%momenty(i1_l) ) 
+  END IF
+    DstInputData%momenty = SrcInputData%momenty
+ENDIF
+IF (ASSOCIATED(SrcInputData%momentz)) THEN
+  i1_l = LBOUND(SrcInputData%momentz,1)
+  i1_u = UBOUND(SrcInputData%momentz,1)
+  IF (.NOT. ASSOCIATED(DstInputData%momentz)) THEN 
+    ALLOCATE(DstInputData%momentz(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstInputData%momentz.', ErrStat, ErrMsg,RoutineName)
+      RETURN
+    END IF
+    DstInputData%c_obj%momentz_Len = SIZE(DstInputData%momentz)
+    IF (DstInputData%c_obj%momentz_Len > 0) &
+      DstInputData%c_obj%momentz = C_LOC( DstInputData%momentz(i1_l) ) 
+  END IF
+    DstInputData%momentz = SrcInputData%momentz
+ENDIF
 IF (ASSOCIATED(SrcInputData%SuperController)) THEN
   i1_l = LBOUND(SrcInputData%SuperController,1)
   i1_u = UBOUND(SrcInputData%SuperController,1)
@@ -2532,6 +2586,24 @@ IF (ASSOCIATED(InputData%fz)) THEN
   InputData%fz => NULL()
   InputData%C_obj%fz = C_NULL_PTR
   InputData%C_obj%fz_Len = 0
+ENDIF
+IF (ASSOCIATED(InputData%momentx)) THEN
+  DEALLOCATE(InputData%momentx)
+  InputData%momentx => NULL()
+  InputData%C_obj%momentx = C_NULL_PTR
+  InputData%C_obj%momentx_Len = 0
+ENDIF
+IF (ASSOCIATED(InputData%momenty)) THEN
+  DEALLOCATE(InputData%momenty)
+  InputData%momenty => NULL()
+  InputData%C_obj%momenty = C_NULL_PTR
+  InputData%C_obj%momenty_Len = 0
+ENDIF
+IF (ASSOCIATED(InputData%momentz)) THEN
+  DEALLOCATE(InputData%momentz)
+  InputData%momentz => NULL()
+  InputData%C_obj%momentz = C_NULL_PTR
+  InputData%C_obj%momentz_Len = 0
 ENDIF
 IF (ASSOCIATED(InputData%SuperController)) THEN
   DEALLOCATE(InputData%SuperController)
@@ -2625,6 +2697,21 @@ ENDIF
   IF ( ASSOCIATED(InData%fz) ) THEN
     Int_BufSz   = Int_BufSz   + 2*1  ! fz upper/lower bounds for each dimension
       Re_BufSz   = Re_BufSz   + SIZE(InData%fz)  ! fz
+  END IF
+  Int_BufSz   = Int_BufSz   + 1     ! momentx allocated yes/no
+  IF ( ASSOCIATED(InData%momentx) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! momentx upper/lower bounds for each dimension
+      Re_BufSz   = Re_BufSz   + SIZE(InData%momentx)  ! momentx
+  END IF
+  Int_BufSz   = Int_BufSz   + 1     ! momenty allocated yes/no
+  IF ( ASSOCIATED(InData%momenty) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! momenty upper/lower bounds for each dimension
+      Re_BufSz   = Re_BufSz   + SIZE(InData%momenty)  ! momenty
+  END IF
+  Int_BufSz   = Int_BufSz   + 1     ! momentz allocated yes/no
+  IF ( ASSOCIATED(InData%momentz) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! momentz upper/lower bounds for each dimension
+      Re_BufSz   = Re_BufSz   + SIZE(InData%momentz)  ! momentz
   END IF
   Int_BufSz   = Int_BufSz   + 1     ! SuperController allocated yes/no
   IF ( ASSOCIATED(InData%SuperController) ) THEN
@@ -2789,6 +2876,45 @@ ENDIF
 
       IF (SIZE(InData%fz)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%fz))-1 ) = PACK(InData%fz,.TRUE.)
       Re_Xferred   = Re_Xferred   + SIZE(InData%fz)
+  END IF
+  IF ( .NOT. ASSOCIATED(InData%momentx) ) THEN
+    IntKiBuf( Int_Xferred ) = 0
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    IntKiBuf( Int_Xferred ) = 1
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%momentx,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%momentx,1)
+    Int_Xferred = Int_Xferred + 2
+
+      IF (SIZE(InData%momentx)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%momentx))-1 ) = PACK(InData%momentx,.TRUE.)
+      Re_Xferred   = Re_Xferred   + SIZE(InData%momentx)
+  END IF
+  IF ( .NOT. ASSOCIATED(InData%momenty) ) THEN
+    IntKiBuf( Int_Xferred ) = 0
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    IntKiBuf( Int_Xferred ) = 1
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%momenty,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%momenty,1)
+    Int_Xferred = Int_Xferred + 2
+
+      IF (SIZE(InData%momenty)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%momenty))-1 ) = PACK(InData%momenty,.TRUE.)
+      Re_Xferred   = Re_Xferred   + SIZE(InData%momenty)
+  END IF
+  IF ( .NOT. ASSOCIATED(InData%momentz) ) THEN
+    IntKiBuf( Int_Xferred ) = 0
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    IntKiBuf( Int_Xferred ) = 1
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%momentz,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%momentz,1)
+    Int_Xferred = Int_Xferred + 2
+
+      IF (SIZE(InData%momentz)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%momentz))-1 ) = PACK(InData%momentz,.TRUE.)
+      Re_Xferred   = Re_Xferred   + SIZE(InData%momentz)
   END IF
   IF ( .NOT. ASSOCIATED(InData%SuperController) ) THEN
     IntKiBuf( Int_Xferred ) = 0
@@ -3098,6 +3224,84 @@ ENDIF
       Re_Xferred   = Re_Xferred   + SIZE(OutData%fz)
     DEALLOCATE(mask1)
   END IF
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! momentx not allocated
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    Int_Xferred = Int_Xferred + 1
+    i1_l = IntKiBuf( Int_Xferred    )
+    i1_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    IF (ASSOCIATED(OutData%momentx)) DEALLOCATE(OutData%momentx)
+    ALLOCATE(OutData%momentx(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%momentx.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    OutData%c_obj%momentx_Len = SIZE(OutData%momentx)
+    IF (OutData%c_obj%momentx_Len > 0) &
+       OutData%c_obj%momentx = C_LOC( OutData%momentx(i1_l) ) 
+    ALLOCATE(mask1(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating mask1.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    mask1 = .TRUE. 
+      IF (SIZE(OutData%momentx)>0) OutData%momentx = REAL( UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%momentx))-1 ), mask1, 0.0_ReKi ), C_FLOAT)
+      Re_Xferred   = Re_Xferred   + SIZE(OutData%momentx)
+    DEALLOCATE(mask1)
+  END IF
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! momenty not allocated
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    Int_Xferred = Int_Xferred + 1
+    i1_l = IntKiBuf( Int_Xferred    )
+    i1_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    IF (ASSOCIATED(OutData%momenty)) DEALLOCATE(OutData%momenty)
+    ALLOCATE(OutData%momenty(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%momenty.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    OutData%c_obj%momenty_Len = SIZE(OutData%momenty)
+    IF (OutData%c_obj%momenty_Len > 0) &
+       OutData%c_obj%momenty = C_LOC( OutData%momenty(i1_l) ) 
+    ALLOCATE(mask1(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating mask1.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    mask1 = .TRUE. 
+      IF (SIZE(OutData%momenty)>0) OutData%momenty = REAL( UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%momenty))-1 ), mask1, 0.0_ReKi ), C_FLOAT)
+      Re_Xferred   = Re_Xferred   + SIZE(OutData%momenty)
+    DEALLOCATE(mask1)
+  END IF
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! momentz not allocated
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    Int_Xferred = Int_Xferred + 1
+    i1_l = IntKiBuf( Int_Xferred    )
+    i1_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    IF (ASSOCIATED(OutData%momentz)) DEALLOCATE(OutData%momentz)
+    ALLOCATE(OutData%momentz(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%momentz.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    OutData%c_obj%momentz_Len = SIZE(OutData%momentz)
+    IF (OutData%c_obj%momentz_Len > 0) &
+       OutData%c_obj%momentz = C_LOC( OutData%momentz(i1_l) ) 
+    ALLOCATE(mask1(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating mask1.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    mask1 = .TRUE. 
+      IF (SIZE(OutData%momentz)>0) OutData%momentz = REAL( UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%momentz))-1 ), mask1, 0.0_ReKi ), C_FLOAT)
+      Re_Xferred   = Re_Xferred   + SIZE(OutData%momentz)
+    DEALLOCATE(mask1)
+  END IF
   IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! SuperController not allocated
     Int_Xferred = Int_Xferred + 1
   ELSE
@@ -3202,6 +3406,27 @@ ENDIF
        NULLIFY( InputData%fz )
     ELSE
        CALL C_F_POINTER(InputData%C_obj%fz, InputData%fz, (/InputData%C_obj%fz_Len/))
+    END IF
+
+    ! -- momentx Input Data fields
+    IF ( .NOT. C_ASSOCIATED( InputData%C_obj%momentx ) ) THEN
+       NULLIFY( InputData%momentx )
+    ELSE
+       CALL C_F_POINTER(InputData%C_obj%momentx, InputData%momentx, (/InputData%C_obj%momentx_Len/))
+    END IF
+
+    ! -- momenty Input Data fields
+    IF ( .NOT. C_ASSOCIATED( InputData%C_obj%momenty ) ) THEN
+       NULLIFY( InputData%momenty )
+    ELSE
+       CALL C_F_POINTER(InputData%C_obj%momenty, InputData%momenty, (/InputData%C_obj%momenty_Len/))
+    END IF
+
+    ! -- momentz Input Data fields
+    IF ( .NOT. C_ASSOCIATED( InputData%C_obj%momentz ) ) THEN
+       NULLIFY( InputData%momentz )
+    ELSE
+       CALL C_F_POINTER(InputData%C_obj%momentz, InputData%momentz, (/InputData%C_obj%momentz_Len/))
     END IF
 
     ! -- SuperController Input Data fields
@@ -3868,6 +4093,30 @@ IF (ASSOCIATED(u_out%fz) .AND. ASSOCIATED(u1%fz)) THEN
   DEALLOCATE(b1)
   DEALLOCATE(c1)
 END IF ! check if allocated
+IF (ASSOCIATED(u_out%momentx) .AND. ASSOCIATED(u1%momentx)) THEN
+  ALLOCATE(b1(SIZE(u_out%momentx,1)))
+  ALLOCATE(c1(SIZE(u_out%momentx,1)))
+  b1 = -(u1%momentx - u2%momentx)/t(2)
+  u_out%momentx = u1%momentx + b1 * t_out
+  DEALLOCATE(b1)
+  DEALLOCATE(c1)
+END IF ! check if allocated
+IF (ASSOCIATED(u_out%momenty) .AND. ASSOCIATED(u1%momenty)) THEN
+  ALLOCATE(b1(SIZE(u_out%momenty,1)))
+  ALLOCATE(c1(SIZE(u_out%momenty,1)))
+  b1 = -(u1%momenty - u2%momenty)/t(2)
+  u_out%momenty = u1%momenty + b1 * t_out
+  DEALLOCATE(b1)
+  DEALLOCATE(c1)
+END IF ! check if allocated
+IF (ASSOCIATED(u_out%momentz) .AND. ASSOCIATED(u1%momentz)) THEN
+  ALLOCATE(b1(SIZE(u_out%momentz,1)))
+  ALLOCATE(c1(SIZE(u_out%momentz,1)))
+  b1 = -(u1%momentz - u2%momentz)/t(2)
+  u_out%momentz = u1%momentz + b1 * t_out
+  DEALLOCATE(b1)
+  DEALLOCATE(c1)
+END IF ! check if allocated
 IF (ASSOCIATED(u_out%SuperController) .AND. ASSOCIATED(u1%SuperController)) THEN
   ALLOCATE(b1(SIZE(u_out%SuperController,1)))
   ALLOCATE(c1(SIZE(u_out%SuperController,1)))
@@ -4017,6 +4266,33 @@ IF (ASSOCIATED(u_out%fz) .AND. ASSOCIATED(u1%fz)) THEN
   b1 = (t(3)**2*(u1%fz - u2%fz) + t(2)**2*(-u1%fz + u3%fz))/(t(2)*t(3)*(t(2) - t(3)))
   c1 = ( (t(2)-t(3))*u1%fz + t(3)*u2%fz - t(2)*u3%fz ) / (t(2)*t(3)*(t(2) - t(3)))
   u_out%fz = u1%fz + b1 * t_out + c1 * t_out**2
+  DEALLOCATE(b1)
+  DEALLOCATE(c1)
+END IF ! check if allocated
+IF (ASSOCIATED(u_out%momentx) .AND. ASSOCIATED(u1%momentx)) THEN
+  ALLOCATE(b1(SIZE(u_out%momentx,1)))
+  ALLOCATE(c1(SIZE(u_out%momentx,1)))
+  b1 = (t(3)**2*(u1%momentx - u2%momentx) + t(2)**2*(-u1%momentx + u3%momentx))/(t(2)*t(3)*(t(2) - t(3)))
+  c1 = ( (t(2)-t(3))*u1%momentx + t(3)*u2%momentx - t(2)*u3%momentx ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%momentx = u1%momentx + b1 * t_out + c1 * t_out**2
+  DEALLOCATE(b1)
+  DEALLOCATE(c1)
+END IF ! check if allocated
+IF (ASSOCIATED(u_out%momenty) .AND. ASSOCIATED(u1%momenty)) THEN
+  ALLOCATE(b1(SIZE(u_out%momenty,1)))
+  ALLOCATE(c1(SIZE(u_out%momenty,1)))
+  b1 = (t(3)**2*(u1%momenty - u2%momenty) + t(2)**2*(-u1%momenty + u3%momenty))/(t(2)*t(3)*(t(2) - t(3)))
+  c1 = ( (t(2)-t(3))*u1%momenty + t(3)*u2%momenty - t(2)*u3%momenty ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%momenty = u1%momenty + b1 * t_out + c1 * t_out**2
+  DEALLOCATE(b1)
+  DEALLOCATE(c1)
+END IF ! check if allocated
+IF (ASSOCIATED(u_out%momentz) .AND. ASSOCIATED(u1%momentz)) THEN
+  ALLOCATE(b1(SIZE(u_out%momentz,1)))
+  ALLOCATE(c1(SIZE(u_out%momentz,1)))
+  b1 = (t(3)**2*(u1%momentz - u2%momentz) + t(2)**2*(-u1%momentz + u3%momentz))/(t(2)*t(3)*(t(2) - t(3)))
+  c1 = ( (t(2)-t(3))*u1%momentz + t(3)*u2%momentz - t(2)*u3%momentz ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%momentz = u1%momentz + b1 * t_out + c1 * t_out**2
   DEALLOCATE(b1)
   DEALLOCATE(c1)
 END IF ! check if allocated

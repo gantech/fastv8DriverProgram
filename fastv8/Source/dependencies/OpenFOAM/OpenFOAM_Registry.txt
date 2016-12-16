@@ -65,6 +65,9 @@ typedef	^	InputType	ReKi	pOrientation	{:}	-	-	"Direction cosine matrix to transf
 typedef	^	InputType	ReKi	fx	{:}	-	-	"normalized x force at actuator force nodes"	"N/kg/m^3"
 typedef	^	InputType	ReKi	fy	{:}	-	-	"normalized y force at actuator force nodes"	"N/kg/m^3"
 typedef	^	InputType	ReKi	fz	{:}	-	-	"normalized z force at actuator force nodes"	"N/kg/m^3"
+typedef	^	InputType	ReKi	momentx	{:}	-	-	"normalized x moment at actuator force nodes"	"Nm/kg/m^3"
+typedef	^	InputType	ReKi	momenty	{:}	-	-	"normalized y moment at actuator force nodes"	"Nm/kg/m^3"
+typedef	^	InputType	ReKi	momentz	{:}	-	-	"normalized z moment at actuator force nodes"	"Nm/kg/m^3"
 typedef	^	InputType	ReKi	SuperController	{:}	-	-	"inputs to the super controller (from the turbine controller)"	-
 
 # ..... OpenFOAM_OutputType data .......................................................................................................
