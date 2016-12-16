@@ -77,6 +77,7 @@ compileYAMLcpp() {
     echo "Compiling yaml-cpp"
     echo -n "   Setting up build directory"
     cd fastv8/Source/dependencies/yaml-cpp
+    git clone https://github.com/jbeder/yaml-cpp.git
     rm -rf build
     [ -d build ] || mkdir build
     cd build
