@@ -107,7 +107,9 @@ class FAST_cInterface {
   int init();
   int solution0();
   int step();
-  void getCoordinates(double *currentCoords, int iNode);
+  void getVelNodeCoordinates(double *currentCoords, int iNode);
+  void getForceNodeCoordinates(double *currentCoords, int iNode);
+  void getForceNodeOrientation(double *currentOrientation, int iNode);
   void getForce(std::vector<double> & force, int iNode);
   void setVelocity(std::vector<double> & velocity, int iNode);
   int get_ntStart() { return ntStart; }
@@ -122,6 +124,7 @@ class FAST_cInterface {
   int get_numVelPtsBlade(int iTurbLoc) { return numVelPtsBlade[iTurbLoc]; }
   int get_numVelPtsTwr(int iTurbLoc) { return numVelPtsTwr[iTurbLoc]; }
   int get_numVelPts(int iTurbLoc) { return 1 + numBlades[iTurbLoc]*numVelPtsBlade[iTurbLoc] + numVelPtsTwr[iTurbLoc]; }
+  void computeTorqueThrust(int iTurGlob, double * torque, double * thrust);
   ActuatorNodeType getNodeType(int iTurbGlob, int iNode);
   void end();
 

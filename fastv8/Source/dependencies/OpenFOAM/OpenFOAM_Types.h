@@ -69,6 +69,7 @@
     float * pxForce ;     int pxForce_Len ;
     float * pyForce ;     int pyForce_Len ;
     float * pzForce ;     int pzForce_Len ;
+    float * pOrientation ;     int pOrientation_Len ;
     float * fx ;     int fx_Len ;
     float * fy ;     int fy_Len ;
     float * fz ;     int fz_Len ;

@@ -145,6 +145,8 @@ IMPLICIT NONE
     INTEGER(C_int) :: pyForce_Len = 0 
     TYPE(C_ptr) :: pzForce = C_NULL_PTR 
     INTEGER(C_int) :: pzForce_Len = 0 
+    TYPE(C_ptr) :: pOrientation = C_NULL_PTR 
+    INTEGER(C_int) :: pOrientation_Len = 0 
     TYPE(C_ptr) :: fx = C_NULL_PTR 
     INTEGER(C_int) :: fx_Len = 0 
     TYPE(C_ptr) :: fy = C_NULL_PTR 
@@ -159,12 +161,13 @@ IMPLICIT NONE
     REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: pxVel => NULL()      !< x position of velocity interface (Aerodyn) nodes [m]
     REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: pyVel => NULL()      !< y position of velocity interface (Aerodyn) nodes [m]
     REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: pzVel => NULL()      !< z position of velocity interface (Aerodyn) nodes [m]
-    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: pxForce => NULL()      !< x position of velocity interface (Aerodyn) nodes [m]
-    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: pyForce => NULL()      !< y position of velocity interface (Aerodyn) nodes [m]
-    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: pzForce => NULL()      !< z position of velocity interface (Aerodyn) nodes [m]
-    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: fx => NULL()      !< normalized x force of interface nodes [N/kg/m^3]
-    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: fy => NULL()      !< normalized y force of interface nodes [N/kg/m^3]
-    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: fz => NULL()      !< normalized z force of interface nodes [N/kg/m^3]
+    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: pxForce => NULL()      !< x position of actuator force nodes [m]
+    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: pyForce => NULL()      !< y position of actuator force nodes [m]
+    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: pzForce => NULL()      !< z position of actuator force nodes [m]
+    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: pOrientation => NULL()      !< Direction cosine matrix to transform vectors from global frame of reference to actuator force node frame of reference [-]
+    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: fx => NULL()      !< normalized x force at actuator force nodes [N/kg/m^3]
+    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: fy => NULL()      !< normalized y force at actuator force nodes [N/kg/m^3]
+    REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: fz => NULL()      !< normalized z force at actuator force nodes [N/kg/m^3]
     REAL(KIND=C_FLOAT) , DIMENSION(:), POINTER  :: SuperController => NULL()      !< inputs to the super controller (from the turbine controller) [-]
   END TYPE OpFM_InputType
 ! =======================
@@ -2384,6 +2387,21 @@ IF (ASSOCIATED(SrcInputData%pzForce)) THEN
   END IF
     DstInputData%pzForce = SrcInputData%pzForce
 ENDIF
+IF (ASSOCIATED(SrcInputData%pOrientation)) THEN
+  i1_l = LBOUND(SrcInputData%pOrientation,1)
+  i1_u = UBOUND(SrcInputData%pOrientation,1)
+  IF (.NOT. ASSOCIATED(DstInputData%pOrientation)) THEN 
+    ALLOCATE(DstInputData%pOrientation(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstInputData%pOrientation.', ErrStat, ErrMsg,RoutineName)
+      RETURN
+    END IF
+    DstInputData%c_obj%pOrientation_Len = SIZE(DstInputData%pOrientation)
+    IF (DstInputData%c_obj%pOrientation_Len > 0) &
+      DstInputData%c_obj%pOrientation = C_LOC( DstInputData%pOrientation(i1_l) ) 
+  END IF
+    DstInputData%pOrientation = SrcInputData%pOrientation
+ENDIF
 IF (ASSOCIATED(SrcInputData%fx)) THEN
   i1_l = LBOUND(SrcInputData%fx,1)
   i1_u = UBOUND(SrcInputData%fx,1)
@@ -2491,6 +2509,12 @@ IF (ASSOCIATED(InputData%pzForce)) THEN
   InputData%C_obj%pzForce = C_NULL_PTR
   InputData%C_obj%pzForce_Len = 0
 ENDIF
+IF (ASSOCIATED(InputData%pOrientation)) THEN
+  DEALLOCATE(InputData%pOrientation)
+  InputData%pOrientation => NULL()
+  InputData%C_obj%pOrientation = C_NULL_PTR
+  InputData%C_obj%pOrientation_Len = 0
+ENDIF
 IF (ASSOCIATED(InputData%fx)) THEN
   DEALLOCATE(InputData%fx)
   InputData%fx => NULL()
@@ -2581,6 +2605,11 @@ ENDIF
   IF ( ASSOCIATED(InData%pzForce) ) THEN
     Int_BufSz   = Int_BufSz   + 2*1  ! pzForce upper/lower bounds for each dimension
       Re_BufSz   = Re_BufSz   + SIZE(InData%pzForce)  ! pzForce
+  END IF
+  Int_BufSz   = Int_BufSz   + 1     ! pOrientation allocated yes/no
+  IF ( ASSOCIATED(InData%pOrientation) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! pOrientation upper/lower bounds for each dimension
+      Re_BufSz   = Re_BufSz   + SIZE(InData%pOrientation)  ! pOrientation
   END IF
   Int_BufSz   = Int_BufSz   + 1     ! fx allocated yes/no
   IF ( ASSOCIATED(InData%fx) ) THEN
@@ -2708,6 +2737,19 @@ ENDIF
 
       IF (SIZE(InData%pzForce)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%pzForce))-1 ) = PACK(InData%pzForce,.TRUE.)
       Re_Xferred   = Re_Xferred   + SIZE(InData%pzForce)
+  END IF
+  IF ( .NOT. ASSOCIATED(InData%pOrientation) ) THEN
+    IntKiBuf( Int_Xferred ) = 0
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    IntKiBuf( Int_Xferred ) = 1
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%pOrientation,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%pOrientation,1)
+    Int_Xferred = Int_Xferred + 2
+
+      IF (SIZE(InData%pOrientation)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%pOrientation))-1 ) = PACK(InData%pOrientation,.TRUE.)
+      Re_Xferred   = Re_Xferred   + SIZE(InData%pOrientation)
   END IF
   IF ( .NOT. ASSOCIATED(InData%fx) ) THEN
     IntKiBuf( Int_Xferred ) = 0
@@ -2952,6 +2994,32 @@ ENDIF
       Re_Xferred   = Re_Xferred   + SIZE(OutData%pzForce)
     DEALLOCATE(mask1)
   END IF
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! pOrientation not allocated
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    Int_Xferred = Int_Xferred + 1
+    i1_l = IntKiBuf( Int_Xferred    )
+    i1_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    IF (ASSOCIATED(OutData%pOrientation)) DEALLOCATE(OutData%pOrientation)
+    ALLOCATE(OutData%pOrientation(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%pOrientation.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    OutData%c_obj%pOrientation_Len = SIZE(OutData%pOrientation)
+    IF (OutData%c_obj%pOrientation_Len > 0) &
+       OutData%c_obj%pOrientation = C_LOC( OutData%pOrientation(i1_l) ) 
+    ALLOCATE(mask1(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating mask1.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    mask1 = .TRUE. 
+      IF (SIZE(OutData%pOrientation)>0) OutData%pOrientation = REAL( UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%pOrientation))-1 ), mask1, 0.0_ReKi ), C_FLOAT)
+      Re_Xferred   = Re_Xferred   + SIZE(OutData%pOrientation)
+    DEALLOCATE(mask1)
+  END IF
   IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! fx not allocated
     Int_Xferred = Int_Xferred + 1
   ELSE
@@ -3106,6 +3174,13 @@ ENDIF
        NULLIFY( InputData%pzForce )
     ELSE
        CALL C_F_POINTER(InputData%C_obj%pzForce, InputData%pzForce, (/InputData%C_obj%pzForce_Len/))
+    END IF
+
+    ! -- pOrientation Input Data fields
+    IF ( .NOT. C_ASSOCIATED( InputData%C_obj%pOrientation ) ) THEN
+       NULLIFY( InputData%pOrientation )
+    ELSE
+       CALL C_F_POINTER(InputData%C_obj%pOrientation, InputData%pOrientation, (/InputData%C_obj%pOrientation_Len/))
     END IF
 
     ! -- fx Input Data fields
@@ -3761,6 +3836,14 @@ IF (ASSOCIATED(u_out%pzForce) .AND. ASSOCIATED(u1%pzForce)) THEN
   DEALLOCATE(b1)
   DEALLOCATE(c1)
 END IF ! check if allocated
+IF (ASSOCIATED(u_out%pOrientation) .AND. ASSOCIATED(u1%pOrientation)) THEN
+  ALLOCATE(b1(SIZE(u_out%pOrientation,1)))
+  ALLOCATE(c1(SIZE(u_out%pOrientation,1)))
+  b1 = -(u1%pOrientation - u2%pOrientation)/t(2)
+  u_out%pOrientation = u1%pOrientation + b1 * t_out
+  DEALLOCATE(b1)
+  DEALLOCATE(c1)
+END IF ! check if allocated
 IF (ASSOCIATED(u_out%fx) .AND. ASSOCIATED(u1%fx)) THEN
   ALLOCATE(b1(SIZE(u_out%fx,1)))
   ALLOCATE(c1(SIZE(u_out%fx,1)))
@@ -3898,6 +3981,15 @@ IF (ASSOCIATED(u_out%pzForce) .AND. ASSOCIATED(u1%pzForce)) THEN
   b1 = (t(3)**2*(u1%pzForce - u2%pzForce) + t(2)**2*(-u1%pzForce + u3%pzForce))/(t(2)*t(3)*(t(2) - t(3)))
   c1 = ( (t(2)-t(3))*u1%pzForce + t(3)*u2%pzForce - t(2)*u3%pzForce ) / (t(2)*t(3)*(t(2) - t(3)))
   u_out%pzForce = u1%pzForce + b1 * t_out + c1 * t_out**2
+  DEALLOCATE(b1)
+  DEALLOCATE(c1)
+END IF ! check if allocated
+IF (ASSOCIATED(u_out%pOrientation) .AND. ASSOCIATED(u1%pOrientation)) THEN
+  ALLOCATE(b1(SIZE(u_out%pOrientation,1)))
+  ALLOCATE(c1(SIZE(u_out%pOrientation,1)))
+  b1 = (t(3)**2*(u1%pOrientation - u2%pOrientation) + t(2)**2*(-u1%pOrientation + u3%pOrientation))/(t(2)*t(3)*(t(2) - t(3)))
+  c1 = ( (t(2)-t(3))*u1%pOrientation + t(3)*u2%pOrientation - t(2)*u3%pOrientation ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%pOrientation = u1%pOrientation + b1 * t_out + c1 * t_out**2
   DEALLOCATE(b1)
   DEALLOCATE(c1)
 END IF ! check if allocated

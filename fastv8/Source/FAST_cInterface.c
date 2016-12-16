@@ -128,7 +128,9 @@ int FAST_cInterface::init() {
 int FAST_cInterface::solution0() {
 
        // set wind speeds at initial locations
-       //      setOutputsToFAST(cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb]);
+    for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
+        setOutputsToFAST(cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb]);
+    }
      
      if(scStatus) {
 
@@ -185,7 +187,7 @@ int FAST_cInterface::step() {
    for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
 
      //  set wind speeds at original locations 
-     //  setOutputsToFAST(cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb]);
+     setOutputsToFAST(cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb]);
 
      // this advances the states, calls CalcOutput, and solves for next inputs. Predictor-corrector loop is imbeded here:
      // (note OpenFOAM could do subcycling around this step)
@@ -377,12 +379,30 @@ void FAST_cInterface::setOutputsToFAST(OpFM_InputType_t* cDriver_Input_from_FAST
    return;
 }
 
-void FAST_cInterface::getCoordinates(double *currentCoords, int iNode) {
+void FAST_cInterface::getVelNodeCoordinates(double *currentCoords, int iNode) {
+
+    // Set coordinates at current node of current turbine - Only one turbine for now
+    currentCoords[0] = cDriver_Input_from_FAST[0]->pxVel[iNode] ;
+    currentCoords[1] = cDriver_Input_from_FAST[0]->pyVel[iNode] ;
+    currentCoords[2] = cDriver_Input_from_FAST[0]->pzVel[iNode] ;
+
+}
+
+void FAST_cInterface::getForceNodeCoordinates(double *currentCoords, int iNode) {
 
   // Set coordinates at current node of current turbine - Only one turbine for now
-  currentCoords[0] = cDriver_Input_from_FAST[0]->pxVel[iNode] ;
-  currentCoords[1] = cDriver_Input_from_FAST[0]->pyVel[iNode] ;
-  currentCoords[2] = cDriver_Input_from_FAST[0]->pzVel[iNode] ;
+  currentCoords[0] = cDriver_Input_from_FAST[0]->pxForce[iNode] ;
+  currentCoords[1] = cDriver_Input_from_FAST[0]->pyForce[iNode] ;
+  currentCoords[2] = cDriver_Input_from_FAST[0]->pzForce[iNode] ;
+
+}
+
+void FAST_cInterface::getForceNodeOrientation(double *currentOrientation, int iNode) {
+
+    // Set orientation at current node of current turbine - Only one turbine for now
+    for(int i=0;i<9;i++) {
+        currentOrientation[i] = cDriver_Input_from_FAST[0]->pxForce[iNode*9+i] ;
+    }
 
 }
 
@@ -404,6 +424,34 @@ void FAST_cInterface::setVelocity(std::vector<double> & currentVelocity, int iNo
 
 }
 
+void FAST_cInterface::computeTorqueThrust(int iTurbGlob, double * torque, double * thrust) {
+
+    //Compute the torque and thrust based on the forces at the actuator nodes
+    double relLoc[] = {0.0,0.0,0.0} ;
+    thrust[0] = 0.0; thrust[1] = 0.0; thrust[2] = 0.0;
+    torque[0] = 0.0; torque[1] = 0.0; torque[2] = 0.0;    
+    
+    int iTurbLoc = get_localTurbNo(iTurbGlob) ;
+    for (int k=0; k < get_numBlades(iTurbLoc); k++) {
+        for (int j=0; j < numForcePtsBlade[iTurbLoc]; j++) {
+            int iNode = 1 + numForcePtsBlade[iTurbLoc]*k + j ;
+            
+            thrust[0] = thrust[0] + cDriver_Input_from_FAST[0]->fx[iNode] ;
+            thrust[1] = thrust[1] + cDriver_Input_from_FAST[0]->fy[iNode] ;
+            thrust[2] = thrust[2] + cDriver_Input_from_FAST[0]->fz[iNode] ;
+
+            relLoc[0] = cDriver_Input_from_FAST[iTurbLoc]->pxForce[iNode] - cDriver_Input_from_FAST[iTurbLoc]->pxForce[0] ;
+            relLoc[1] = cDriver_Input_from_FAST[iTurbLoc]->pyForce[iNode] - cDriver_Input_from_FAST[iTurbLoc]->pyForce[0];
+            relLoc[2] = cDriver_Input_from_FAST[iTurbLoc]->pzForce[iNode] - cDriver_Input_from_FAST[iTurbLoc]->pzForce[0];            
+
+            torque[0] = torque[0] + relLoc[1] * cDriver_Input_from_FAST[iTurbLoc]->fz[iNode] - relLoc[2] * cDriver_Input_from_FAST[iTurbLoc]->fy[iNode] ;
+            torque[1] = torque[1] + relLoc[2] * cDriver_Input_from_FAST[iTurbLoc]->fx[iNode] - relLoc[0] * cDriver_Input_from_FAST[iTurbLoc]->fz[iNode] ;
+            torque[2] = torque[2] + relLoc[0] * cDriver_Input_from_FAST[iTurbLoc]->fy[iNode] - relLoc[1] * cDriver_Input_from_FAST[iTurbLoc]->fx[iNode] ;
+            
+        }
+    }
+}
+    
 ActuatorNodeType FAST_cInterface::getNodeType(int iTurbGlob, int iNode) {
   // Return the type of actuator node for the given node number. The node ordering (from FAST) is 
   // Node 0 - Hub node
