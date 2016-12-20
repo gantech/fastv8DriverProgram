@@ -76,9 +76,9 @@ compileYAMLcpp() {
 #yaml-cpp
     echo "Compiling yaml-cpp"
     echo -n "   Setting up build directory"
-    cd fastv8/Source/dependencies/yaml-cpp
-    git clone https://github.com/jbeder/yaml-cpp.git
-#    rm -rf build
+    cd fastv8/Source/dependencies/
+    git clone https://github.com/jbeder/yaml-cpp.git &> /dev/null
+    rm -rf build
     [ -d build ] || mkdir build &> log.mkdirBuild
     cd build
     passFail $?
@@ -97,7 +97,7 @@ compileYAMLcpp() {
     echo -n "   Installing"
     make install &> log.makeInstall
     passFail $?
-    cd ../../../../../
+    cd ../../../../
 }
 
 compileHDF5() {
