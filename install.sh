@@ -84,11 +84,11 @@ compileYAMLcpp() {
     passFail $?
     echo -n "   Configuring"
     if [ "${COMPILER}" == 'gnu' ] ; then
-	cmake ../yaml-cpp/ -DCMAKE_CXX_COMPILER=g++ -DCMAKE_CXX_FLAGS="-std=c++11" -DCMAKE_INSTALL_PREFIX=../../../../ &> log.cmake
+	cmake ../yaml-cpp/ -DCMAKE_CXX_COMPILER=g++ -DCMAKE_CXX_FLAGS="-std=c++11" -DCMAKE_INSTALL_PREFIX=../../../ &> log.cmake
     elif [ "${COMPILER}" == 'intel' ] ; then
-	cmake ../yaml-cpp/ -DCMAKE_CXX_COMPILER=icpc -DCMAKE_CXX_FLAGS="-std=c++11" -DCMAKE_INSTALL_PREFIX=../../../../ &> log.cmake
+	cmake ../yaml-cpp/ -DCMAKE_CXX_COMPILER=icpc -DCMAKE_CXX_FLAGS="-std=c++11" -DCMAKE_INSTALL_PREFIX=../../../ &> log.cmake
     elif [ "${COMPILER}" == 'intelPhi' ] ; then
-	cmake ../yaml-cpp/ -DCMAKE_CXX_COMPILER=icpc -DCMAKE_CXX_FLAGS="-std=c++11 -mmic" -DCMAKE_INSTALL_PREFIX=../../../../ &> log.cmake
+	cmake ../yaml-cpp/ -DCMAKE_CXX_COMPILER=icpc -DCMAKE_CXX_FLAGS="-std=c++11 -mmic" -DCMAKE_INSTALL_PREFIX=../../../ &> log.cmake
     fi
     passFail $? 
     echo -n "   Compiling"
