@@ -415,6 +415,13 @@ void FAST_cInterface::getForce(std::vector<double> & currentForce, int iNode) {
 
 }
 
+double FAST_cInterface::getChord(int iNode) {
+
+  // Return blade chord/tower diameter at current node of current turbine - Only one turbine for now
+  return cDriver_Input_from_FAST[0]->forceNodesChord[iNode] ;
+
+}
+
 void FAST_cInterface::setVelocity(std::vector<double> & currentVelocity, int iNode) {
 
   // Set velocity at current node of current turbine - Only one turbine for now

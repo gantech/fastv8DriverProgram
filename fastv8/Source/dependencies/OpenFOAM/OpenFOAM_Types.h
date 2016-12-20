@@ -26,6 +26,10 @@
     int NumCtrl2SC ;
     int NumActForcePtsBlade ;
     int NumActForcePtsTower ;
+    float * StructBldRNodes ;     int StructBldRNodes_Len ;
+    float * StructTwrHNodes ;     int StructTwrHNodes_Len ;
+    float BladeLength ;
+    float TowerHeight ;
   } OpFM_InitInputType_t ;
   typedef struct OpFM_InitOutputType {
     void * object ;
@@ -33,17 +37,6 @@
     char * WriteOutputUnt ;     int WriteOutputUnt_Len ;
 
   } OpFM_InitOutputType_t ;
-  typedef struct OpFM_BladePropsType {
-    void * object ;
-    int NumBlNds ;
-    float * BlSpn ;     int BlSpn_Len ;
-    float * BlCrvAC ;     int BlCrvAC_Len ;
-    float * BlSwpAC ;     int BlSwpAC_Len ;
-    float * BlCrvAng ;     int BlCrvAng_Len ;
-    float * BlTwist ;     int BlTwist_Len ;
-    float * BlChord ;     int BlChord_Len ;
-    int * BlAFID ;     int BlAFID_Len ;
-  } OpFM_BladePropsType_t ;
   typedef struct OpFM_MiscVarType {
     void * object ;
 
@@ -60,6 +53,10 @@
     int NnodesForce ;
     int NnodesForceBlade ;
     int NnodesForceTower ;
+    float * forceBldRnodes ;     int forceBldRnodes_Len ;
+    float * forceTwrHnodes ;     int forceTwrHnodes_Len ;
+    float BladeLength ;
+    float TowerHeight ;
   } OpFM_ParameterType_t ;
   typedef struct OpFM_InputType {
     void * object ;
@@ -76,6 +73,7 @@
     float * momentx ;     int momentx_Len ;
     float * momenty ;     int momenty_Len ;
     float * momentz ;     int momentz_Len ;
+    float * forceNodesChord ;     int forceNodesChord_Len ;
     float * SuperController ;     int SuperController_Len ;
   } OpFM_InputType_t ;
   typedef struct OpFM_OutputType {

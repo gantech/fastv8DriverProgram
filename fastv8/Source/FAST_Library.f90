@@ -611,6 +611,7 @@ subroutine SetOpenFOAM_pointers(iTurb, OpFM_Input_from_FAST, OpFM_Output_to_FAST
    OpFM_Input_from_FAST%momentx_Len = Turbine(iTurb)%OpFM%u%c_obj%momentx_Len; OpFM_Input_from_FAST%momentx = Turbine(iTurb)%OpFM%u%c_obj%momentx
    OpFM_Input_from_FAST%momenty_Len = Turbine(iTurb)%OpFM%u%c_obj%momenty_Len; OpFM_Input_from_FAST%momenty = Turbine(iTurb)%OpFM%u%c_obj%momenty
    OpFM_Input_from_FAST%momentz_Len = Turbine(iTurb)%OpFM%u%c_obj%momentz_Len; OpFM_Input_from_FAST%momentz = Turbine(iTurb)%OpFM%u%c_obj%momentz
+   OpFM_Input_from_FAST%forceNodesChord_Len = Turbine(iTurb)%OpFM%u%c_obj%forceNodesChord_Len; OpFM_Input_from_FAST%forceNodesChord = Turbine(iTurb)%OpFM%u%c_obj%forceNodesChord
    OpFM_Input_from_FAST%SuperController_Len = Turbine(iTurb)%OpFM%u%c_obj%SuperController_Len
    OpFM_Input_from_FAST%SuperController     = Turbine(iTurb)%OpFM%u%c_obj%SuperController
 

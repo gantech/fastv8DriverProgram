@@ -536,9 +536,19 @@ SUBROUTINE FAST_InitializeAll( t_initial, p_FAST, y_FAST, m_FAST, ED, BD, SrvD, 
          CALL Cleanup()
          RETURN         
       END IF
-      
+      InitInData_OpFM%BladeLength = InitOutData_ED%BladeLength
+      InitInData_OpFM%TowerHeight = InitOutData_ED%TowerHeight
+      ALLOCATE(InitInData_OpFM%StructBldRNodes( SIZE(InitOutData_ED%BldRNodes)),  STAT=ErrStat2)
+      InitInData_OpFM%StructBldRNodes(:) = InitOutData_ED%BldRNodes(:)
+      ALLOCATE(InitInData_OpFM%StructTwrHNodes( SIZE(InitOutData_ED%TwrHNodes)),  STAT=ErrStat2)
+      InitInData_OpFM%StructTwrHNodes(:) = InitOutData_ED%TwrHNodes(:)
+      IF (ErrStat2 /= 0) THEN
+         CALL SetErrStat(ErrID_Fatal,"Error allocating OpFM%InitInput.",ErrStat,ErrMsg,RoutineName)
+         CALL Cleanup()
+         RETURN
+      END IF
          ! set up the data structures for integration with OpenFOAM
-      CALL Init_OpFM( InitInData_OpFM, p_FAST, AirDens, AD14%Input(1), AD%Input(1), AD%y, ED%Output(1), OpFM, InitOutData_OpFM, ErrStat2, ErrMsg2 )
+      CALL Init_OpFM( InitInData_OpFM, p_FAST, AirDens, AD14%Input(1), AD%Input(1), InitOutData_AD, AD%y, ED%Output(1), OpFM, InitOutData_OpFM, ErrStat2, ErrMsg2 )
          CALL SetErrStat(ErrStat2,ErrMsg2,ErrStat,ErrMsg,RoutineName)
       
       IF (ErrStat >= AbortErrLev) THEN

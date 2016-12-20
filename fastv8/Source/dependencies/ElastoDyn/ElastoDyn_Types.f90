@@ -52,7 +52,10 @@ IMPLICIT NONE
     REAL(ReKi)  :: Gravity      !< Gravitational acceleration [m/s^2]
     REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: BlPitch      !< Initial blade pitch angles [radians]
     REAL(ReKi)  :: BladeLength      !< Blade length (for AeroDyn) [meters]
+    REAL(ReKi)  :: TowerHeight      !< Tower Height [meters]
     REAL(ReKi)  :: HubHt      !< Height of the hub [meters]
+    REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: BldRNodes      !< Radius to analysis nodes relative to hub ( 0 < RNodes(:) < BldFlexL ) [-]
+    REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: TwrHNodes      !< Location of variable-spaced tower nodes (relative to the tower rigid base height [-]
     REAL(ReKi) , DIMENSION(1:6)  :: PlatformPos      !< Initial platform position (6 DOFs) [-]
     REAL(ReKi) , DIMENSION(1:3)  :: TwrBasePos      !< initial position of the tower base (for SrvD) [m]
     REAL(ReKi)  :: HubRad      !< Preconed hub radius (distance from the rotor apex to the blade root) [m]
@@ -1089,7 +1092,32 @@ IF (ALLOCATED(SrcInitOutputData%BlPitch)) THEN
     DstInitOutputData%BlPitch = SrcInitOutputData%BlPitch
 ENDIF
     DstInitOutputData%BladeLength = SrcInitOutputData%BladeLength
+    DstInitOutputData%TowerHeight = SrcInitOutputData%TowerHeight
     DstInitOutputData%HubHt = SrcInitOutputData%HubHt
+IF (ALLOCATED(SrcInitOutputData%BldRNodes)) THEN
+  i1_l = LBOUND(SrcInitOutputData%BldRNodes,1)
+  i1_u = UBOUND(SrcInitOutputData%BldRNodes,1)
+  IF (.NOT. ALLOCATED(DstInitOutputData%BldRNodes)) THEN 
+    ALLOCATE(DstInitOutputData%BldRNodes(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstInitOutputData%BldRNodes.', ErrStat, ErrMsg,RoutineName)
+      RETURN
+    END IF
+  END IF
+    DstInitOutputData%BldRNodes = SrcInitOutputData%BldRNodes
+ENDIF
+IF (ALLOCATED(SrcInitOutputData%TwrHNodes)) THEN
+  i1_l = LBOUND(SrcInitOutputData%TwrHNodes,1)
+  i1_u = UBOUND(SrcInitOutputData%TwrHNodes,1)
+  IF (.NOT. ALLOCATED(DstInitOutputData%TwrHNodes)) THEN 
+    ALLOCATE(DstInitOutputData%TwrHNodes(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstInitOutputData%TwrHNodes.', ErrStat, ErrMsg,RoutineName)
+      RETURN
+    END IF
+  END IF
+    DstInitOutputData%TwrHNodes = SrcInitOutputData%TwrHNodes
+ENDIF
     DstInitOutputData%PlatformPos = SrcInitOutputData%PlatformPos
     DstInitOutputData%TwrBasePos = SrcInitOutputData%TwrBasePos
     DstInitOutputData%HubRad = SrcInitOutputData%HubRad
@@ -1186,6 +1214,12 @@ ENDIF
 IF (ALLOCATED(InitOutputData%BlPitch)) THEN
   DEALLOCATE(InitOutputData%BlPitch)
 ENDIF
+IF (ALLOCATED(InitOutputData%BldRNodes)) THEN
+  DEALLOCATE(InitOutputData%BldRNodes)
+ENDIF
+IF (ALLOCATED(InitOutputData%TwrHNodes)) THEN
+  DEALLOCATE(InitOutputData%TwrHNodes)
+ENDIF
 IF (ALLOCATED(InitOutputData%LinNames_y)) THEN
   DEALLOCATE(InitOutputData%LinNames_y)
 ENDIF
@@ -1277,7 +1311,18 @@ ENDIF
       Re_BufSz   = Re_BufSz   + SIZE(InData%BlPitch)  ! BlPitch
   END IF
       Re_BufSz   = Re_BufSz   + 1  ! BladeLength
+      Re_BufSz   = Re_BufSz   + 1  ! TowerHeight
       Re_BufSz   = Re_BufSz   + 1  ! HubHt
+  Int_BufSz   = Int_BufSz   + 1     ! BldRNodes allocated yes/no
+  IF ( ALLOCATED(InData%BldRNodes) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! BldRNodes upper/lower bounds for each dimension
+      Re_BufSz   = Re_BufSz   + SIZE(InData%BldRNodes)  ! BldRNodes
+  END IF
+  Int_BufSz   = Int_BufSz   + 1     ! TwrHNodes allocated yes/no
+  IF ( ALLOCATED(InData%TwrHNodes) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! TwrHNodes upper/lower bounds for each dimension
+      Re_BufSz   = Re_BufSz   + SIZE(InData%TwrHNodes)  ! TwrHNodes
+  END IF
       Re_BufSz   = Re_BufSz   + SIZE(InData%PlatformPos)  ! PlatformPos
       Re_BufSz   = Re_BufSz   + SIZE(InData%TwrBasePos)  ! TwrBasePos
       Re_BufSz   = Re_BufSz   + 1  ! HubRad
@@ -1419,8 +1464,36 @@ ENDIF
   END IF
       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%BladeLength
       Re_Xferred   = Re_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%TowerHeight
+      Re_Xferred   = Re_Xferred   + 1
       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HubHt
       Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. ALLOCATED(InData%BldRNodes) ) THEN
+    IntKiBuf( Int_Xferred ) = 0
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    IntKiBuf( Int_Xferred ) = 1
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%BldRNodes,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%BldRNodes,1)
+    Int_Xferred = Int_Xferred + 2
+
+      IF (SIZE(InData%BldRNodes)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%BldRNodes))-1 ) = PACK(InData%BldRNodes,.TRUE.)
+      Re_Xferred   = Re_Xferred   + SIZE(InData%BldRNodes)
+  END IF
+  IF ( .NOT. ALLOCATED(InData%TwrHNodes) ) THEN
+    IntKiBuf( Int_Xferred ) = 0
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    IntKiBuf( Int_Xferred ) = 1
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%TwrHNodes,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%TwrHNodes,1)
+    Int_Xferred = Int_Xferred + 2
+
+      IF (SIZE(InData%TwrHNodes)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%TwrHNodes))-1 ) = PACK(InData%TwrHNodes,.TRUE.)
+      Re_Xferred   = Re_Xferred   + SIZE(InData%TwrHNodes)
+  END IF
       ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%PlatformPos))-1 ) = PACK(InData%PlatformPos,.TRUE.)
       Re_Xferred   = Re_Xferred   + SIZE(InData%PlatformPos)
       ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%TwrBasePos))-1 ) = PACK(InData%TwrBasePos,.TRUE.)
@@ -1675,8 +1748,56 @@ ENDIF
   END IF
       OutData%BladeLength = ReKiBuf( Re_Xferred )
       Re_Xferred   = Re_Xferred + 1
+      OutData%TowerHeight = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
       OutData%HubHt = ReKiBuf( Re_Xferred )
       Re_Xferred   = Re_Xferred + 1
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! BldRNodes not allocated
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    Int_Xferred = Int_Xferred + 1
+    i1_l = IntKiBuf( Int_Xferred    )
+    i1_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    IF (ALLOCATED(OutData%BldRNodes)) DEALLOCATE(OutData%BldRNodes)
+    ALLOCATE(OutData%BldRNodes(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%BldRNodes.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    ALLOCATE(mask1(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating mask1.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    mask1 = .TRUE. 
+      IF (SIZE(OutData%BldRNodes)>0) OutData%BldRNodes = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%BldRNodes))-1 ), mask1, 0.0_ReKi )
+      Re_Xferred   = Re_Xferred   + SIZE(OutData%BldRNodes)
+    DEALLOCATE(mask1)
+  END IF
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! TwrHNodes not allocated
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    Int_Xferred = Int_Xferred + 1
+    i1_l = IntKiBuf( Int_Xferred    )
+    i1_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    IF (ALLOCATED(OutData%TwrHNodes)) DEALLOCATE(OutData%TwrHNodes)
+    ALLOCATE(OutData%TwrHNodes(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%TwrHNodes.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    ALLOCATE(mask1(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating mask1.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    mask1 = .TRUE. 
+      IF (SIZE(OutData%TwrHNodes)>0) OutData%TwrHNodes = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%TwrHNodes))-1 ), mask1, 0.0_ReKi )
+      Re_Xferred   = Re_Xferred   + SIZE(OutData%TwrHNodes)
+    DEALLOCATE(mask1)
+  END IF
     i1_l = LBOUND(OutData%PlatformPos,1)
     i1_u = UBOUND(OutData%PlatformPos,1)
     ALLOCATE(mask1(i1_l:i1_u),STAT=ErrStat2)
