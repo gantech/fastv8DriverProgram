@@ -57,7 +57,7 @@ endif
    # Name of compiler to use and flags to use.
 ifeq ($(COMPILER),gnu)
         CFLAGS = $(OPT_OPTIONS) -fPIC -fpermissive -std=c++11 -DHAVE_MPI
-	LDFLAGS = -fPIC -L$(FASTLIB_DIR) -L$(YAMLCPPLIB_DIR) -lFAST_cInterface$(EXE_EXT) -lFAST$(EXE_EXT) -lmap-1.20.10 -lyaml-cpp -ldl
+	LDFLAGS = -fPIC -L$(FASTLIB_DIR) -L$(YAMLCPPLIB_DIR) -lFAST_cInterface$(EXE_EXT) -lFAST$(EXE_EXT) -lmap-1.20.10 -lyaml-cpp -ldl -lgfortran
 	ifeq ($(LAPACK),lapack)
 		LAPACK_LINK = -L$(FASTLIB_DIR)$(BITS) -llapack -lblas -llapacke -lm
 	else ifeq ($(LAPACK),mkl)
@@ -65,11 +65,11 @@ ifeq ($(COMPILER),gnu)
 	endif
 else ifeq ($(COMPILER),intel)
 	CFLAGS  = $(OPT_OPTIONS) -fpermissive -fp-model strict -xhost -DHAVE_MPI -fPIC -std=c++11 
-	LDFLAGS    = -fPIC -L$(FASTLIB_DIR) -L$(YAMLCPPLIB_DIR) -lFAST_cInterface$(EXE_EXT) -lFAST$(EXE_EXT) -lmap-1.20.10 -lyaml-cpp -ldl
+	LDFLAGS    = -fPIC -L$(FASTLIB_DIR) -L$(YAMLCPPLIB_DIR) -lFAST_cInterface$(EXE_EXT) -lFAST$(EXE_EXT) -lmap-1.20.10 -lyaml-cpp -ldl -lgfortran
 	LAPACK_LINK = -Wl,-rpath,/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/lib/intel64 -Wl,-rpath,/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/../compiler/lib/intel64 -L/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/lib/intel64 -L/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/../compiler/lib/intel64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm
 else ifeq ($(COMPILER),intelPhi)
 	CFLAGS  = $(OPT_OPTIONS) -fpermissive -fp-model strict -mmic -DHAVE_MPI -fPIC -fpermissive -std=c++11 
-	LDFLAGS    = -fPIC -L$(FASTLIB_DIR) -L$(YAMLCPPLIB_DIR) -lFAST_cInterface$(EXE_EXT) -lFAST$(EXE_EXT) -lmap-1.20.10 -lyaml-cpp -ldl
+	LDFLAGS    = -fPIC -L$(FASTLIB_DIR) -L$(YAMLCPPLIB_DIR) -lFAST_cInterface$(EXE_EXT) -lFAST$(EXE_EXT) -lmap-1.20.10 -lyaml-cpp -ldl -lgfortran
 	LAPACK_LINK  = -Wl,-rpath,/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/lib/mic -Wl,-rpath,/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/../compiler/lib/mic -L/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/lib/mic -L/nopt/intel/16.0/compilers_and_libraries_2016.2.181/linux/mkl/../compiler/lib/mic -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm
 endif
 

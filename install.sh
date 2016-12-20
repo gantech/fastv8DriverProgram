@@ -78,8 +78,8 @@ compileYAMLcpp() {
     echo -n "   Setting up build directory"
     cd fastv8/Source/dependencies/yaml-cpp
     git clone https://github.com/jbeder/yaml-cpp.git
-    rm -rf build
-    [ -d build ] || mkdir build
+#    rm -rf build
+    [ -d build ] || mkdir build &> log.mkdirBuild
     cd build
     passFail $?
     echo -n "   Configuring"
@@ -99,6 +99,37 @@ compileYAMLcpp() {
     passFail $?
     cd ../../../../../
 }
+
+compileHDF5() {
+    echo "Compiling hdf5"
+    echo -n "   Getting source"
+    cd fastv8/Source/dependencies/
+    curl -k -o hdf5-1.8.18.tar.bz2 https://support.hdfgroup.org/ftp/HDF5/current18/src/hdf5-1.8.18.tar.bz2 &> log.curl
+    passFail $?
+    echo -n "   Setting up build directory"
+    tar -jxf hdf5-1.8.18.tar.bz2 &> log.untar
+    cd hdf5-1.8.18
+    [ -d build ] || mkdir build &> log.mkdirBuild
+    cd build
+    passFail $?
+    echo -n "   Configuring"
+    if [ "${COMPILER}" == 'gnu' ] ; then
+	cmake -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DCMAKE_INSTALL_PREFIX=../../../../ -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_SHARED_LIBS=OFF ../ &> log.cmake
+    elif [ "${COMPILER}" == 'intel' ] ; then
+	cmake -DCMAKE_CXX_COMPILER=icpc -DCMAKE_C_COMPILER=icc  -DCMAKE_CXX_FLAGS="-std=c++11" -DCMAKE_INSTALL_PREFIX=../../../../ -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_SHARED_LIBS=OFF ../ &> log.cmake
+    elif [ "${COMPILER}" == 'intelPhi' ] ; then
+	cmake -DCMAKE_CXX_COMPILER=icpc -DCMAKE_C_COMPILER=icc  -DCMAKE_CXX_FLAGS="-std=c++11 -mmic" -DCMAKE_INSTALL_PREFIX=../../../../ -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_SHARED_LIBS=OFF ../ &> log.cmake
+    fi
+    passFail $? 
+    echo -n "   Compiling"
+    make -j 8 &> log.make
+    passFail $?
+    echo -n "   Installing"
+    make install &> log.makeInstall
+    passFail $?
+    cd ../../../../../
+}
+
 
 compileFAST() {
 #FAST 
@@ -141,8 +172,10 @@ if [ "${LAPACK}" == 'lapack' ]; then
 fi
 compileMapPlusPlus
 compileYAMLcpp
+compileHDF5
 compileFAST
 if [ "${COMPILER}" == 'intelPhi' ]; then
     prepPhiEnv
 fi
+
 
