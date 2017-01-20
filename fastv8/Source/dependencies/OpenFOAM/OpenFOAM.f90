@@ -46,7 +46,7 @@ MODULE OpenFOAM
 
 CONTAINS
 !----------------------------------------------------------------------------------------------------------------------------------
-SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, y_AD, y_ED, OpFM, InitOut, ErrStat, ErrMsg )
+SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, initOut_AD, y_AD, y_ED, OpFM, InitOut, ErrStat, ErrMsg )
 !..................................................................................................................................
 
    TYPE(OpFM_InitInputType),        INTENT(IN   )  :: InitInp     ! Input data for initialization routine
@@ -55,6 +55,7 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, y_AD, y_ED, OpFM, 
    TYPE(AD14_InputType),            INTENT(IN   )  :: u_AD14      ! AeroDyn14 input data
    TYPE(AD_InputType),              INTENT(IN   )  :: u_AD        ! AeroDyn input data
    TYPE(AD_OutputType),             INTENT(IN   )  :: y_AD        ! AeroDyn output data (for mesh mapping)
+   TYPE(AD_InitOutputType),         INTENT(IN   )  :: initOut_AD  ! AeroDyn InitOutput data (for BladeProps)
    TYPE(ED_OutputType),             INTENT(IN)     :: y_ED        ! The outputs of the structural dynamics module
    TYPE(OpenFOAM_Data),             INTENT(INOUT)  :: OpFM        ! data for the OpenFOAM integration module
    TYPE(OpFM_InitOutputType),       INTENT(INOUT)  :: InitOut     ! Output for initialization routine
@@ -99,9 +100,11 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, y_AD, y_ED, OpFM, 
    Opfm%p%NnodesForceBlade =  InitInp%NumActForcePtsBlade 
    OpFM%p%NnodesForceTower = InitInp%NumActForcePtsTower
    OpFM%p%NnodesForce = 1 + OpFM%p%NumBl * InitInp%NumActForcePtsBlade + InitInp%NumActForcePtsTower
+   OpFM%p%BladeLength = InitInp%BladeLength
 
    if ( y_AD%TowerLoad%NNodes > 0 ) then
       OpFM%p%NMappings = OpFM%p%NumBl + 1
+      OpFM%p%TowerHeight = InitInp%TowerHeight
    else
       OpFM%p%NMappings = OpFM%p%NumBl
    end if
@@ -129,6 +132,7 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, y_AD, y_ED, OpFM, 
    CALL AllocPAry( OpFM%u%momentx, OpFM%p%NnodesForce, 'momentx', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
    CALL AllocPAry( OpFM%u%momenty, OpFM%p%NnodesForce, 'momenty', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
    CALL AllocPAry( OpFM%u%momentz, OpFM%p%NnodesForce, 'momentz', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+   CALL AllocPAry( OpFM%u%forceNodesChord, OpFM%p%NnodesForce, 'forceNodesChord', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
 
    
    IF (InitInp%NumCtrl2SC > 0) THEN
@@ -152,6 +156,7 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, y_AD, y_ED, OpFM, 
    OpFM%u%c_obj%momentx_Len = OpFM%p%NnodesForce; OpFM%u%c_obj%momentx = C_LOC( OpFM%u%momentx(1) )
    OpFM%u%c_obj%momenty_Len = OpFM%p%NnodesForce; OpFM%u%c_obj%momenty = C_LOC( OpFM%u%momenty(1) )
    OpFM%u%c_obj%momentz_Len = OpFM%p%NnodesForce; OpFM%u%c_obj%momentz = C_LOC( OpFM%u%momentz(1) )
+   OpFM%u%c_obj%forceNodesChord_Len = OpFM%p%NnodesForce; OpFM%u%c_obj%forceNodesChord = C_LOC( OpFM%u%forceNodesChord(1) )
    if (InitInp%NumCtrl2SC > 0) then
       OpFM%u%c_obj%SuperController_Len = InitInp%NumCtrl2SC
       OpFM%u%c_obj%SuperController     = C_LOC( OpFM%u%SuperController(1) )
@@ -159,8 +164,9 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, y_AD, y_ED, OpFM, 
    end if
 
       ! initialize the arrays:
-!   call ReadInputFiles( InitInp_AD%InputFile, OpFM%m, NumBl, ErrStat2, ErrMsg2 )
-   call OpFM_CreateActForceMotionsMesh( p_FAST, y_ED, OpFM, ErrStat2, ErrMsg2)
+   call OpFM_CreateActForceBladeTowerNodes(OpFM%p, ErrStat2, ErrMsg2) !Creates the blade and tower nodes in radial and tower height co-ordinates
+   call OpFM_InterpolateForceNodesChord(initOut_AD, OpFM%p, OpFM%u, ErrStat2, ErrMsg2) !Interpolates the chord distribution to the force nodes 
+   call OpFM_CreateActForceMotionsMesh( p_FAST, y_ED, InitInp, OpFM, ErrStat2, ErrMsg2)
 
       !............................................................................................
    ! Allocate arrays and set up mappings to point loads (for AD15 only):
@@ -506,11 +512,12 @@ SUBROUTINE OpFM_SetWriteOutput( OpFM )
 
 END SUBROUTINE OpFM_SetWriteOutput
 !----------------------------------------------------------------------------------------------------------------------------------
-SUBROUTINE OpFM_CreateActForceMotionsMesh( p_FAST, y_ED, OpFM, ErrStat, ErrMsg )
+SUBROUTINE OpFM_CreateActForceMotionsMesh( p_FAST, y_ED, InitIn_OpFM, OpFM, ErrStat, ErrMsg )
 !..................................................................................................................................
 
    TYPE(FAST_ParameterType),        INTENT(IN   )  :: p_FAST      ! Parameters for the glue code
    TYPE(ED_OutputType),             INTENT(IN)     :: y_ED        ! The outputs of the structural dynamics module
+   TYPE(OpFM_InitInputType),          INTENT(IN   )  :: InitIn_OpFM ! InitInp data for the OpenFOAM integration module
    TYPE(OpenFOAM_Data),             INTENT(INOUT)  :: OpFM        ! data for the OpenFOAM integration module
    INTEGER(IntKi),                  INTENT(  OUT)  :: ErrStat     ! Error status of the operation
    CHARACTER(*),                    INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
@@ -536,7 +543,7 @@ SUBROUTINE OpFM_CreateActForceMotionsMesh( p_FAST, y_ED, OpFM, ErrStat, ErrMsg )
          CALL SetErrStat(ErrID_Fatal, 'Error allocating force nodes mesh mapping types', ErrStat, ErrMsg, RoutineName)
          RETURN
       END IF
-      CALL OpFM_CreateTmpActForceMotionsMesh( p_FAST, y_ED, OpFM%p, tmpActForceMotionsMesh, ErrStat2, ErrMsg2 )
+      CALL OpFM_CreateTmpActForceMotionsMesh( p_FAST, y_ED, OpFM%p, InitIn_OpFM, tmpActForceMotionsMesh, ErrStat2, ErrMsg2 )
            call SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
            if (errStat >= AbortErrLev) return
 
@@ -608,12 +615,13 @@ SUBROUTINE OpFM_CreateActForceMotionsMesh( p_FAST, y_ED, OpFM, ErrStat, ErrMsg )
 
 END SUBROUTINE OpFM_CreateActForceMotionsMesh
 !----------------------------------------------------------------------------------------------------------------------------------
-SUBROUTINE OpFM_CreateTmpActForceMotionsMesh( p_FAST, y_ED, p_OpFM, tmpActForceMotions, ErrStat, ErrMsg )
+SUBROUTINE OpFM_CreateTmpActForceMotionsMesh( p_FAST, y_ED, p_OpFM, InitIn_OpFM, tmpActForceMotions, ErrStat, ErrMsg )
 !..................................................................................................................................
 
    TYPE(FAST_ParameterType),        INTENT(IN   )  :: p_FAST      ! Parameters for the glue code
    TYPE(ED_OutputType),             INTENT(IN   )  :: y_ED        ! The outputs of the structural dynamics module
    TYPE(OpFM_ParameterType),        INTENT(IN   )  :: p_OpFM        ! data for the OpenFOAM integration module
+   TYPE(OpFM_InitInputType),        INTENT(IN   )  :: InitIn_OpFM   ! InitInp data for the OpenFOAM integration module
    TYPE(MeshType),                  INTENT(INOUT)  :: tmpActForceMotions(:) ! temporary mesh to create the actuator force nodes
    INTEGER(IntKi),                  INTENT(  OUT)  :: ErrStat     ! Error status of the operation
    CHARACTER(*),                    INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
@@ -669,7 +677,7 @@ SUBROUTINE OpFM_CreateTmpActForceMotionsMesh( p_FAST, y_ED, p_OpFM, tmpActForceM
       IF (ErrStat >= AbortErrLev) RETURN
       
       tmpActForceMotions(k)%RemapFlag = .false.
-      call CalcForceActuatorPositions(p_OpFM%NnodesForceBlade, tmp_StructModelMesh(k)%position, forceNodePositions, errStat2, errMsg2)
+      call CalcForceActuatorPositionsBlade(InitIn_OpFM, p_OpFM, tmp_StructModelMesh(k)%position, forceNodePositions, errStat2, errMsg2)
       do j=1,p_OpFM%NnodesForceBlade
          call MeshPositionNode(tmpActForceMotions(k), j, forceNodePositions(:,j), errStat2, errMsg2)
          call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
@@ -686,7 +694,7 @@ SUBROUTINE OpFM_CreateTmpActForceMotionsMesh( p_FAST, y_ED, p_OpFM, tmpActForceM
 
    ALLOCATE(forceNodePositions(3,p_OpFM%NnodesForceTower)) ! Allocate space to create new positions
    DO k=p_OpFM%NumBl+1,p_OpFM%NMappings   
-      call CalcForceActuatorPositions(p_OpFM%NnodesForceTower, tmp_StructModelMesh(k)%position, forceNodePositions, errStat2, errMsg2)
+      call CalcForceActuatorPositionsTower(InitIn_OpFM, p_OpFM, tmp_StructModelMesh(k)%position, forceNodePositions, errStat2, errMsg2)
 
       call MeshCreate ( BlankMesh = tmpActForceMotions(k)        &
            ,IOS       = COMPONENT_INPUT             &
@@ -862,57 +870,172 @@ SUBROUTINE CreateTmpStructModelMesh(p_FAST, y_ED, p_OpFM, tmpStructModelMesh, Er
   RETURN 
 END SUBROUTINE CreateTmpStructModelMesh
 !----------------------------------------------------------------------------------------------------------------------------------
-SUBROUTINE CalcForceActuatorPositions(numForcePts, structPositions, forceNodePositions, ErrStat2, ErrMsg2)
+SUBROUTINE CalcForceActuatorPositionsBlade(InitIn_OpFM, p_OpFM, structPositions, forceNodePositions, ErrStat2, ErrMsg2)
 
-  INTEGER(IntKi),         INTENT(IN   )  :: numForcePts              ! number of force actuator nodes desired
-  REAL(ReKi),   POINTER                  :: structPositions(:,:)        ! AeroDyn output data (for mesh mapping)
+  TYPE(OpFM_InitInputType), INTENT(IN )  :: InitIn_OpFM   ! data for the OpenFOAM integration module
+  TYPE(OpFM_ParameterType), INTENT(IN )  :: p_OpFM        ! data for the OpenFOAM integration module
+  REAL(ReKi),   POINTER                  :: structPositions(:,:)     ! structural model positions
   REAL(ReKi),             INTENT(INOUT)  :: forceNodePositions(:,:)  ! Array to store the newly created positions
-
   INTEGER(IntKi)                         :: ErrStat2    ! temporary Error status of the operation
   CHARACTER(ErrMsgLen)                   :: ErrMsg2     ! temporary Error message if ErrStat /= ErrID_None
 
 
+  !Local variables
   INTEGER(IntKi)                         :: nStructNodes    ! Number of velocity nodes
   REAL(ReKi), DIMENSION(:), ALLOCATABLE  :: rStructNodes    ! Distance of velocity nodes from the first node - Used as a parameter for curve fitting
-  REAL(ReKi)                             :: dRforceNodes ! Uniform distance between two consecutive force nodes
-  REAL(ReKi), DIMENSION(:), ALLOCATABLE  :: rForceNodes  ! Distance of force nodes from the first node - Used to create the new force nodes through interpolation
   INTEGER(IntKI)                         :: i,j,k        ! Loop variables
-  INTEGER(IntKI)                         :: jVelLower    ! Index of the vel node just smaller than the force node
-  REAL(ReKi)                             :: rInterp      ! The location of this force node in (0,1) co-ordinates between the jVelLower and jVelLower+1 nodes
+  INTEGER(IntKI)                         :: jLower    ! Index of the struct node just smaller than the force node
+  REAL(ReKi)                             :: rInterp      ! The location of this force node in (0,1) co-ordinates between the jLower and jLower+1 nodes
 
   nStructNodes = SIZE(structPositions,2)
-  ALLOCATE(rStructNodes(nStructNodes), rForceNodes(numForcePts), STAT=ErrStat2)
+  ALLOCATE(rStructNodes(nStructNodes), STAT=ErrStat2)
 
-  ! Calculate the distance of the velocity nodes from the root (tower/blade). 
+  ! Store the distance of the structural model nodes from the root into an array
   rStructNodes(1) = 0.0 ! First node
-  DO I=2,nStructNodes
-     rStructNodes(I) = sqrt( (structPositions(1,I)-structPositions(1,1))*(structPositions(1,I)-structPositions(1,1)) + (structPositions(2,I)-structPositions(2,1))*(structPositions(2,I)-structPositions(2,1)) + (structPositions(3,I)-structPositions(3,1))*(structPositions(3,I)-structPositions(3,1)) )
-  END DO
-
-  dRforceNodes = rStructNodes(nStructNodes)/ REAL(numForcePts-1, ReKi) ! Calculate the uniform spacing between force nodes
-
+  rStructNodes(2:nStructNodes-1) = InitIn_OpFM%StructBldRnodes(:)
+  rStructNodes(nStructNodes) = p_OpFM%BladeLength
 
   ! Now calculate the positions of the force nodes based on interpolation
-  forceNodePositions(:,1) = structPositions(:,1)  ! First one is known
-  forceNodePositions(:,numForcePts) = structPositions(:,nStructNodes)  ! Last one is known
-  DO I=2,numForcePts-1 ! Calculate the position of the intermediate nodes
-     rForceNodes(I) = REAL(I-1,ReKi) * dRforceNodes
-
-     jVelLower=1
-     do while ( (rStructNodes(jVelLower) - rForceNodes(I))*(rStructNodes(jVelLower+1) - rForceNodes(I)) .gt. 0 )
-        jVelLower = jVelLower + 1
+  DO I=1,p_OpFM%NnodesForceBlade ! Calculate the position of the force nodes
+     jLower=1
+     do while ( (rStructNodes(jLower) - p_OpFM%forceBldRnodes(I))*(rStructNodes(jLower+1) - p_OpFM%forceBldRnodes(I)) .gt. 0 )
+        jLower = jLower + 1
      end do
-     rInterp =  (rForceNodes(I) - rStructNodes(jVelLower))/(rStructNodes(jVelLower+1)-rStructNodes(jVelLower)) ! The location of this force node in (0,1) co-ordinates between the jVelLower and jVelLower+1 nodes
-     forceNodePositions(:,I) = structPositions(:,jVelLower) + rInterp * (structPositions(:,jVelLower+1) - structPositions(:,jVelLower))
+     rInterp =  (p_OpFM%forceBldRnodes(I) - rStructNodes(jLower))/(rStructNodes(jLower+1)-rStructNodes(jLower)) ! The location of this force node in (0,1) co-ordinates between the jLower and jLower+1 nodes
+     forceNodePositions(:,I) = structPositions(:,jLower) + rInterp * (structPositions(:,jLower+1) - structPositions(:,jLower))
   END DO
 
   DEALLOCATE(rStructNodes)
-  DEALLOCATE(rForceNodes)
 
   RETURN
 
-END SUBROUTINE CalcForceActuatorPositions
+END SUBROUTINE CalcForceActuatorPositionsBlade
+!----------------------------------------------------------------------------------------------------------------------------------
+SUBROUTINE CalcForceActuatorPositionsTower(InitIn_OpFM, p_OpFM, structPositions, forceNodePositions, ErrStat2, ErrMsg2)
 
+  TYPE(OpFM_InitInputType), INTENT(IN )  :: InitIn_OpFM   ! data for the OpenFOAM integration module
+  TYPE(OpFM_ParameterType), INTENT(IN )  :: p_OpFM        ! data for the OpenFOAM integration module
+  REAL(ReKi),   POINTER                  :: structPositions(:,:)     ! structural model positions
+  REAL(ReKi),             INTENT(INOUT)  :: forceNodePositions(:,:)  ! Array to store the newly created positions
+  INTEGER(IntKi)                         :: ErrStat2    ! temporary Error status of the operation
+  CHARACTER(ErrMsgLen)                   :: ErrMsg2     ! temporary Error message if ErrStat /= ErrID_None
+
+
+  !Local variables
+  INTEGER(IntKi)                         :: nStructNodes    ! Number of velocity nodes
+  REAL(ReKi), DIMENSION(:), ALLOCATABLE  :: hStructNodes    ! Distance of velocity nodes from the first node - Used as a parameter for curve fitting
+  INTEGER(IntKI)                         :: i,j,k        ! Loop variables
+  INTEGER(IntKI)                         :: jLower    ! Index of the struct node just smaller than the force node
+  REAL(ReKi)                             :: hInterp      ! The location of this force node in (0,1) co-ordinates between the jLower and jLower+1 nodes
+
+  nStructNodes = SIZE(structPositions,2)
+  ALLOCATE(hStructNodes(nStructNodes), STAT=ErrStat2)
+
+  ! Store the distance of the structural model nodes from the root into an array
+  hStructNodes(1) = 0.0 ! First node
+  hStructNodes(2:nStructNodes-1) = InitIn_OpFM%StructTwrHnodes(:)
+  hStructNodes(nStructNodes) = p_OpFM%BladeLength
+
+  ! Now calculate the positions of the force nodes based on interpolation
+  DO I=1,p_OpFM%NnodesForceTower ! Calculate the position of the force nodes
+     jLower=1
+     do while ( (hStructNodes(jLower) - p_OpFM%forceBldRnodes(I))*(hStructNodes(jLower+1) - p_OpFM%forceBldRnodes(I)) .gt. 0 )
+        jLower = jLower + 1
+     end do
+     hInterp =  (p_OpFM%forceBldRnodes(I) - hStructNodes(jLower))/(hStructNodes(jLower+1)-hStructNodes(jLower)) ! The location of this force node in (0,1) co-ordinates between the jLower and jLower+1 nodes
+     forceNodePositions(:,I) = structPositions(:,jLower) + hInterp * (structPositions(:,jLower+1) - structPositions(:,jLower))
+  END DO
+
+  DEALLOCATE(hStructNodes)
+
+  RETURN
+
+END SUBROUTINE CalcForceActuatorPositionsTower
+
+SUBROUTINE OpFM_CreateActForceBladeTowerNodes(p_OpFM, ErrStat, ErrMsg) 
+!Creates the blade and tower nodes in radial and tower height co-ordinates
+
+  TYPE(OpFM_ParameterType), INTENT(INOUT)  :: p_OpFM        ! data for the OpenFOAM integration module
+  INTEGER(IntKi)                         :: ErrStat    ! temporary Error status of the operation
+  CHARACTER(ErrMsgLen)                   :: ErrMsg     ! temporary Error message if ErrStat /= ErrID_None
+
+  !Local variables
+  REAL(ReKi)                             :: dRforceNodes ! Uniform distance between two consecutive force nodes
+  INTEGER(IntKI)                         :: i            ! Loop variables
+  INTEGER(IntKi)                         :: ErrStat2    ! temporary Error status of the operation
+  CHARACTER(ErrMsgLen)                   :: ErrMsg2     ! temporary Error message if ErrStat /= ErrID_None
+  
+
+  !Do the blade first
+  allocate(p_OpFM%forceBldRnodes(p_OpFM%NnodesForceBlade), stat=errStat2)
+  dRforceNodes = p_OpFM%BladeLength/p_OpFM%NnodesForceBlade
+  do i=1,p_OpFM%NnodesForceBlade
+     p_OpFM%forceBldRnodes(i) = 0.5*dRforceNodes + (i-1)*dRforceNodes
+  end do
+
+
+  !Do the tower now
+  allocate(p_OpFM%forceTwrHnodes(p_OpFM%NnodesForceTower), stat=errStat2)
+  dRforceNodes = p_OpFM%TowerHeight/p_OpFM%NnodesForceTower
+  do i=1,p_OpFM%NnodesForceTower
+     p_OpFM%forceTwrHnodes(i) = 0.5*dRforceNodes + (i-1)*dRforceNodes
+  end do
+  
+  return
+
+END SUBROUTINE OpFM_CreateActForceBladeTowerNodes
+
+SUBROUTINE OpFM_InterpolateForceNodesChord(InitOut_AD, p_OpFM, u_OpFM, ErrStat, ErrMsg) 
+
+  !Interpolates the chord distribution to the force nodes 
+  
+  TYPE(AD_InitOutputType),  INTENT(IN   ) :: InitOut_AD ! InitOut  data for the OpenFOAM integration module
+  TYPE(OpFM_ParameterType), INTENT(IN   ) :: p_OpFM     ! Input data for the OpenFOAM integration module
+  TYPE(OpFM_InputType),     INTENT(INOUT) :: u_OpFM     ! Parameter data for the OpenFOAM integration module
+  INTEGER(IntKi)                          :: ErrStat    ! temporary Error status of the operation
+  CHARACTER(ErrMsgLen)                    :: ErrMsg     ! temporary Error message if ErrStat /= ErrID_None
+
+  !Local variables
+  INTEGER(IntKI)                         :: i,j,k,node  ! Loop variables
+  INTEGER(IntKI)                         :: jLower      ! Index of the blade properties node just smaller than the force node
+  INTEGER(IntKi)                         :: ErrStat2    ! temporary Error status of the operation
+  CHARACTER(ErrMsgLen)                   :: ErrMsg2     ! temporary Error message if ErrStat /= ErrID_None
+  REAL(ReKi)                             :: rInterp     ! The location of this force node in (0,1) co-ordinates between the jLower and jLower+1 nodes
+  
+  ! Set the chord for the hub node to be zero. Ideally, I'd like this to be the hub radius. Will figure this out later.
+  Node = 1
+  u_OpFM%forceNodesChord(Node) = 0.0_ReKi
+
+  ! The blades first
+  do k = 1, p_OpFM%NumBl
+     ! Calculate the chord at the force nodes based on interpolation
+     DO I=1,p_OpFM%NnodesForceBlade 
+        Node = Node + 1
+        jLower=1
+        do while ( (InitOut_AD%BladeProps(k)%BlSpn(jLower) - p_OpFM%forceBldRnodes(I))*(InitOut_AD%BladeProps(k)%BlSpn(jLower+1) - p_OpFM%forceBldRnodes(I)) .gt. 0 ) !Determine the closest two nodes at which the blade properties are specified
+           jLower = jLower + 1
+        end do
+        rInterp =  (p_OpFM%forceBldRnodes(I) - InitOut_AD%BladeProps(k)%BlSpn(jLower))/(InitOut_AD%BladeProps(k)%BlSpn(jLower+1)-InitOut_AD%BladeProps(k)%BlSpn(jLower)) ! The location of this force node in (0,1) co-ordinates between the jLower and jLower+1 nodes
+        u_OpFM%forceNodesChord(Node) = InitOut_AD%BladeProps(k)%BlChord(jLower) + rInterp * (InitOut_AD%BladeProps(k)%BlChord(jLower+1) - InitOut_AD%BladeProps(k)%BlChord(jLower))
+     END DO
+  end do
+     
+
+  ! The tower now
+  do k = p_OpFM%NumBl+1,p_OpFM%NMappings
+     ! Calculate the chord at the force nodes based on interpolation
+     DO I=1,p_OpFM%NnodesForceTower
+        Node = Node + 1
+        jLower=1
+        do while ( (InitOut_AD%TwrElev(jLower) - p_OpFM%forceTwrHnodes(I))*(InitOut_AD%TwrElev(jLower+1) - p_OpFM%forceTwrHnodes(I)) .gt. 0 ) !Determine the closest two nodes at which the blade properties are specified
+           jLower = jLower + 1
+        end do
+        rInterp =  (p_OpFM%forceTwrHnodes(I) - InitOut_AD%TwrElev(jLower))/(InitOut_AD%TwrElev(jLower+1)-InitOut_AD%TwrElev(jLower)) ! The location of this force node in (0,1) co-ordinates between the jLower and jLower+1 nodes
+        u_OpFM%forceNodesChord(Node) = InitOut_AD%TwrDiam(jLower) + rInterp * (InitOut_AD%TwrDiam(jLower+1) - InitOut_AD%TwrDiam(jLower))
+     END DO
+  end do
+
+END SUBROUTINE OpFM_InterpolateForceNodesChord
 
 END MODULE OpenFOAM
 !**********************************************************************************************************************************
