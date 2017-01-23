@@ -46,8 +46,10 @@ class FAST_cInterface {
   int ntStart, ntEnd;      // The time step to start and end the FAST simulation
   int nEveryCheckPoint;    // Check point files will be written every 'nEveryCheckPoint' time steps
   int * numBlades;           // Number of blades
-  int * numElementsPerBlade;
-  int * numTwrElements;
+  int * numForcePtsBlade;
+  int * numForcePtsTwr;
+  int * numVelPtsBlade;
+  int * numVelPtsTwr;
   int numScOutputs;  // # outputs from the supercontroller == # inputs to the controller == NumSC2Ctrl
   int numScInputs;   // # inputs to the supercontroller == # outputs from the controller == NumCtrl2SC
   double ** scOutputsGlob;  // # outputs from the supercontroller for all turbines
@@ -108,8 +110,11 @@ class FAST_cInterface {
   int solution0();
   int step();
   void getHubShaftDirection(double *hubShftVec);
-  void getCoordinates(double *currentCoords, int iNode);
+  void getVelNodeCoordinates(double *currentCoords, int iNode);
+  void getForceNodeCoordinates(double *currentCoords, int iNode);
+  void getForceNodeOrientation(double *currentOrientation, int iNode);
   void getForce(std::vector<double> & force, int iNode);
+  double getChord(int iNode); // At force nodes
   void setVelocity(std::vector<double> & velocity, int iNode);
   int get_ntStart() { return ntStart; }
   int get_ntEnd() { return ntEnd; }
@@ -120,10 +125,14 @@ class FAST_cInterface {
   int get_localTurbNo(int iTurbGlob) { return reverseTurbineMapProcToGlob[iTurbGlob]; }
   int get_nTurbinesGlob() { return nTurbinesGlob; } 
   int get_numBlades(int iTurbLoc) { return numBlades[iTurbLoc]; }
-  int get_numNodesPerBlade(int iTurbLoc) { return numElementsPerBlade[iTurbLoc]; }
-  int get_numTwrNodes(int iTurbLoc) { return numTwrElements[iTurbLoc]; }
-  int get_numNodes(int iTurbLoc) { return 1 + numBlades[iTurbLoc]*numElementsPerBlade[iTurbLoc] + numTwrElements[iTurbLoc]; }
-  ActuatorNodeType getNodeType(int iTurbGlob, int iNode);
+  int get_numVelPtsBlade(int iTurbLoc) { return numVelPtsBlade[iTurbLoc]; }
+  int get_numVelPtsTwr(int iTurbLoc) { return numVelPtsTwr[iTurbLoc]; }
+  int get_numVelPts(int iTurbLoc) { return 1 + numBlades[iTurbLoc]*numVelPtsBlade[iTurbLoc] + numVelPtsTwr[iTurbLoc]; }
+  int get_numForcePtsBlade(int iTurbLoc) { return numForcePtsBlade[iTurbLoc]; }
+  int get_numForcePtsTwr(int iTurbLoc) { return numForcePtsTwr[iTurbLoc]; }
+  int get_numForcePts(int iTurbLoc) { return 1 + numBlades[iTurbLoc]*numForcePtsBlade[iTurbLoc] + numForcePtsTwr[iTurbLoc]; }
+  void computeTorqueThrust(int iTurGlob, double * torque, double * thrust);
+  ActuatorNodeType getForceNodeType(int iTurbGlob, int iNode);
   void end();
 
  private:
@@ -137,8 +146,8 @@ class FAST_cInterface {
   void allocateInputData();
   void allocateTurbinesToProcsSimple();
   
-  void fillScInputsGlob() ;
-  void fillScOutputsLoc() ;
+  /* void fillScInputsGlob() ; */
+  /* void fillScOutputsLoc() ; */
 
 };
 

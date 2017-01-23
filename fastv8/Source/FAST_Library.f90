@@ -421,7 +421,7 @@ subroutine FAST_Restart(iTurb, CheckpointRootName_c, AbortErrLev_c, NumOuts_c, d
       
 end subroutine FAST_Restart 
 !==================================================================================================================================
-subroutine FAST_OpFM_Init(iTurb, TMax, InputFileName_c, TurbID, NumSC2Ctrl, NumCtrl2SC, TurbPosn, AbortErrLev_c, dt_c, NumBl_c, NumBlElem_c, &
+subroutine FAST_OpFM_Init(iTurb, TMax, InputFileName_c, TurbID, NumSC2Ctrl, NumCtrl2SC, NumActForcePtsBlade, NumActForcePtsTower, TurbPosn, AbortErrLev_c, dt_c, NumBl_c, NumBlElem_c, &
                           OpFM_Input_from_FAST, OpFM_Output_to_FAST, SC_Input_from_FAST, SC_Output_to_FAST, ErrStat_c, ErrMsg_c) BIND (C, NAME='FAST_OpFM_Init')
 !DEC$ ATTRIBUTES DLLEXPORT::FAST_OpFM_Init
    IMPLICIT NONE 
@@ -434,6 +434,8 @@ subroutine FAST_OpFM_Init(iTurb, TMax, InputFileName_c, TurbID, NumSC2Ctrl, NumC
    INTEGER(C_INT),         INTENT(IN   ) :: TurbID           ! Need not be same as iTurb
    INTEGER(C_INT),         INTENT(IN   ) :: NumSC2Ctrl       ! Supercontroller outputs = controller inputs
    INTEGER(C_INT),         INTENT(IN   ) :: NumCtrl2SC       ! controller outputs = Supercontroller inputs
+   INTEGER(C_INT),         INTENT(IN   ) :: NumActForcePtsBlade ! number of actuator line force points in blade
+   INTEGER(C_INT),         INTENT(IN   ) :: NumActForcePtsTower ! number of actuator line force points in tower
    REAL(C_FLOAT),          INTENT(IN   ) :: TurbPosn(3)      
    INTEGER(C_INT),         INTENT(  OUT) :: AbortErrLev_c      
    REAL(C_DOUBLE),         INTENT(  OUT) :: dt_c      
@@ -467,6 +469,8 @@ subroutine FAST_OpFM_Init(iTurb, TMax, InputFileName_c, TurbID, NumSC2Ctrl, NumC
    ExternInitData%SensorType = SensorType_None
    ExternInitData%NumCtrl2SC = NumCtrl2SC
    ExternInitData%NumSC2Ctrl = NumSC2Ctrl
+   ExternInitData%NumActForcePtsBlade = NumActForcePtsBlade
+   ExternInitData%NumActForcePtsTower = NumActForcePtsTower
 
    CALL FAST_InitializeAll_T( t_initial, 1_IntKi, Turbine(iTurb), ErrStat, ErrMsg, InputFileName, ExternInitData )
    
@@ -594,13 +598,20 @@ subroutine SetOpenFOAM_pointers(iTurb, OpFM_Input_from_FAST, OpFM_Output_to_FAST
    TYPE(SC_InputType_C),   INTENT(INOUT) :: SC_Input_from_FAST
    TYPE(SC_OutputType_C),  INTENT(INOUT) :: SC_Output_to_FAST
 
-   OpFM_Input_from_FAST%px_Len = Turbine(iTurb)%OpFM%u%c_obj%px_Len; OpFM_Input_from_FAST%px = Turbine(iTurb)%OpFM%u%c_obj%px
-   OpFM_Input_from_FAST%py_Len = Turbine(iTurb)%OpFM%u%c_obj%py_Len; OpFM_Input_from_FAST%py = Turbine(iTurb)%OpFM%u%c_obj%py
-   OpFM_Input_from_FAST%pz_Len = Turbine(iTurb)%OpFM%u%c_obj%pz_Len; OpFM_Input_from_FAST%pz = Turbine(iTurb)%OpFM%u%c_obj%pz
+   OpFM_Input_from_FAST%pxVel_Len = Turbine(iTurb)%OpFM%u%c_obj%pxVel_Len; OpFM_Input_from_FAST%pxVel = Turbine(iTurb)%OpFM%u%c_obj%pxVel
+   OpFM_Input_from_FAST%pyVel_Len = Turbine(iTurb)%OpFM%u%c_obj%pyVel_Len; OpFM_Input_from_FAST%pyVel = Turbine(iTurb)%OpFM%u%c_obj%pyVel
+   OpFM_Input_from_FAST%pzVel_Len = Turbine(iTurb)%OpFM%u%c_obj%pzVel_Len; OpFM_Input_from_FAST%pzVel = Turbine(iTurb)%OpFM%u%c_obj%pzVel
+   OpFM_Input_from_FAST%pxForce_Len = Turbine(iTurb)%OpFM%u%c_obj%pxForce_Len; OpFM_Input_from_FAST%pxForce = Turbine(iTurb)%OpFM%u%c_obj%pxForce
+   OpFM_Input_from_FAST%pyForce_Len = Turbine(iTurb)%OpFM%u%c_obj%pyForce_Len; OpFM_Input_from_FAST%pyForce = Turbine(iTurb)%OpFM%u%c_obj%pyForce
+   OpFM_Input_from_FAST%pzForce_Len = Turbine(iTurb)%OpFM%u%c_obj%pzForce_Len; OpFM_Input_from_FAST%pzForce = Turbine(iTurb)%OpFM%u%c_obj%pzForce
+   OpFM_Input_from_FAST%pOrientation_Len = Turbine(iTurb)%OpFM%u%c_obj%pOrientation_Len; OpFM_Input_from_FAST%pOrientation = Turbine(iTurb)%OpFM%u%c_obj%pOrientation
    OpFM_Input_from_FAST%fx_Len = Turbine(iTurb)%OpFM%u%c_obj%fx_Len; OpFM_Input_from_FAST%fx = Turbine(iTurb)%OpFM%u%c_obj%fx
    OpFM_Input_from_FAST%fy_Len = Turbine(iTurb)%OpFM%u%c_obj%fy_Len; OpFM_Input_from_FAST%fy = Turbine(iTurb)%OpFM%u%c_obj%fy
    OpFM_Input_from_FAST%fz_Len = Turbine(iTurb)%OpFM%u%c_obj%fz_Len; OpFM_Input_from_FAST%fz = Turbine(iTurb)%OpFM%u%c_obj%fz
-   OpFM_Input_from_FAST%hubShftVec_Len = Turbine(iTurb)%OpFM%u%c_obj%hubShftVec_Len; OpFM_Input_from_FAST%hubShftVec = Turbine(iTurb)%OpFM%u%c_obj%hubShftVec
+   OpFM_Input_from_FAST%momentx_Len = Turbine(iTurb)%OpFM%u%c_obj%momentx_Len; OpFM_Input_from_FAST%momentx = Turbine(iTurb)%OpFM%u%c_obj%momentx
+   OpFM_Input_from_FAST%momenty_Len = Turbine(iTurb)%OpFM%u%c_obj%momenty_Len; OpFM_Input_from_FAST%momenty = Turbine(iTurb)%OpFM%u%c_obj%momenty
+   OpFM_Input_from_FAST%momentz_Len = Turbine(iTurb)%OpFM%u%c_obj%momentz_Len; OpFM_Input_from_FAST%momentz = Turbine(iTurb)%OpFM%u%c_obj%momentz
+   OpFM_Input_from_FAST%forceNodesChord_Len = Turbine(iTurb)%OpFM%u%c_obj%forceNodesChord_Len; OpFM_Input_from_FAST%forceNodesChord = Turbine(iTurb)%OpFM%u%c_obj%forceNodesChord
    OpFM_Input_from_FAST%SuperController_Len = Turbine(iTurb)%OpFM%u%c_obj%SuperController_Len
    OpFM_Input_from_FAST%SuperController     = Turbine(iTurb)%OpFM%u%c_obj%SuperController
 

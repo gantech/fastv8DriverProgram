@@ -90,7 +90,7 @@ int FAST_cInterface::init() {
 
      for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
        /* note that this will set nt_global inside the FAST library */
-       FAST_OpFM_Restart(&iTurb, CheckpointFileRoot[iTurb], &AbortErrLev, &dtFAST, &numBlades[iTurb], &numElementsPerBlade[iTurb], &ntStart, cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb], cDriverSC_Input_from_FAST[iTurb], cDriverSC_Output_to_FAST[iTurb], &ErrStat, ErrMsg);
+       FAST_OpFM_Restart(&iTurb, CheckpointFileRoot[iTurb], &AbortErrLev, &dtFAST, &numBlades[iTurb], &numVelPtsBlade[iTurb], &ntStart, cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb], cDriverSC_Input_from_FAST[iTurb], cDriverSC_Output_to_FAST[iTurb], &ErrStat, ErrMsg);
        checkError(ErrStat, ErrMsg);
        nt_global = ntStart;
        ntEnd = int((tEnd - tStart)/dtFAST) + ntStart;
@@ -106,15 +106,15 @@ int FAST_cInterface::init() {
       // this calls the Init() routines of each module
 
      for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
-       FAST_OpFM_Init(&iTurb, &tMax, FASTInputFileName[iTurb], &TurbID[iTurb], &numScOutputs, &numScInputs, TurbinePos[iTurb], &AbortErrLev, &dtFAST, &numBlades[iTurb], &numElementsPerBlade[iTurb], cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb], cDriverSC_Input_from_FAST[iTurb], cDriverSC_Output_to_FAST[iTurb], &ErrStat, ErrMsg);
+       FAST_OpFM_Init(&iTurb, &tMax, FASTInputFileName[iTurb], &TurbID[iTurb], &numScOutputs, &numScInputs, &numForcePtsBlade[iTurb], &numForcePtsTwr[iTurb], TurbinePos[iTurb], &AbortErrLev, &dtFAST, &numBlades[iTurb], &numVelPtsBlade[iTurb], cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb], cDriverSC_Input_from_FAST[iTurb], cDriverSC_Output_to_FAST[iTurb], &ErrStat, ErrMsg);
        checkError(ErrStat, ErrMsg);
        
-       numTwrElements[iTurb] = cDriver_Output_to_FAST[iTurb]->u_Len - numBlades[iTurb]*numElementsPerBlade[iTurb] - 1;
+       numVelPtsTwr[iTurb] = cDriver_Output_to_FAST[iTurb]->u_Len - numBlades[iTurb]*numVelPtsBlade[iTurb] - 1;
 
 
        if ( isDebug() ) {
-	 for (int iNode=0; iNode < get_numNodes(iTurb); iNode++) {
-	   std::cout << "Node " << iNode << " Position = " << cDriver_Input_from_FAST[iTurb]->px[iNode] << " " << cDriver_Input_from_FAST[iTurb]->py[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pz[iNode] << " " << std::endl ;
+	 for (int iNode=0; iNode < get_numVelPts(iTurb); iNode++) {
+	   std::cout << "Node " << iNode << " Position = " << cDriver_Input_from_FAST[iTurb]->pxVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pyVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pzVel[iNode] << " " << std::endl ;
 	 }
        }
      }
@@ -128,15 +128,17 @@ int FAST_cInterface::init() {
 int FAST_cInterface::solution0() {
 
        // set wind speeds at initial locations
-       //      setOutputsToFAST(cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb]);
+     /* for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) { */
+     /*   setOutputsToFAST(cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb]); */
+     /* } */
      
-     if(scStatus) {
+     /* if(scStatus) { */
 
-       sc->init(nTurbinesGlob, numScInputs, numScOutputs);
+     /*   sc->init(nTurbinesGlob, numScInputs, numScOutputs); */
 
-       sc->calcOutputs(scOutputsGlob);
-       fillScOutputsLoc();
-     }
+     /*   sc->calcOutputs(scOutputsGlob); */
+     /*   fillScOutputsLoc(); */
+     /* } */
 
      for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
 
@@ -145,9 +147,9 @@ int FAST_cInterface::solution0() {
 
      }
 
-     if (scStatus) {
-       fillScInputsGlob(); // Update inputs to super controller
-     }
+     /* if (scStatus) { */
+     /*   fillScInputsGlob(); // Update inputs to super controller */
+     /* } */
 
      timeZero = false; // Turn the flag to compute solution0 off
 
@@ -177,10 +179,10 @@ int FAST_cInterface::step() {
      set inputs from this code and call FAST:
   ********************************* */
 
-   if(scStatus) {
-     sc->calcOutputs(scOutputsGlob);
-     fillScOutputsLoc();
-   }
+   /* if(scStatus) { */
+   /*   sc->calcOutputs(scOutputsGlob); */
+   /*   fillScOutputsLoc(); */
+   /* } */
 
    for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
 
@@ -190,7 +192,7 @@ int FAST_cInterface::step() {
      // this advances the states, calls CalcOutput, and solves for next inputs. Predictor-corrector loop is imbeded here:
      // (note OpenFOAM could do subcycling around this step)
      if ( isDebug() ) {
-       for (int iNode=0; iNode < get_numNodes(iTurb); iNode++) {
+       for (int iNode=0; iNode <  get_numVelPts(iTurb); iNode++) {
 	 std::cout << "Node " << iNode << " Velocity = " << cDriver_Output_to_FAST[iTurb]->u[iNode] << " " << cDriver_Output_to_FAST[iTurb]->v[iNode] << " " << cDriver_Output_to_FAST[iTurb]->w[iNode] << " " << std::endl ;
        }
      }
@@ -199,20 +201,20 @@ int FAST_cInterface::step() {
      checkError(ErrStat, ErrMsg);
 
      if ( isDebug() ) {
-       for (int iNode=0; iNode < get_numNodes(iTurb); iNode++) {
-	 std::cout << "Node " << iNode << " Position = " << cDriver_Input_from_FAST[iTurb]->px[iNode] << " " << cDriver_Input_from_FAST[iTurb]->py[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pz[iNode] << " " << std::endl ;
+       for (int iNode=0; iNode < get_numVelPts(iTurb); iNode++) {
+	 std::cout << "Node " << iNode << " Position = " << cDriver_Input_from_FAST[iTurb]->pxVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pyVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pzVel[iNode] << " " << std::endl ;
        }
-       for (int iNode=0; iNode < get_numNodes(iTurb); iNode++) {
-	 std::cout << "Node " << iNode << " Type " << getNodeType(turbineMapProcToGlob[iTurb], iNode) << " Force = " << cDriver_Input_from_FAST[iTurb]->fx[iNode] << " " << cDriver_Input_from_FAST[iTurb]->fy[iNode] << " " << cDriver_Input_from_FAST[iTurb]->fz[iNode] << " " << std::endl ;
+       for (int iNode=0; iNode < get_numVelPts(iTurb); iNode++) {
+	 std::cout << "Node " << iNode << " Type " << getForceNodeType(turbineMapProcToGlob[iTurb], iNode) << " Force = " << cDriver_Input_from_FAST[iTurb]->fx[iNode] << " " << cDriver_Input_from_FAST[iTurb]->fy[iNode] << " " << cDriver_Input_from_FAST[iTurb]->fz[iNode] << " " << std::endl ;
        }
      }
 
    }
 
-   if(scStatus) {
-     sc->updateStates(scInputsGlob); // Go from 'n' to 'n+1' based on input at previous time step
-     fillScInputsGlob(); // Update inputs to super controller for 'n+1'
-   }
+   /* if(scStatus) { */
+   /*   sc->updateStates(scInputsGlob); // Go from 'n' to 'n+1' based on input at previous time step */
+   /*   fillScInputsGlob(); // Update inputs to super controller for 'n+1' */
+   /* } */
 
    nt_global = nt_global + 1;
   
@@ -295,7 +297,7 @@ void FAST_cInterface::setOutputsToFAST(OpFM_InputType_t* cDriver_Input_from_FAST
    // routine sets the u-v-w wind speeds used in FAST and the SuperController inputs
 
    for (j = 0; j < cDriver_Output_to_FAST->u_Len; j++){
-      cDriver_Output_to_FAST->u[j] = (float) 10.0*pow((cDriver_Input_from_FAST->pz[j] / 90.0), 0.2); // 0.2 power law wind profile using reference 10 m/s at 90 meters
+      cDriver_Output_to_FAST->u[j] = (float) 10.0*pow((cDriver_Input_from_FAST->pzVel[j] / 90.0), 0.2); // 0.2 power law wind profile using reference 10 m/s at 90 meters
       cDriver_Output_to_FAST->v[j] = 0.0;
       cDriver_Output_to_FAST->w[j] = 0.0;
    }
@@ -313,18 +315,36 @@ void FAST_cInterface::setOutputsToFAST(OpFM_InputType_t* cDriver_Input_from_FAST
 void FAST_cInterface::getHubShaftDirection(double *hubShftVec) {
 
   // Get hub shaft direction of current turbine - Only one turbine for now
-  hubShftVec[0] = cDriver_Input_from_FAST[0]->hubShftVec[0] ;
-  hubShftVec[1] = cDriver_Input_from_FAST[0]->hubShftVec[1] ;
-  hubShftVec[2] = cDriver_Input_from_FAST[0]->hubShftVec[2];
+  hubShftVec[0] = cDriver_Input_from_FAST[0]->pOrientation[0] ;
+  hubShftVec[1] = cDriver_Input_from_FAST[0]->pOrientation[1] ;
+  hubShftVec[2] = cDriver_Input_from_FAST[0]->pOrientation[2] ;
 
 }
 
-void FAST_cInterface::getCoordinates(double *currentCoords, int iNode) {
+void FAST_cInterface::getVelNodeCoordinates(double *currentCoords, int iNode) {
+
+    // Set coordinates at current node of current turbine - Only one turbine for now
+    currentCoords[0] = cDriver_Input_from_FAST[0]->pxVel[iNode] ;
+    currentCoords[1] = cDriver_Input_from_FAST[0]->pyVel[iNode] ;
+    currentCoords[2] = cDriver_Input_from_FAST[0]->pzVel[iNode] ;
+
+}
+
+void FAST_cInterface::getForceNodeCoordinates(double *currentCoords, int iNode) {
 
   // Set coordinates at current node of current turbine - Only one turbine for now
-  currentCoords[0] = cDriver_Input_from_FAST[0]->px[iNode] ;
-  currentCoords[1] = cDriver_Input_from_FAST[0]->py[iNode] ;
-  currentCoords[2] = cDriver_Input_from_FAST[0]->pz[iNode] ;
+  currentCoords[0] = cDriver_Input_from_FAST[0]->pxForce[iNode] ;
+  currentCoords[1] = cDriver_Input_from_FAST[0]->pyForce[iNode] ;
+  currentCoords[2] = cDriver_Input_from_FAST[0]->pzForce[iNode] ;
+
+}
+
+void FAST_cInterface::getForceNodeOrientation(double *currentOrientation, int iNode) {
+
+    // Set orientation at current node of current turbine - Only one turbine for now
+    for(int i=0;i<9;i++) {
+        currentOrientation[i] = cDriver_Input_from_FAST[0]->pOrientation[iNode*9+i] ;
+    }
 
 }
 
@@ -337,6 +357,13 @@ void FAST_cInterface::getForce(std::vector<double> & currentForce, int iNode) {
 
 }
 
+double FAST_cInterface::getChord(int iNode) {
+
+  // Return blade chord/tower diameter at current force node of current turbine - Only one turbine for now
+  return cDriver_Input_from_FAST[0]->forceNodesChord[iNode] ;
+
+}
+
 void FAST_cInterface::setVelocity(std::vector<double> & currentVelocity, int iNode) {
 
   // Set velocity at current node of current turbine - Only one turbine for now
@@ -346,8 +373,36 @@ void FAST_cInterface::setVelocity(std::vector<double> & currentVelocity, int iNo
 
 }
 
-ActuatorNodeType FAST_cInterface::getNodeType(int iTurbGlob, int iNode) {
-  // Return the type of actuator node for the given node number. The node ordering (from FAST) is 
+void FAST_cInterface::computeTorqueThrust(int iTurbGlob, double * torque, double * thrust) {
+
+    //Compute the torque and thrust based on the forces at the actuator nodes
+    double relLoc[] = {0.0,0.0,0.0} ;
+    thrust[0] = 0.0; thrust[1] = 0.0; thrust[2] = 0.0;
+    torque[0] = 0.0; torque[1] = 0.0; torque[2] = 0.0;    
+    
+    int iTurbLoc = get_localTurbNo(iTurbGlob) ;
+    for (int k=0; k < get_numBlades(iTurbLoc); k++) {
+        for (int j=0; j < numForcePtsBlade[iTurbLoc]; j++) {
+            int iNode = 1 + numForcePtsBlade[iTurbLoc]*k + j ;
+            
+            thrust[0] = thrust[0] + cDriver_Input_from_FAST[0]->fx[iNode] ;
+            thrust[1] = thrust[1] + cDriver_Input_from_FAST[0]->fy[iNode] ;
+            thrust[2] = thrust[2] + cDriver_Input_from_FAST[0]->fz[iNode] ;
+
+            relLoc[0] = cDriver_Input_from_FAST[iTurbLoc]->pxForce[iNode] - cDriver_Input_from_FAST[iTurbLoc]->pxForce[0] ;
+            relLoc[1] = cDriver_Input_from_FAST[iTurbLoc]->pyForce[iNode] - cDriver_Input_from_FAST[iTurbLoc]->pyForce[0];
+            relLoc[2] = cDriver_Input_from_FAST[iTurbLoc]->pzForce[iNode] - cDriver_Input_from_FAST[iTurbLoc]->pzForce[0];            
+
+            torque[0] = torque[0] + relLoc[1] * cDriver_Input_from_FAST[iTurbLoc]->fz[iNode] - relLoc[2] * cDriver_Input_from_FAST[iTurbLoc]->fy[iNode] + cDriver_Input_from_FAST[iTurbLoc]->momentx[iNode] ;
+            torque[1] = torque[1] + relLoc[2] * cDriver_Input_from_FAST[iTurbLoc]->fx[iNode] - relLoc[0] * cDriver_Input_from_FAST[iTurbLoc]->fz[iNode] + cDriver_Input_from_FAST[iTurbLoc]->momenty[iNode] ;
+            torque[2] = torque[2] + relLoc[0] * cDriver_Input_from_FAST[iTurbLoc]->fy[iNode] - relLoc[1] * cDriver_Input_from_FAST[iTurbLoc]->fx[iNode] + cDriver_Input_from_FAST[iTurbLoc]->momentz[iNode] ;
+            
+        }
+    }
+}
+
+ActuatorNodeType FAST_cInterface::getForceNodeType(int iTurbGlob, int iNode) {
+  // Return the type of actuator force node for the given node number. The node ordering (from FAST) is 
   // Node 0 - Hub node
   // Blade 1 nodes
   // Blade 2 nodes
@@ -356,7 +411,7 @@ ActuatorNodeType FAST_cInterface::getNodeType(int iTurbGlob, int iNode) {
 
   int iTurbLoc = get_localTurbNo(iTurbGlob);
   if (iNode) {
-    if ( (iNode + 1 - (get_numNodes(iTurbLoc) - get_numTwrNodes(iTurbLoc)) ) > 0) {
+    if ( (iNode + 1 - (get_numForcePts(iTurbLoc) - get_numForcePtsTwr(iTurbLoc)) ) > 0) {
       return TOWER; 
     }
     else {
@@ -378,8 +433,10 @@ void FAST_cInterface::allocateInputData() {
   FASTInputFileName = new char * [nTurbinesProc];
   CheckpointFileRoot = new char * [nTurbinesProc];
   numBlades = new int[nTurbinesProc];
-  numElementsPerBlade = new int[nTurbinesProc];
-  numTwrElements = new int[nTurbinesProc];
+  numForcePtsBlade = new int[nTurbinesProc];
+  numForcePtsTwr = new int[nTurbinesProc];
+  numVelPtsBlade = new int[nTurbinesProc];
+  numVelPtsTwr = new int[nTurbinesProc];
   
   for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
     TurbinePos[iTurb] = new float[3];
@@ -482,8 +539,10 @@ void FAST_cInterface::end() {
     delete[] CheckpointFileRoot;
     delete[] TurbID;
     delete[] numBlades;
-    delete[] numElementsPerBlade;
-    delete[] numTwrElements;
+    delete[] numVelPtsBlade;
+    delete[] numVelPtsTwr;
+    delete[] numForcePtsBlade;
+    delete[] numForcePtsTwr;
     
     if ( !dryRun ) {
       for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
@@ -603,44 +662,44 @@ void FAST_cInterface::end() {
 /* } */
 
 
-void FAST_cInterface::fillScInputsGlob() {
+/* void FAST_cInterface::fillScInputsGlob() { */
   
-  // Fills the global array containing inputs to the supercontroller from all turbines
+/*   // Fills the global array containing inputs to the supercontroller from all turbines */
 
-  for(int iTurb=0; iTurb < nTurbinesGlob; iTurb++) {
-    for(int iInput=0; iInput < numScInputs; iInput++) {
-      scInputsGlob[iTurb][iInput] = 0.0; // Initialize to zero 
-    }
-  }
+/*   for(int iTurb=0; iTurb < nTurbinesGlob; iTurb++) { */
+/*     for(int iInput=0; iInput < numScInputs; iInput++) { */
+/*       scInputsGlob[iTurb][iInput] = 0.0; // Initialize to zero  */
+/*     } */
+/*   } */
   
-  for(int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
-    for(int iInput=0; iInput < numScInputs; iInput++) {
-      scInputsGlob[turbineMapProcToGlob[iTurb]][iInput] = cDriverSC_Input_from_FAST[iTurb]->toSC[iInput] ;
-    }
-  }
+/*   for(int iTurb=0; iTurb < nTurbinesProc; iTurb++) { */
+/*     for(int iInput=0; iInput < numScInputs; iInput++) { */
+/*       scInputsGlob[turbineMapProcToGlob[iTurb]][iInput] = cDriverSC_Input_from_FAST[iTurb]->toSC[iInput] ; */
+/*     } */
+/*   } */
   
   
-#ifdef HAVE_MPI
-  if (MPI_COMM_NULL != fastMPIComm) {
-    MPI_Allreduce(MPI_IN_PLACE, scInputsGlob[0], numScInputs*nTurbinesGlob, MPI_DOUBLE, MPI_SUM, fastMPIComm) ;
-  }
-#endif
+/* #ifdef HAVE_MPI */
+/*   if (MPI_COMM_NULL != fastMPIComm) { */
+/*     MPI_Allreduce(MPI_IN_PLACE, scInputsGlob[0], numScInputs*nTurbinesGlob, MPI_DOUBLE, MPI_SUM, fastMPIComm) ; */
+/*   } */
+/* #endif */
   
 
-}
+/* } */
 
 
-void FAST_cInterface::fillScOutputsLoc() {
+/* void FAST_cInterface::fillScOutputsLoc() { */
   
-  // Fills the local array containing outputs from the supercontroller to each turbine
+/*   // Fills the local array containing outputs from the supercontroller to each turbine */
   
-  for(int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
-    for(int iOutput=0; iOutput < numScOutputs; iOutput++) {
-      cDriverSC_Output_to_FAST[iTurb]->fromSC[iOutput] = scOutputsGlob[turbineMapProcToGlob[iTurb]][iOutput] ;
-    }
-  }
+/*   for(int iTurb=0; iTurb < nTurbinesProc; iTurb++) { */
+/*     for(int iOutput=0; iOutput < numScOutputs; iOutput++) { */
+/*       cDriverSC_Output_to_FAST[iTurb]->fromSC[iOutput] = scOutputsGlob[turbineMapProcToGlob[iTurb]][iOutput] ; */
+/*     } */
+/*   } */
 
-}
+/* } */
 
 
 
