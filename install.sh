@@ -27,6 +27,7 @@ prepareSourceMods() {
     echo -n "Setting up lib and bin directories"
     [ -d fastv8/lib ] || mkdir fastv8/lib
     [ -d fastv8/bin ] || mkdir fastv8/bin
+    [ -d fastv8/include ] || mkdir fastv8/include
     passFail $?
 }
 
@@ -105,7 +106,7 @@ compileFAST() {
     cd fastv8/Compiling
     echo "Compiling FAST"
     echo -n "   Compiling FAST Library"
-    make -f makefileCDriverProg COMPILER=${COMPILER} BUILD=${BUILD} LAPACK=${LAPACK} clean &> /dev/null
+    make COMPILER=${COMPILER} BUILD=${BUILD} LAPACK=${LAPACK} clean &> /dev/null
     make COMPILER=${COMPILER} BUILD=${BUILD} LAPACK=${LAPACK} &> log.make #Basic FAST Library
     passFail $?
     echo -n "   Compiling Bladed style controller libraries"
