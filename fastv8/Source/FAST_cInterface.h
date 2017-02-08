@@ -101,7 +101,7 @@ class FAST_cInterface {
   ~FAST_cInterface() {} ;
   
   int setGlobalInputs(int nTsGlob, bool dRun, bool sController, std::string sControlLib, bool rStart, double timeStart, int nTimeStepStart, double timeEnd, int nTimeStepEnd, double timeMax, double timeStep, int nCheckpoint, int nScOutputs, int nScInputs) ;
-  void setTurbineData(int tid, std::string fastInpFile, std::string fastRstartFile, std::vector<double> tPos);
+  void setTurbineData(int tid, std::string fastInpFile, std::string fastRstartFile, std::vector<double> tPos, int nActForcePtsBlade, int nActForcePtsTower);
   void setRestart(const bool & isRestart);
   void setTstart(const double & cfdTstart);
   void setDt(const double & cfdDt);

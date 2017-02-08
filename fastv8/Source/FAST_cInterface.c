@@ -447,7 +447,7 @@ void FAST_cInterface::allocateInputData() {
   return;
 }
 
-void FAST_cInterface::setTurbineData(int tid, std::string fastInpFile, std::string fastRstartFile, std::vector<double> tPos) {
+void FAST_cInterface::setTurbineData(int tid, std::string fastInpFile, std::string fastRstartFile, std::vector<double> tPos, int nActForcePtsBlade, int nActForcePtsTower) {
 
   //Read turbine data for a given turbine using arguments - Assumes only one turbine on a given processor
   
@@ -457,6 +457,8 @@ void FAST_cInterface::setTurbineData(int tid, std::string fastInpFile, std::stri
   for(int i=0;i<3;i++) {
     TurbinePos[0][i] = tPos[i];
   }
+  numForcePtsBlade[0] = nActForcePtsBlade;
+  numForcePtsTwr[0] = nActForcePtsTower;
 
   return ;
 }
