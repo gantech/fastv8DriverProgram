@@ -854,11 +854,10 @@ SUBROUTINE CreateTmpStructModelMesh(p_FAST, y_ED, p_OpFM, tmpStructModelMesh, Er
         ! Copy the orientation
         tmpStructModelMesh(K)%Orientation(:,:,1) = y_ED%TowerLn2Mesh%RefOrientation(:,:,nNodesStructModel)
         DO J=1,nNodesStructModel-1
-           tmpStructModelMesh(K)%Orientation(:,:,J+1) = y_ED%TowerLn2Mesh%RefOrientation(:,:,J)           
+           tmpStructModelMesh(k)%Orientation(:,:,J+1) = y_ED%TowerLn2Mesh%RefOrientation(:,:,J)           
         END DO
 
      END DO
-     
      
   ELSEIF (p_FAST%CompElast == Module_BD ) THEN
 
@@ -934,15 +933,15 @@ SUBROUTINE CalcForceActuatorPositionsTower(InitIn_OpFM, p_OpFM, structPositions,
   ! Store the distance of the structural model nodes from the root into an array
   hStructNodes(1) = 0.0 ! First node
   hStructNodes(2:nStructNodes-1) = InitIn_OpFM%StructTwrHnodes(:)
-  hStructNodes(nStructNodes) = p_OpFM%BladeLength
+  hStructNodes(nStructNodes) = p_OpFM%TowerHeight
 
   ! Now calculate the positions of the force nodes based on interpolation
   DO I=1,p_OpFM%NnodesForceTower ! Calculate the position of the force nodes
      jLower=1
-     do while ( (hStructNodes(jLower) - p_OpFM%forceBldRnodes(I))*(hStructNodes(jLower+1) - p_OpFM%forceBldRnodes(I)) .gt. 0 )
+     do while ( (hStructNodes(jLower) - p_OpFM%forceTwrHnodes(I))*(hStructNodes(jLower+1) - p_OpFM%forceTwrHnodes(I)) .gt. 0 )
         jLower = jLower + 1
      end do
-     hInterp =  (p_OpFM%forceBldRnodes(I) - hStructNodes(jLower))/(hStructNodes(jLower+1)-hStructNodes(jLower)) ! The location of this force node in (0,1) co-ordinates between the jLower and jLower+1 nodes
+     hInterp =  (p_OpFM%forceTwrHnodes(I) - hStructNodes(jLower))/(hStructNodes(jLower+1)-hStructNodes(jLower)) ! The location of this force node in (0,1) co-ordinates between the jLower and jLower+1 nodes
      forceNodePositions(:,I) = structPositions(:,jLower) + hInterp * (structPositions(:,jLower+1) - structPositions(:,jLower))
   END DO
 
