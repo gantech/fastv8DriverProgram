@@ -314,10 +314,10 @@ void FAST_cInterface::setOutputsToFAST(OpFM_InputType_t* cDriver_Input_from_FAST
 
 void FAST_cInterface::getHubShaftDirection(double *hubShftVec) {
 
-  // Get hub shaft direction of current turbine - Only one turbine for now
+  // Get hub shaft direction of current turbine - pointing downwind - Only one turbine for now
   hubShftVec[0] = cDriver_Input_from_FAST[0]->pOrientation[0] ;
-  hubShftVec[1] = cDriver_Input_from_FAST[0]->pOrientation[1] ;
-  hubShftVec[2] = cDriver_Input_from_FAST[0]->pOrientation[2] ;
+  hubShftVec[1] = cDriver_Input_from_FAST[0]->pOrientation[3] ;
+  hubShftVec[2] = cDriver_Input_from_FAST[0]->pOrientation[6] ;
 
 }
 
