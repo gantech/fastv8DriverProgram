@@ -324,18 +324,18 @@ void FAST_cInterface::getHubShaftDirection(double *hubShftVec) {
 void FAST_cInterface::getVelNodeCoordinates(double *currentCoords, int iNode) {
 
     // Set coordinates at current node of current turbine - Only one turbine for now
-    currentCoords[0] = cDriver_Input_from_FAST[0]->pxVel[iNode] ;
-    currentCoords[1] = cDriver_Input_from_FAST[0]->pyVel[iNode] ;
-    currentCoords[2] = cDriver_Input_from_FAST[0]->pzVel[iNode] ;
+    currentCoords[0] = cDriver_Input_from_FAST[0]->pxVel[iNode] + TurbinePos[0][0] ;
+    currentCoords[1] = cDriver_Input_from_FAST[0]->pyVel[iNode] + TurbinePos[0][1] ;
+    currentCoords[2] = cDriver_Input_from_FAST[0]->pzVel[iNode] + TurbinePos[0][2] ;
 
 }
 
 void FAST_cInterface::getForceNodeCoordinates(double *currentCoords, int iNode) {
 
   // Set coordinates at current node of current turbine - Only one turbine for now
-  currentCoords[0] = cDriver_Input_from_FAST[0]->pxForce[iNode] ;
-  currentCoords[1] = cDriver_Input_from_FAST[0]->pyForce[iNode] ;
-  currentCoords[2] = cDriver_Input_from_FAST[0]->pzForce[iNode] ;
+  currentCoords[0] = cDriver_Input_from_FAST[0]->pxForce[iNode] + TurbinePos[0][0] ;
+  currentCoords[1] = cDriver_Input_from_FAST[0]->pyForce[iNode] + TurbinePos[0][0] ;
+  currentCoords[2] = cDriver_Input_from_FAST[0]->pzForce[iNode] + TurbinePos[0][0] ;
 
 }
 
