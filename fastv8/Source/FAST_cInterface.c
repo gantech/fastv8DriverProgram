@@ -204,8 +204,8 @@ int FAST_cInterface::step() {
        for (int iNode=0; iNode < get_numVelPts(iTurb); iNode++) {
 	 std::cout << "Node " << iNode << " Position = " << cDriver_Input_from_FAST[iTurb]->pxVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pyVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pzVel[iNode] << " " << std::endl ;
        }
-       for (int iNode=0; iNode < get_numVelPts(iTurb); iNode++) {
-	 std::cout << "Node " << iNode << " Type " << getNodeType(turbineMapProcToGlob[iTurb], iNode) << " Force = " << cDriver_Input_from_FAST[iTurb]->fx[iNode] << " " << cDriver_Input_from_FAST[iTurb]->fy[iNode] << " " << cDriver_Input_from_FAST[iTurb]->fz[iNode] << " " << std::endl ;
+       for (int iNode=0; iNode < get_numForcePts(iTurb); iNode++) {
+	 std::cout << "Node " << iNode << " Type " << getVelNodeType(turbineMapProcToGlob[iTurb], iNode) << " Force = " << cDriver_Input_from_FAST[iTurb]->fx[iNode] << " " << cDriver_Input_from_FAST[iTurb]->fy[iNode] << " " << cDriver_Input_from_FAST[iTurb]->fz[iNode] << " " << std::endl ;
        }
      }
 
@@ -238,6 +238,12 @@ int FAST_cInterface::readInputFile(std::string cInterfaceInputFile ) {
 	dryRun = false;
       }
       
+      if(cDriverInp["debug"]) {
+	debug = cDriverInp["debug"].as<bool>();
+      } else {
+	debug = false;
+      }
+
       allocateTurbinesToProcs(cDriverInp);
 
       allocateInputData(); // Allocate memory for all inputs that are dependent on the number of turbines
@@ -459,8 +465,8 @@ void FAST_cInterface::computeTorqueThrust(int iTurbGlob, double * torque, double
     }
 }
     
-ActuatorNodeType FAST_cInterface::getNodeType(int iTurbGlob, int iNode) {
-  // Return the type of actuator node for the given node number. The node ordering (from FAST) is 
+ActuatorNodeType FAST_cInterface::getVelNodeType(int iTurbGlob, int iNode) {
+  // Return the type of velocity node for the given node number. The node ordering (from FAST) is 
   // Node 0 - Hub node
   // Blade 1 nodes
   // Blade 2 nodes
@@ -470,6 +476,29 @@ ActuatorNodeType FAST_cInterface::getNodeType(int iTurbGlob, int iNode) {
   int iTurbLoc = get_localTurbNo(iTurbGlob);
   if (iNode) {
     if ( (iNode + 1 - (get_numVelPts(iTurbLoc) - get_numVelPtsTwr(iTurbLoc)) ) > 0) {
+      return TOWER; 
+    }
+    else {
+      return BLADE;
+    }
+  }
+  else {
+    return HUB; 
+  }
+  
+}
+
+ActuatorNodeType FAST_cInterface::getForceNodeType(int iTurbGlob, int iNode) {
+  // Return the type of actuator force node for the given node number. The node ordering (from FAST) is 
+  // Node 0 - Hub node
+  // Blade 1 nodes
+  // Blade 2 nodes
+  // Blade 3 nodes
+  // Tower nodes
+
+  int iTurbLoc = get_localTurbNo(iTurbGlob);
+  if (iNode) {
+    if ( (iNode + 1 - (get_numForcePts(iTurbLoc) - get_numForcePtsTwr(iTurbLoc)) ) > 0) {
       return TOWER; 
     }
     else {
