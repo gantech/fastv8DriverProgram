@@ -201,8 +201,8 @@ int FAST_cInterface::step() {
      checkError(ErrStat, ErrMsg);
 
      if ( isDebug() ) {
-       for (int iNode=0; iNode < get_numVelPts(iTurb); iNode++) {
-	 std::cout << "Node " << iNode << " Position = " << cDriver_Input_from_FAST[iTurb]->pxVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pyVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pzVel[iNode] << " " << std::endl ;
+       for (int iNode=0; iNode < get_numForcePts(iTurb); iNode++) {
+	 std::cout << "Node " << iNode << " Position = " << cDriver_Input_from_FAST[iTurb]->pxForce[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pyForce[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pzForce[iNode] << " " << std::endl ;
        }
        for (int iNode=0; iNode < get_numForcePts(iTurb); iNode++) {
 	 std::cout << "Node " << iNode << " Type " << getVelNodeType(turbineMapProcToGlob[iTurb], iNode) << " Force = " << cDriver_Input_from_FAST[iTurb]->fx[iNode] << " " << cDriver_Input_from_FAST[iTurb]->fy[iNode] << " " << cDriver_Input_from_FAST[iTurb]->fz[iNode] << " " << std::endl ;
