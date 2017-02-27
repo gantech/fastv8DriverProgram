@@ -195,6 +195,7 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, initOut_AD, y_AD, 
       ELSEIF (p_FAST%CompElast == Module_BD ) THEN
          !            call MeshMapCreate( BD%y(k)%BldMotion, OpFM%m%ActForceMotions(k), OpFM%m%Line2_to_Line2_Motions(k),  ErrStat2, ErrMsg2 );
       END IF
+      write(*,*) '(a1-d1).(d2-d1)', DOT_PRODUCT((y_AD%BladeLoad(k)%Position(:,1)-OpFM%m%ActForceLoads(k)%Position(:,1)),(OpFM%m%ActForceLoads(k)%Position(:,2) - OpFM%m%ActForceLoads(k)%Position(:,1)))
       call MeshMapCreate( y_AD%BladeLoad(k), OpFM%m%ActForceLoads(k), OpFM%m%Line2_to_Line2_Loads(k),  ErrStat2, ErrMsg2 );
 !      OpFM%m%ActForceLoads(k)%RemapFlag = .false.
    END DO
@@ -461,19 +462,17 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
    DO K = 1,OpFM%p%NumBl
       
       call Transfer_Line2_to_Line2( y_AD%BladeLoad(k), OpFM%m%ActForceLoads(k), OpFM%m%Line2_to_Line2_Loads(k), ErrStat2, ErrMsg2, u_AD%BladeMotion(k), OpFM%m%ActForceMotions(k) )
-      
+     
       DO J = 1, OpFM%p%NnodesForceBlade
          Node = Node + 1
-         
          OpFM%u%fx(Node) = OpFM%m%ActForceLoads(k)%Force(1,j) * dRforceNodes / OpFM%p%AirDens
          OpFM%u%fy(Node) = OpFM%m%ActForceLoads(k)%Force(2,j) * dRforceNodes / OpFM%p%AirDens
          OpFM%u%fz(Node) = OpFM%m%ActForceLoads(k)%Force(3,j) * dRforceNodes / OpFM%p%AirDens
          OpFM%u%momentx(Node) = OpFM%m%ActForceLoads(k)%Moment(1,j) * dRforceNodes / OpFM%p%AirDens
          OpFM%u%momenty(Node) = OpFM%m%ActForceLoads(k)%Moment(2,j) * dRforceNodes / OpFM%p%AirDens
          OpFM%u%momentz(Node) = OpFM%m%ActForceLoads(k)%Moment(3,j) * dRforceNodes / OpFM%p%AirDens
-         
-      END DO !J = 1,p%BldNodes ! Loop through the blade nodes / elements
-      
+      END DO 
+
    END DO !K = 1,OpFM%p%NumBl
    
    !.......................
@@ -987,17 +986,17 @@ SUBROUTINE OpFM_CreateActForceBladeTowerNodes(p_OpFM, ErrStat, ErrMsg)
 
   !Do the blade first
   allocate(p_OpFM%forceBldRnodes(p_OpFM%NnodesForceBlade), stat=errStat2)
-  dRforceNodes = p_OpFM%BladeLength/p_OpFM%NnodesForceBlade
+  dRforceNodes = p_OpFM%BladeLength/(p_OpFM%NnodesForceBlade-1)
   do i=1,p_OpFM%NnodesForceBlade
-     p_OpFM%forceBldRnodes(i) = 0.5*dRforceNodes + (i-1)*dRforceNodes
+     p_OpFM%forceBldRnodes(i) = (i-1)*dRforceNodes
   end do
 
 
   !Do the tower now
   allocate(p_OpFM%forceTwrHnodes(p_OpFM%NnodesForceTower), stat=errStat2)
-  dRforceNodes = p_OpFM%TowerHeight/p_OpFM%NnodesForceTower
+  dRforceNodes = p_OpFM%TowerHeight/(p_OpFM%NnodesForceTower-1)
   do i=1,p_OpFM%NnodesForceTower
-     p_OpFM%forceTwrHnodes(i) = 0.5*dRforceNodes + (i-1)*dRforceNodes
+     p_OpFM%forceTwrHnodes(i) = (i-1)*dRforceNodes
   end do
   
   return
