@@ -99,15 +99,15 @@ void SuperController::updateStates(double ** scInputsGlob) {
 
   // Turbine 0
     /*  Vary PC_MinPit as a function of time: */
-    /*  0-20s: 0 degrees */
-    /*  20-40s: 1.5 degrees */
-    /*  40-60s: 3 degrees */
+    /*  0-1s: 0 degrees */
+    /*  1-2s: 1.5 degrees */
+    /*  2-4s: 3 degrees */
 
   // Turbine 1
     /*  Vary PC_MinPit as a function of time: */
-    /*  0-20s: 0.5 degrees */
-    /*  20-40s: 1 degrees */
-    /*  40-60s: 2.5 degrees */
+    /*  0-1s: 0.5 degrees */
+    /*  1-2s: 1 degrees */
+    /*  2-4s: 2.5 degrees */
 
   //Copy inputs into states first
   for(int iTurb=0; iTurb < nTurbines; iTurb++) {
@@ -116,19 +116,19 @@ void SuperController::updateStates(double ** scInputsGlob) {
     }
   }
 
-  if (scInputsGlob[0][0] < 20.0) {
+  if (scInputsGlob[0][0] < 1.001) {
     turbineStates[0][nScInputs] = 0.0 ;
-  } else if(scInputsGlob[0][0] < 40.0) {
+  } else if(scInputsGlob[0][0] < 2.001) {
     turbineStates[0][nScInputs] = 1.5 * d2R ;
-  } else if(scInputsGlob[0][0] < 40.0) {
+  } else if(scInputsGlob[0][0] < 4.001) {
     turbineStates[0][nScInputs] = 3 * d2R ;    
   }
 
-  if (scInputsGlob[1][0] < 20.0) {
+  if (scInputsGlob[1][0] < 1.001) {
     turbineStates[1][nScInputs] = 0.5 * d2R ;
-  } else if(scInputsGlob[1][0] < 40.0) {
+  } else if(scInputsGlob[1][0] < 2.001) {
     turbineStates[1][nScInputs] = 1.0 * d2R ;
-  } else if(scInputsGlob[1][0] < 40.0) {
+  } else if(scInputsGlob[1][0] < 4.001) {
     turbineStates[1][nScInputs] = 2.5 * d2R ;    
   }
 

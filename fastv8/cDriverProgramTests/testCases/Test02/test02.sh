@@ -9,29 +9,36 @@ if [ -f $CWD/PASS ]; then
     didSimulationDiffAnywhere=0
 else
     make -f makefile_DISCON_DLL COMPILER=${COMPILER} BUILD=${BUILD} &> log.make_DISCON_DLL
+    if [ "${COMPILER}" == 'intelPhi' ] ; then
+	ssh `hostname`-mic0 "cd $PWD; source ../../../../phi.env; $nativeFAST &> log.Test02.nativeFAST"
+    else
+	$nativeFAST Test02.fst &> log.Test02.nativeFAST
+    fi
+    mv Test02.outb Test02.nativeFortran.outb
+
     cp cDriver.i.1 cDriver.i
     if [ "${COMPILER}" == 'intelPhi' ] ; then
-	ssh `hostname`-mic0 "cd $PWD; source ../../../../phi.env; $FAST &> log.Test02.1"
+	ssh `hostname`-mic0 "cd $PWD; source ../../../../phi.env; $cFAST &> log.Test02.1"
     else
-	$FAST &> log.Test02.1
+	$cFAST &> log.Test02.1
     fi
     cp cDriver.i.2 cDriver.i
     if [ "${COMPILER}" == 'intelPhi' ] ; then
-	ssh `hostname`-mic0 "cd $PWD; source ../../../../phi.env; $FAST &> log.Test02.2"
+	ssh `hostname`-mic0 "cd $PWD; source ../../../../phi.env; $cFAST &> log.Test02.2"
     else
-	$FAST &> log.Test02.2
+	$cFAST &> log.Test02.2
     fi
     cp cDriver.i.3 cDriver.i
     if [ "${COMPILER}" == 'intelPhi' ] ; then
-	ssh `hostname`-mic0 "cd $PWD; source ../../../../phi.env; $FAST &> log.Test02.3"
+	ssh `hostname`-mic0 "cd $PWD; source ../../../../phi.env; $cFAST &> log.Test02.3"
     else
-	$FAST &> log.Test02.3
+	$cFAST &> log.Test02.3
     fi
     cp cDriver.i.4 cDriver.i
     if [ "${COMPILER}" == 'intelPhi' ] ; then
-	ssh `hostname`-mic0 "cd $PWD; source ../../../../phi.env; $FAST &> log.Test02.4"
+	ssh `hostname`-mic0 "cd $PWD; source ../../../../phi.env; $cFAST &> log.Test02.4"
     else
-	$FAST &> log.Test02.4
+	$cFAST &> log.Test02.4
     fi
     determine_pass_fail Test02.T1.outb Test02.nativeFortran.outb
     didSimulationDiffAnywhere="$?"

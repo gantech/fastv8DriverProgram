@@ -127,9 +127,6 @@ int FAST_cInterface::init() {
 
 int FAST_cInterface::solution0() {
 
-       // set wind speeds at initial locations
-       //      setOutputsToFAST(cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb]);
-     
      if(scStatus) {
 
        sc->init(nTurbinesGlob, numScInputs, numScOutputs);
@@ -156,6 +153,7 @@ int FAST_cInterface::solution0() {
 
 int FAST_cInterface::step() {
 
+  std::cout << "nt_global = " << nt_global << std::endl ;
   if ( (((nt_global - ntStart) % nEveryCheckPoint) == 0 )  && (nt_global != ntStart) ) {
     //sprintf(CheckpointFileRoot, "../../CertTest/Test18.%d", nt_global);
     for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
@@ -188,7 +186,6 @@ int FAST_cInterface::step() {
      //  setOutputsToFAST(cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb]);
 
      // this advances the states, calls CalcOutput, and solves for next inputs. Predictor-corrector loop is imbeded here:
-     // (note OpenFOAM could do subcycling around this step)
      if ( isDebug() ) {
        for (int iNode=0; iNode < get_numNodes(iTurb); iNode++) {
 	 std::cout << "Node " << iNode << " Velocity = " << cDriver_Output_to_FAST[iTurb]->u[iNode] << " " << cDriver_Output_to_FAST[iTurb]->v[iNode] << " " << cDriver_Output_to_FAST[iTurb]->w[iNode] << " " << std::endl ;
@@ -266,7 +263,13 @@ int FAST_cInterface::readInputFile(std::string cInterfaceInputFile ) {
 
       if ( !dryRun ) {
 	init();
-	solution0();
+	if (restart == false) {
+	  // set wind speeds at initial locations
+	  /* for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) { */
+	  /*   setOutputsToFAST(cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb]); */
+	  /* } */
+	  solution0();
+	}
       }
       
     } else {

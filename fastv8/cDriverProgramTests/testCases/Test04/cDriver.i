@@ -11,140 +11,140 @@ nEveryCheckPoint: 800
 
 Turbine0:
   procNo: 0
-  TurbinePos: [ 0.0, 0.0, 0.0 ]
-  restartFileName: "blah"
-  FASTInputFileName: "t1_test18.fst"
-  TurbID:  1
+  turbine_pos: [ 0.0, 0.0, 0.0 ]
+  restart_filename: "blah"
+  FAST_input_filename: "t1_test18.fst"
+  turb_id:  1
 
 Turbine1:
   procNo: 1
-  TurbinePos: [ 0.0, 0.0, 0.0 ]
-  restartFileName: "blah"
-  FASTInputFileName: "t2_test18.fst"
-  TurbID:  2
+  turbine_pos: [ 0.0, 0.0, 0.0 ]
+  restart_filename: "blah"
+  FAST_input_filename: "t2_test18.fst"
+  turb_id:  2
 
 Turbine2:
   procNo: 2
-  TurbinePos: [ 0.0, 0.0, 0.0 ]
-  restartFileName: "blah"
-  FASTInputFileName: "t1_test18.fst"
-  TurbID:  3
+  turbine_pos: [ 0.0, 0.0, 0.0 ]
+  restart_filename: "blah"
+  FAST_input_filename: "t1_test18.fst"
+  turb_id:  3
 
 Turbine3:
   procNo: 2
-  TurbinePos: [ 0.0, 0.0, 0.0 ]
-  restartFileName: "blah"
-  FASTInputFileName: "t2_test18.fst"
-  TurbID:  4
+  turbine_pos: [ 0.0, 0.0, 0.0 ]
+  restart_filename: "blah"
+  FAST_input_filename: "t2_test18.fst"
+  turb_id:  4
 
 Turbine4:
   procNo: 0
-  TurbinePos: [ 0.0, 0.0, 0.0 ]
-  restartFileName: "blah"
-  FASTInputFileName: "t1_test18.fst"
-  TurbID:  5
+  turbine_pos: [ 0.0, 0.0, 0.0 ]
+  restart_filename: "blah"
+  FAST_input_filename: "t1_test18.fst"
+  turb_id:  5
 
 Turbine5:
   procNo: 1
-  TurbinePos: [ 0.0, 0.0, 0.0 ]
-  restartFileName: "blah"
-  FASTInputFileName: "t2_test18.fst"
-  TurbID:  6
+  turbine_pos: [ 0.0, 0.0, 0.0 ]
+  restart_filename: "blah"
+  FAST_input_filename: "t2_test18.fst"
+  turb_id:  6
 
 Turbine6:
   procNo: 2
-  TurbinePos: [ 0.0, 0.0, 0.0 ]
-  restartFileName: "blah"
-  FASTInputFileName: "t1_test18.fst"
-  TurbID:  7
+  turbine_pos: [ 0.0, 0.0, 0.0 ]
+  restart_filename: "blah"
+  FAST_input_filename: "t1_test18.fst"
+  turb_id:  7
 
 Turbine7:
   procNo: 2
-  TurbinePos: [ 0.0, 0.0, 0.0 ]
-  restartFileName: "blah"
-  FASTInputFileName: "t2_test18.fst"
-  TurbID:  8
+  turbine_pos: [ 0.0, 0.0, 0.0 ]
+  restart_filename: "blah"
+  FAST_input_filename: "t2_test18.fst"
+  turb_id:  8
 
 Turbine8:
   procNo: 0
-  TurbinePos: [ 0.0, 0.0, 0.0 ]
-  restartFileName: "blah"
-  FASTInputFileName: "t1_test18.fst"
-  TurbID:  9
+  turbine_pos: [ 0.0, 0.0, 0.0 ]
+  restart_filename: "blah"
+  FAST_input_filename: "t1_test18.fst"
+  turb_id:  9
 
 Turbine9:
   procNo: 1
-  TurbinePos: [ 0.0, 0.0, 0.0 ]
-  restartFileName: "blah"
-  FASTInputFileName: "t2_test18.fst"
-  TurbID:  10
+  turbine_pos: [ 0.0, 0.0, 0.0 ]
+  restart_filename: "blah"
+  FAST_input_filename: "t2_test18.fst"
+  turb_id:  10
 
 Turbine10:
   procNo: 2
-  TurbinePos: [ 0.0, 0.0, 0.0 ]
-  restartFileName: "blah"
-  FASTInputFileName: "t1_test18.fst"
-  TurbID:  11
+  turbine_pos: [ 0.0, 0.0, 0.0 ]
+  restart_filename: "blah"
+  FAST_input_filename: "t1_test18.fst"
+  turb_id:  11
 
 Turbine11:
   procNo: 2
-  TurbinePos: [ 0.0, 0.0, 0.0 ]
-  restartFileName: "blah"
-  FASTInputFileName: "t2_test18.fst"
-  TurbID:  12
+  turbine_pos: [ 0.0, 0.0, 0.0 ]
+  restart_filename: "blah"
+  FAST_input_filename: "t2_test18.fst"
+  turb_id:  12
 
 Turbine12:
   procNo: 0
-  TurbinePos: [ 0.0, 0.0, 0.0 ]
-  restartFileName: "blah"
-  FASTInputFileName: "t1_test18.fst"
-  TurbID:  13
+  turbine_pos: [ 0.0, 0.0, 0.0 ]
+  restart_filename: "blah"
+  FAST_input_filename: "t1_test18.fst"
+  turb_id:  13
 
 Turbine13:
   procNo: 1
-  TurbinePos: [ 0.0, 0.0, 0.0 ]
-  restartFileName: "blah"
-  FASTInputFileName: "t2_test18.fst"
-  TurbID:  14
+  turbine_pos: [ 0.0, 0.0, 0.0 ]
+  restart_filename: "blah"
+  FAST_input_filename: "t2_test18.fst"
+  turb_id:  14
 
 Turbine14:
   procNo: 0
-  TurbinePos: [ 0.0, 0.0, 0.0 ]
-  restartFileName: "blah"
-  FASTInputFileName: "t1_test18.fst"
-  TurbID:  15
+  turbine_pos: [ 0.0, 0.0, 0.0 ]
+  restart_filename: "blah"
+  FAST_input_filename: "t1_test18.fst"
+  turb_id:  15
 
 Turbine15:
   procNo: 1
-  TurbinePos: [ 0.0, 0.0, 0.0 ]
-  restartFileName: "blah"
-  FASTInputFileName: "t2_test18.fst"
-  TurbID:  16
+  turbine_pos: [ 0.0, 0.0, 0.0 ]
+  restart_filename: "blah"
+  FAST_input_filename: "t2_test18.fst"
+  turb_id:  16
 
 Turbine16:
   procNo: 0
-  TurbinePos: [ 0.0, 0.0, 0.0 ]
-  restartFileName: "blah"
-  FASTInputFileName: "t1_test18.fst"
-  TurbID:  17
+  turbine_pos: [ 0.0, 0.0, 0.0 ]
+  restart_filename: "blah"
+  FAST_input_filename: "t1_test18.fst"
+  turb_id:  17
 
 Turbine17:
   procNo: 1
-  TurbinePos: [ 0.0, 0.0, 0.0 ]
-  restartFileName: "blah"
-  FASTInputFileName: "t2_test18.fst"
-  TurbID:  18
+  turbine_pos: [ 0.0, 0.0, 0.0 ]
+  restart_filename: "blah"
+  FAST_input_filename: "t2_test18.fst"
+  turb_id:  18
 
 Turbine18:
   procNo: 0
-  TurbinePos: [ 0.0, 0.0, 0.0 ]
-  restartFileName: "blah"
-  FASTInputFileName: "t1_test18.fst"
-  TurbID:  19
+  turbine_pos: [ 0.0, 0.0, 0.0 ]
+  restart_filename: "blah"
+  FAST_input_filename: "t1_test18.fst"
+  turb_id:  19
 
 Turbine19:
   procNo: 1
-  TurbinePos: [ 0.0, 0.0, 0.0 ]
-  restartFileName: "blah"
-  FASTInputFileName: "t2_test18.fst"
-  TurbID:  20
+  turbine_pos: [ 0.0, 0.0, 0.0 ]
+  restart_filename: "blah"
+  FAST_input_filename: "t2_test18.fst"
+  turb_id:  20

@@ -10,9 +10,11 @@ if [ -f $CWD/PASS ]; then
 else
     make -f makefile_DISCON_DLL COMPILER=${COMPILER} BUILD=${BUILD} &> log.make_DISCON_DLL
     if [ "${COMPILER}" == 'intelPhi' ] ; then
-	ssh `hostname`-mic0 "cd $PWD; source ../../../../phi.env; $FAST &> log.Test01"
+	ssh `hostname`-mic0 "cd $PWD; source ../../../../phi.env; $nativeFAST Test01.fst &> log.Test01.nativeFAST; $cFAST &> log.Test01"
     else
-	$FAST &> log.Test01
+	$nativeFAST Test01.fst &> log.Test01.nativeFAST
+	mv Test01.outb Test01.nativeFortran.outb
+	$cFAST &> log.Test01
     fi
     determine_pass_fail Test01.T1.outb Test01.nativeFortran.outb
     didSimulationDiffAnywhere="$?"

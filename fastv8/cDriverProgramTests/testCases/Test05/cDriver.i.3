@@ -1,31 +1,31 @@
 nTurbinesGlob: 3
 dryRun:  False
 restart: True
-tStart:  30.0
-tEnd:    50.0
-tMax:    60.0
-ntStart: 4800
-ntEnd:   8000
+tStart:  2.0
+tEnd:    3.0
+tMax:    4.0
+ntStart: 160
+ntEnd:   320
 dtFAST:  0.00625
-nEveryCheckPoint: 1600
+nEveryCheckPoint: 160
 
 Turbine0:
   procNo: 0
-  TurbinePos: [ 0.0, 0.0, 0.0 ]
-  restartFileName: "t1_Test05.T1.4800"
-  FASTInputFileName: "banana"
-  TurbID:  1
+  turbine_pos: [ 0.0, 0.0, 0.0 ]
+  restart_filename: "t1_Test05.T1.320"
+  FAST_input_filename: "banana"
+  turb_id:  1
 
 Turbine1:
   procNo: 0
-  TurbinePos: [ 0.0, 0.0, 0.0 ]
-  restartFileName: "t2_Test05.T2.4800"
-  FASTInputFileName: "banana"
-  TurbID:  2
+  turbine_pos: [ 0.0, 0.0, 0.0 ]
+  restart_filename: "t2_Test05.T2.320"
+  FAST_input_filename: "banana"
+  turb_id:  2
 
 Turbine2:
   procNo: 2
-  TurbinePos: [ 0.0, 0.0, 0.0 ]
-  restartFileName: "t3_Test05.T3.4800"
-  FASTInputFileName: "banana"
-  TurbID:  3
+  turbine_pos: [ 0.0, 0.0, 0.0 ]
+  restart_filename: "t3_Test05.T3.320"
+  FAST_input_filename: "banana"
+  turb_id:  3

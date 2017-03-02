@@ -9,13 +9,10 @@
 #================================================================================#
 
 #COMPILER options - gnu, intel, intelPhi
-#COMPILER = intelPhi
 
 #BUILD options - release, debug
-#BUILD = release
 
 #LAPACK options - lapack, mkl
-#LAPACK = LAPACK
 
    # Name of compiler to use and flags to use.
 ifeq ($(COMPILER),gnu)

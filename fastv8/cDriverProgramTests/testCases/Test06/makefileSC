@@ -21,7 +21,7 @@ else ifeq ($(COMPILER),intel)
 endif
 
 #No parallel hdf5 with intel and openmpi on Peregrine
-HDF5_FLAGS = $(HDF5_INC) -L/nopt/nrel/apps/hdf5/1.8.12-openmpi-gcc/lib -lz -lhdf5_hl -Wl,-rpath=/nopt/nrel/apps/hdf5/1.8.12-openmpi-gcc/lib -lhdf5 -Wl,-rpath=/nopt/nrel/apps/hdf5/1.8.12-openmpi-gcc/lib
+HDF5_FLAGS = -I$(FAST_DIR)/include -L$(FAST_DIR)/lib -lz -lhdf5_hl -Wl,-rpath=$(FAST_DIR)/lib -lhdf5 -Wl,-rpath=$(FAST_DIR)/lib
 
 # Rule to do everything.
 
