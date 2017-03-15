@@ -112,11 +112,11 @@ int FAST_cInterface::init() {
        numVelPtsTwr[iTurb] = cDriver_Output_to_FAST[iTurb]->u_Len - numBlades[iTurb]*numVelPtsBlade[iTurb] - 1;
 
 
-       if ( isDebug() ) {
-	 for (int iNode=0; iNode < get_numVelPts(iTurb); iNode++) {
-	   std::cout << "Node " << iNode << " Position = " << cDriver_Input_from_FAST[iTurb]->pxVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pyVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pzVel[iNode] << " " << std::endl ;
-	 }
-       }
+       /* if ( isDebug() ) { */
+       /* 	 for (int iNode=0; iNode < get_numVelPts(iTurb); iNode++) { */
+       /* 	   std::cout << "Node " << iNode << " Position = " << cDriver_Input_from_FAST[iTurb]->pxVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pyVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pzVel[iNode] << " " << std::endl ; */
+       /* 	 } */
+       /* } */
      }
      
    }
@@ -191,22 +191,26 @@ int FAST_cInterface::step() {
 
      // this advances the states, calls CalcOutput, and solves for next inputs. Predictor-corrector loop is imbeded here:
      // (note OpenFOAM could do subcycling around this step)
-     if ( isDebug() ) {
-       for (int iNode=0; iNode < get_numVelPts(iTurb); iNode++) {
-	 std::cout << "Node " << iNode << " Velocity = " << cDriver_Output_to_FAST[iTurb]->u[iNode] << " " << cDriver_Output_to_FAST[iTurb]->v[iNode] << " " << cDriver_Output_to_FAST[iTurb]->w[iNode] << " " << std::endl ;
-       }
-     }
+     /* if ( isDebug() ) { */
+     /*   for (int iNode=0; iNode < get_numVelPts(iTurb); iNode++) { */
+     /* 	 std::cout << "Node " << iNode << " Velocity = " << cDriver_Output_to_FAST[iTurb]->u[iNode] << " " << cDriver_Output_to_FAST[iTurb]->v[iNode] << " " << cDriver_Output_to_FAST[iTurb]->w[iNode] << " " << std::endl ; */
+     /*   } */
+     /* } */
 
      FAST_OpFM_Step(&iTurb, &ErrStat, ErrMsg);
      checkError(ErrStat, ErrMsg);
 
      if ( isDebug() ) {
-       for (int iNode=0; iNode < get_numVelPts(iTurb); iNode++) {
-	 std::cout << "Node " << iNode << " Position = " << cDriver_Input_from_FAST[iTurb]->pxVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pyVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pzVel[iNode] << " " << std::endl ;
+       /* for (int iNode=0; iNode < get_numVelPts(iTurb); iNode++) { */
+       /*   std::cout << "Node " << iNode << " Position = " << cDriver_Input_from_FAST[iTurb]->pxVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pyVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pzVel[iNode] << " " << std::endl ; */
+       /* } */
+       std::ofstream actuatorForcesFile;
+       actuatorForcesFile.open("actuatorForces.csv") ;
+       actuatorForcesFile << "# x, y, z, fx, fy, fz" << std::endl ;
+       for (int iNode=0; iNode < get_numForcePts(iTurb); iNode++) {
+           actuatorForcesFile << cDriver_Input_from_FAST[iTurb]->pxForce[iNode] << ", " << cDriver_Input_from_FAST[iTurb]->pyForce[iNode] << ", " << cDriver_Input_from_FAST[iTurb]->pzForce[iNode] << ", " << cDriver_Input_from_FAST[iTurb]->fx[iNode] << ", " << cDriver_Input_from_FAST[iTurb]->fy[iNode] << ", " << cDriver_Input_from_FAST[iTurb]->fz[iNode] << " " << std::endl ;           
        }
-       for (int iNode=0; iNode < get_numVelPts(iTurb); iNode++) {
-	 std::cout << "Node " << iNode << " Type " << getNodeType(turbineMapProcToGlob[iTurb], iNode) << " Force = " << cDriver_Input_from_FAST[iTurb]->fx[iNode] << " " << cDriver_Input_from_FAST[iTurb]->fy[iNode] << " " << cDriver_Input_from_FAST[iTurb]->fz[iNode] << " " << std::endl ;
-       }
+       actuatorForcesFile.close() ;
      }
 
    }
@@ -238,6 +242,12 @@ int FAST_cInterface::readInputFile(std::string cInterfaceInputFile ) {
 	dryRun = false;
       }
       
+      if(cDriverInp["debug"]) {
+	debug = cDriverInp["debug"].as<bool>();
+      } else {
+	debug = false;
+      }
+
       allocateTurbinesToProcs(cDriverInp);
 
       allocateInputData(); // Allocate memory for all inputs that are dependent on the number of turbines
@@ -459,7 +469,7 @@ void FAST_cInterface::computeTorqueThrust(int iTurbGlob, double * torque, double
     }
 }
     
-ActuatorNodeType FAST_cInterface::getNodeType(int iTurbGlob, int iNode) {
+ActuatorNodeType FAST_cInterface::getVelNodeType(int iTurbGlob, int iNode) {
   // Return the type of actuator node for the given node number. The node ordering (from FAST) is 
   // Node 0 - Hub node
   // Blade 1 nodes
@@ -470,6 +480,29 @@ ActuatorNodeType FAST_cInterface::getNodeType(int iTurbGlob, int iNode) {
   int iTurbLoc = get_localTurbNo(iTurbGlob);
   if (iNode) {
     if ( (iNode + 1 - (get_numVelPts(iTurbLoc) - get_numVelPtsTwr(iTurbLoc)) ) > 0) {
+      return TOWER; 
+    }
+    else {
+      return BLADE;
+    }
+  }
+  else {
+    return HUB; 
+  }
+  
+}
+
+ActuatorNodeType FAST_cInterface::getForceNodeType(int iTurbGlob, int iNode) {
+  // Return the type of actuator force node for the given node number. The node ordering (from FAST) is 
+  // Node 0 - Hub node
+  // Blade 1 nodes
+  // Blade 2 nodes
+  // Blade 3 nodes
+  // Tower nodes
+
+  int iTurbLoc = get_localTurbNo(iTurbGlob);
+  if (iNode) {
+    if ( (iNode + 1 - (get_numForcePts(iTurbLoc) - get_numForcePtsTwr(iTurbLoc)) ) > 0) {
       return TOWER; 
     }
     else {
@@ -508,23 +541,17 @@ void FAST_cInterface::allocateInputData() {
 void FAST_cInterface::readTurbineData(int iTurb, YAML::Node turbNode) {
 
   //Read turbine data for a given turbine using the YAML node
-  std::cout << "Came here" << std::endl ;
   TurbID[iTurb] = turbNode["turb_id"].as<int>();
   std::strcpy(FASTInputFileName[iTurb], turbNode["FAST_input_filename"].as<std::string>().c_str()) ;
-  std::cout << "Came here" << std::endl ;
   std::strcpy(CheckpointFileRoot[iTurb], turbNode["restart_filename"].as<std::string>().c_str() );
-  std::cout << "Came here" << std::endl ;
   if (turbNode["turbine_pos"].IsSequence() ) {
     std::vector<double> tp = turbNode["turbine_pos"].as<std::vector<double> >() ;
     for(int i=0;i<3;i++) {
       TurbinePos[iTurb][i] = tp[i];
     }
   }
-  std::cout << "Came here" << std::endl ;
   numForcePtsBlade[iTurb] = turbNode["num_force_pts_blade"].as<int>();
-  std::cout << "Came here" << std::endl ;
   numForcePtsTwr[iTurb] = turbNode["num_force_pts_tower"].as<int>();
-  std::cout << "Came here" << std::endl ;
 
   return ;
 }

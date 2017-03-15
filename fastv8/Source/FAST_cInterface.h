@@ -5,6 +5,7 @@
 #include "sys/stat.h"
 #include "math.h"
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <cstring>
 #include <malloc.h>
@@ -125,8 +126,12 @@ class FAST_cInterface {
   int get_numVelPtsBlade(int iTurbLoc) { return numVelPtsBlade[iTurbLoc]; }
   int get_numVelPtsTwr(int iTurbLoc) { return numVelPtsTwr[iTurbLoc]; }
   int get_numVelPts(int iTurbLoc) { return 1 + numBlades[iTurbLoc]*numVelPtsBlade[iTurbLoc] + numVelPtsTwr[iTurbLoc]; }
+  int get_numForcePtsBlade(int iTurbLoc) { return numForcePtsBlade[iTurbLoc]; }
+  int get_numForcePtsTwr(int iTurbLoc) { return numForcePtsTwr[iTurbLoc]; }
+  int get_numForcePts(int iTurbLoc) { return 1 + numBlades[iTurbLoc]*numForcePtsBlade[iTurbLoc] + numForcePtsTwr[iTurbLoc]; }
   void computeTorqueThrust(int iTurGlob, double * torque, double * thrust);
-  ActuatorNodeType getNodeType(int iTurbGlob, int iNode);
+  ActuatorNodeType getVelNodeType(int iTurbGlob, int iNode);
+  ActuatorNodeType getForceNodeType(int iTurbGlob, int iNode);
   void end();
 
  private:

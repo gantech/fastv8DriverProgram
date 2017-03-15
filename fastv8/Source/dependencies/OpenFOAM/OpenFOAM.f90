@@ -352,15 +352,15 @@ SUBROUTINE SetOpFMPositions(p_FAST, u_AD14, u_AD, y_ED, OpFM)
    OpFM%u%pxForce(Node) = OpFM%u%pxVel(Node)
    OpFM%u%pyForce(Node) = OpFM%u%pyVel(Node) 
    OpFM%u%pzForce(Node) = OpFM%u%pzVel(Node)
-   OpFM%u%pOrientation((Node-1)*9 + 1) = y_ED%HubPtMotion%Orientation(1,1,J)
-   OpFM%u%pOrientation((Node-1)*9 + 2) = y_ED%HubPtMotion%Orientation(2,1,J)
-   OpFM%u%pOrientation((Node-1)*9 + 3) = y_ED%HubPtMotion%Orientation(3,1,J)   
-   OpFM%u%pOrientation((Node-1)*9 + 4) = y_ED%HubPtMotion%Orientation(1,2,J)
-   OpFM%u%pOrientation((Node-1)*9 + 5) = y_ED%HubPtMotion%Orientation(2,2,J)
-   OpFM%u%pOrientation((Node-1)*9 + 6) = y_ED%HubPtMotion%Orientation(3,2,J)   
-   OpFM%u%pOrientation((Node-1)*9 + 7) = y_ED%HubPtMotion%Orientation(1,3,J)
-   OpFM%u%pOrientation((Node-1)*9 + 8) = y_ED%HubPtMotion%Orientation(2,3,J)
-   OpFM%u%pOrientation((Node-1)*9 + 9) = y_ED%HubPtMotion%Orientation(3,3,J)   
+   OpFM%u%pOrientation((Node-1)*9 + 1) = y_ED%HubPtMotion%Orientation(1,1,1)
+   OpFM%u%pOrientation((Node-1)*9 + 2) = y_ED%HubPtMotion%Orientation(2,1,1)
+   OpFM%u%pOrientation((Node-1)*9 + 3) = y_ED%HubPtMotion%Orientation(3,1,1)   
+   OpFM%u%pOrientation((Node-1)*9 + 4) = y_ED%HubPtMotion%Orientation(1,2,1)
+   OpFM%u%pOrientation((Node-1)*9 + 5) = y_ED%HubPtMotion%Orientation(2,2,1)
+   OpFM%u%pOrientation((Node-1)*9 + 6) = y_ED%HubPtMotion%Orientation(3,2,1)   
+   OpFM%u%pOrientation((Node-1)*9 + 7) = y_ED%HubPtMotion%Orientation(1,3,1)
+   OpFM%u%pOrientation((Node-1)*9 + 8) = y_ED%HubPtMotion%Orientation(2,3,1)
+   OpFM%u%pOrientation((Node-1)*9 + 9) = y_ED%HubPtMotion%Orientation(3,3,1)   
 
    
    DO K = 1,OpFM%p%NumBl
@@ -454,13 +454,20 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
    ! blade nodes
    !.......................
 
+   open(unit=987,file='AeroDyn_forces.csv')
+   write(987,*) '#x, y, z, fx, fy, fz'
    DO K = 1,OpFM%p%NumBl
       
       call Transfer_Line2_to_Point( y_AD%BladeLoad(k), OpFM%m%ActForceLoads(k), OpFM%m%Line2_to_Point_Loads(k), ErrStat2, ErrMsg2, u_AD%BladeMotion(k), OpFM%m%ActForceMotions(k) )
       
+      DO J = 1,u_AD%BladeMotion(k)%NNodes
+        write(987,*) u_AD%BladeMotion(k)%TranslationDisp(1,j) + u_AD%BladeMotion(k)%Position(1,j), ', ', u_AD%BladeMotion(k)%TranslationDisp(2,j) + u_AD%BladeMotion(k)%Position(2,j), ', ', u_AD%BladeMotion(k)%TranslationDisp(3,j) + u_AD%BladeMotion(k)%Position(3,j), ', ', y_AD%BladeLoad(k)%Force(1,j), ', ', y_AD%BladeLoad(k)%Force(2,j), ', ', y_AD%BladeLoad(k)%Force(2,j)
+      END DO
+      
       DO J = 1, OpFM%p%NnodesForceBlade
          Node = Node + 1
-         
+
+         write(*,*) u_AD%BladeMotion(k)%TranslationDisp(1,j) + u_AD%BladeMotion(k)%Position(1,j), ' ', u_AD%BladeMotion(k)%TranslationDisp(2,j) + u_AD%BladeMotion(k)%Position(2,j), ' ', u_AD%BladeMotion(k)%TranslationDisp(3,j) + u_AD%BladeMotion(k)%Position(3,j), ' ', y_AD%BladeLoad(k)%Force(1,j), ' ', y_AD%BladeLoad(k)%Force(2,j), ' ', y_AD%BladeLoad(k)%Force(2,j)
          OpFM%u%fx(Node) = OpFM%m%ActForceLoads(k)%Force(1,j) / OpFM%p%AirDens
          OpFM%u%fy(Node) = OpFM%m%ActForceLoads(k)%Force(2,j) / OpFM%p%AirDens
          OpFM%u%fz(Node) = OpFM%m%ActForceLoads(k)%Force(3,j) / OpFM%p%AirDens
@@ -471,7 +478,7 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
       END DO !J = 1,p%BldNodes ! Loop through the blade nodes / elements
       
    END DO !K = 1,OpFM%p%NumBl
-   
+      
    !.......................
    ! tower nodes
    !.......................
@@ -481,6 +488,10 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
    
    call Transfer_Line2_to_Point( y_AD%TowerLoad, OpFM%m%ActForceLoads(k), OpFM%m%Line2_to_Point_Loads(k), ErrStat2, ErrMsg2, u_AD%TowerMotion, OpFM%m%ActForceMotions(k) )
    
+   DO J = 1,u_AD%TowerMotion%NNodes
+      write(987,*) u_AD%TowerMotion%TranslationDisp(1,j) + u_AD%TowerMotion%Position(1,j), ', ', u_AD%TowerMotion%TranslationDisp(2,j) + u_AD%TowerMotion%Position(2,j), ', ', u_AD%TowerMotion%TranslationDisp(3,j) + u_AD%TowerMotion%Position(3,j), ', ', y_AD%TowerLoad%Force(1,j), ', ', y_AD%TowerLoad%Force(2,j), ', ', y_AD%TowerLoad%Force(2,j)
+   END DO
+
    DO J=1,OpFM%p%NnodesForceTower
       Node = Node + 1
       OpFM%u%fx(Node) = OpFM%m%ActForceLoads(k)%Force(1,j) / OpFM%p%AirDens
@@ -490,6 +501,7 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
       OpFM%u%momenty(Node) = OpFM%m%ActForceLoads(k)%Moment(2,j) / OpFM%p%AirDens
       OpFM%u%momentz(Node) = OpFM%m%ActForceLoads(k)%Moment(3,j) / OpFM%p%AirDens
    END DO
+   close(987)
    
 END SUBROUTINE SetOpFMForces
 !----------------------------------------------------------------------------------------------------------------------------------
@@ -934,15 +946,15 @@ SUBROUTINE CalcForceActuatorPositionsTower(InitIn_OpFM, p_OpFM, structPositions,
   ! Store the distance of the structural model nodes from the root into an array
   hStructNodes(1) = 0.0 ! First node
   hStructNodes(2:nStructNodes-1) = InitIn_OpFM%StructTwrHnodes(:)
-  hStructNodes(nStructNodes) = p_OpFM%BladeLength
+  hStructNodes(nStructNodes) = p_OpFM%TowerHeight
 
   ! Now calculate the positions of the force nodes based on interpolation
   DO I=1,p_OpFM%NnodesForceTower ! Calculate the position of the force nodes
      jLower=1
-     do while ( (hStructNodes(jLower) - p_OpFM%forceBldRnodes(I))*(hStructNodes(jLower+1) - p_OpFM%forceBldRnodes(I)) .gt. 0 )
+     do while ( (hStructNodes(jLower) - p_OpFM%forceTwrHnodes(I))*(hStructNodes(jLower+1) - p_OpFM%forceTwrHnodes(I)) .gt. 0 )
         jLower = jLower + 1
      end do
-     hInterp =  (p_OpFM%forceBldRnodes(I) - hStructNodes(jLower))/(hStructNodes(jLower+1)-hStructNodes(jLower)) ! The location of this force node in (0,1) co-ordinates between the jLower and jLower+1 nodes
+     hInterp =  (p_OpFM%forceTwrHnodes(I) - hStructNodes(jLower))/(hStructNodes(jLower+1)-hStructNodes(jLower)) ! The location of this force node in (0,1) co-ordinates between the jLower and jLower+1 nodes
      forceNodePositions(:,I) = structPositions(:,jLower) + hInterp * (structPositions(:,jLower+1) - structPositions(:,jLower))
   END DO
 
