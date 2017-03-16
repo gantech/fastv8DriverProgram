@@ -1015,6 +1015,7 @@ SUBROUTINE OpFM_InterpolateForceNodesChord(InitOut_AD, p_OpFM, u_OpFM, ErrStat, 
 
   !Local variables
   INTEGER(IntKI)                         :: i,j,k,node  ! Loop variables
+  INTEGER(IntKI)                         :: nNodesBladeProps ! Number of nodes in the blade properties for a given blade
   INTEGER(IntKI)                         :: jLower      ! Index of the blade properties node just smaller than the force node
   INTEGER(IntKi)                         :: ErrStat2    ! temporary Error status of the operation
   CHARACTER(ErrMsgLen)                   :: ErrMsg2     ! temporary Error message if ErrStat /= ErrID_None
@@ -1027,14 +1028,19 @@ SUBROUTINE OpFM_InterpolateForceNodesChord(InitOut_AD, p_OpFM, u_OpFM, ErrStat, 
   ! The blades first
   do k = 1, p_OpFM%NumBl
      ! Calculate the chord at the force nodes based on interpolation
+     nNodesBladeProps = SIZE(InitOut_AD%BladeProps(k)%BlChord)
      DO I=1,p_OpFM%NnodesForceBlade 
         Node = Node + 1
         jLower=1
         do while ( (InitOut_AD%BladeProps(k)%BlSpn(jLower) - p_OpFM%forceBldRnodes(I))*(InitOut_AD%BladeProps(k)%BlSpn(jLower+1) - p_OpFM%forceBldRnodes(I)) .gt. 0 ) !Determine the closest two nodes at which the blade properties are specified
            jLower = jLower + 1
         end do
-        rInterp =  (p_OpFM%forceBldRnodes(I) - InitOut_AD%BladeProps(k)%BlSpn(jLower))/(InitOut_AD%BladeProps(k)%BlSpn(jLower+1)-InitOut_AD%BladeProps(k)%BlSpn(jLower)) ! The location of this force node in (0,1) co-ordinates between the jLower and jLower+1 nodes
-        u_OpFM%forceNodesChord(Node) = InitOut_AD%BladeProps(k)%BlChord(jLower) + rInterp * (InitOut_AD%BladeProps(k)%BlChord(jLower+1) - InitOut_AD%BladeProps(k)%BlChord(jLower))
+        if (jLower .lt. nNodesBladeProps) then
+           rInterp =  (p_OpFM%forceBldRnodes(I) - InitOut_AD%BladeProps(k)%BlSpn(jLower))/(InitOut_AD%BladeProps(k)%BlSpn(jLower+1)-InitOut_AD%BladeProps(k)%BlSpn(jLower)) ! The location of this force node in (0,1) co-ordinates between the jLower and jLower+1 nodes
+           u_OpFM%forceNodesChord(Node) = InitOut_AD%BladeProps(k)%BlChord(jLower) + rInterp * (InitOut_AD%BladeProps(k)%BlChord(jLower+1) - InitOut_AD%BladeProps(k)%BlChord(jLower))
+        else
+           u_OpFM%forceNodesChord(Node) = InitOut_AD%BladeProps(k)%BlChord(nNodesBladeProps) !Work around for when the last node of the actuator mesh is slightly outside of the Aerodyn blade properties. Surprisingly this is not an issue with the tower.
+        end if
      END DO
   end do
      
