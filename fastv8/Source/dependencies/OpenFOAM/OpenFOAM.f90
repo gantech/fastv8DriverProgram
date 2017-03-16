@@ -452,8 +452,6 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
 
       ! Local variables:
    REAL(ReKi )                                     :: factor      ! scaling factor to get normalized forces for OpenFOAM
-   REAL(ReKi)                                      :: dRforceNodes ! Uniform distance between two consecutive blade force nodes
-   REAL(ReKi)                                      :: dHforceNodes ! Uniform distance between two consecutive tower force nodes
 
    INTEGER(IntKi)                                  :: J           ! Loops through nodes / elements
    INTEGER(IntKi)                                  :: K           ! Loops through blades.
@@ -475,7 +473,6 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
    !.......................
    ! blade nodes
    !.......................
-   dRforceNodes = OpFM%p%BladeLength/OpFM%p%NnodesForceBlade
    DO K = 1,OpFM%p%NumBl
       
       call Transfer_Line2_to_Line2( y_AD%BladeLoad(k), OpFM%m%ActForceLoads(k), OpFM%m%Line2_to_Line2_Loads(k), ErrStat2, ErrMsg2, u_AD%BladeMotion(k), OpFM%m%ActForceMotions(k) )
@@ -483,12 +480,12 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
      
       DO J = 1, OpFM%p%NnodesForceBlade
          Node = Node + 1
-         OpFM%u%fx(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(1,j) * dRforceNodes / OpFM%p%AirDens
-         OpFM%u%fy(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(2,j) * dRforceNodes / OpFM%p%AirDens
-         OpFM%u%fz(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(3,j) * dRforceNodes / OpFM%p%AirDens
-         OpFM%u%momentx(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(1,j) * dRforceNodes / OpFM%p%AirDens
-         OpFM%u%momenty(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(2,j) * dRforceNodes / OpFM%p%AirDens
-         OpFM%u%momentz(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(3,j) * dRforceNodes / OpFM%p%AirDens
+         OpFM%u%fx(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(1,j) / OpFM%p%AirDens
+         OpFM%u%fy(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(2,j) / OpFM%p%AirDens
+         OpFM%u%fz(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(3,j) / OpFM%p%AirDens
+         OpFM%u%momentx(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(1,j) / OpFM%p%AirDens
+         OpFM%u%momenty(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(2,j) / OpFM%p%AirDens
+         OpFM%u%momentz(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(3,j) / OpFM%p%AirDens
       END DO 
 
    END DO !K = 1,OpFM%p%NumBl
@@ -506,12 +503,12 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
    
    DO J=1,OpFM%p%NnodesForceTower
       Node = Node + 1
-      OpFM%u%fx(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(1,j) * dHforceNodes / OpFM%p%AirDens
-      OpFM%u%fy(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(2,j) * dHforceNodes / OpFM%p%AirDens
-      OpFM%u%fz(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(3,j) * dHforceNodes / OpFM%p%AirDens
-      OpFM%u%momentx(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(1,j) * dHforceNodes / OpFM%p%AirDens
-      OpFM%u%momenty(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(2,j) * dHforceNodes / OpFM%p%AirDens
-      OpFM%u%momentz(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(3,j) * dHforceNodes / OpFM%p%AirDens
+      OpFM%u%fx(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(1,j) / OpFM%p%AirDens
+      OpFM%u%fy(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(2,j) / OpFM%p%AirDens
+      OpFM%u%fz(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(3,j) / OpFM%p%AirDens
+      OpFM%u%momentx(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(1,j) / OpFM%p%AirDens
+      OpFM%u%momenty(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(2,j) / OpFM%p%AirDens
+      OpFM%u%momentz(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(3,j) / OpFM%p%AirDens
    END DO
    
 END SUBROUTINE SetOpFMForces
