@@ -175,7 +175,8 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, initOut_AD, y_AD, 
       !............................................................................................
    ! Allocate space for mapping data structures
    ALLOCATE( OpFM%m%ActForceLoads(OpFM%p%NMappings), OpFM%m%Line2_to_Line2_Loads(OpFM%p%NMappings), OpFM%m%Line2_to_Line2_Motions(OpFM%p%NMappings),STAT=ErrStat2)
-   
+   ALLOCATE( OpFM%m%ActForceLoadsPoints(OpFM%p%NMappings), OpFM%m%Line2_to_Point_Loads(OpFM%p%NMappings), OpFM%m%Line2_to_Point_Motions(OpFM%p%NMappings),STAT=ErrStat2)
+
    do k=1,OpFM%p%NMappings
       call MeshCopy (  SrcMesh  = OpFM%m%ActForceMotions(k)  &
            , DestMesh = OpFM%m%ActForceLoads(k) &
@@ -186,6 +187,15 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, initOut_AD, y_AD, 
            , ErrStat  = ErrStat2              &
            , ErrMess  = ErrMsg2               )
       OpFM%m%ActForceLoads(k)%RemapFlag = .true.
+      call MeshCopy (  SrcMesh  = OpFM%m%ActForceMotionsPoints(k)  &
+           , DestMesh = OpFM%m%ActForceLoadsPoints(k) &
+           , CtrlCode = MESH_SIBLING          &
+           , IOS      = COMPONENT_OUTPUT      &
+           , Force    = .true.                &
+           , Moment   = .true.                &
+           , ErrStat  = ErrStat2              &
+           , ErrMess  = ErrMsg2               )
+      OpFM%m%ActForceLoadsPoints(k)%RemapFlag = .true.
    end do
    
    ! create the mapping data structures:
@@ -196,14 +206,19 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, initOut_AD, y_AD, 
          !            call MeshMapCreate( BD%y(k)%BldMotion, OpFM%m%ActForceMotions(k), OpFM%m%Line2_to_Line2_Motions(k),  ErrStat2, ErrMsg2 );
       END IF
       call MeshMapCreate( y_AD%BladeLoad(k), OpFM%m%ActForceLoads(k), OpFM%m%Line2_to_Line2_Loads(k),  ErrStat2, ErrMsg2 );
+
+      call MeshMapCreate( OpFM%m%ActForceMotions(k), OpFM%m%ActForceMotionsPoints(k), OpFM%m%Line2_to_Point_Motions(k),  ErrStat2, ErrMsg2 );
+      call MeshMapCreate( OpFM%m%ActForceLoads(k), OpFM%m%ActForceLoadsPoints(k), OpFM%m%Line2_to_Point_Loads(k),  ErrStat2, ErrMsg2 );
 !      OpFM%m%ActForceLoads(k)%RemapFlag = .false.
    END DO
    
    do k=OpFM%p%NumBl+1,OpFM%p%NMappings
       call MeshMapCreate( y_ED%TowerLn2Mesh, OpFM%m%ActForceMotions(k), OpFM%m%Line2_to_Line2_Motions(k),  ErrStat2, ErrMsg2 );
+      call MeshMapCreate( OpFM%m%ActForceMotions(k), OpFM%m%ActForceMotionsPoints(k), OpFM%m%Line2_to_Point_Motions(k),  ErrStat2, ErrMsg2 );
       
       if ( y_AD%TowerLoad%nnodes > 0 ) then ! we can have an input mesh on the tower without having an output mesh.
          call MeshMapCreate( y_AD%TowerLoad, OpFM%m%ActForceLoads(k), OpFM%m%Line2_to_Line2_Loads(k),  ErrStat2, ErrMsg2 );
+         call MeshMapCreate( OpFM%m%ActForceLoads(k), OpFM%m%ActForceLoadsPoints(k), OpFM%m%Line2_to_Point_Loads(k),  ErrStat2, ErrMsg2 );
 !         OpFM%m%ActForceLoads(k)%RemapFlag = .false.
       end if
       
@@ -372,21 +387,23 @@ SUBROUTINE SetOpFMPositions(p_FAST, u_AD14, u_AD, y_ED, OpFM)
       ELSEIF (p_FAST%CompElast == Module_BD ) THEN
          !            call Transfer_Line2_to_Point( BD%y(k)%BldMotion, OpFM%m%ActForceMotions(k), OpFM%m%Line2_to_Line2_Motions(k), ErrStat2, ErrMsg2 )
       END IF
+      call Transfer_Line2_to_Point( OpFM%m%ActForceMotions(k), OpFM%m%ActForceMotionsPoints(k), OpFM%m%Line2_to_Point_Motions(k), ErrStat2, ErrMsg2 )
+         
       
       DO J = 1, OpFM%p%NnodesForceBlade
          Node = Node + 1
-         OpFM%u%pxForce(Node) = OpFM%m%ActForceMotions(k)%Position(1,J) +  OpFM%m%ActForceMotions(k)%TranslationDisp(1,J)
-         OpFM%u%pyForce(Node) = OpFM%m%ActForceMotions(k)%Position(2,J) +  OpFM%m%ActForceMotions(k)%TranslationDisp(2,J)
-         OpFM%u%pzForce(Node) = OpFM%m%ActForceMotions(k)%Position(3,J) +  OpFM%m%ActForceMotions(k)%TranslationDisp(3,J)            
-         OpFM%u%pOrientation((Node-1)*9 + 1) = OpFM%m%ActForceMotions(k)%Orientation(1,1,J)
-         OpFM%u%pOrientation((Node-1)*9 + 2) = OpFM%m%ActForceMotions(k)%Orientation(2,1,J)         
-         OpFM%u%pOrientation((Node-1)*9 + 3) = OpFM%m%ActForceMotions(k)%Orientation(3,1,J)
-         OpFM%u%pOrientation((Node-1)*9 + 4) = OpFM%m%ActForceMotions(k)%Orientation(1,2,J)
-         OpFM%u%pOrientation((Node-1)*9 + 5) = OpFM%m%ActForceMotions(k)%Orientation(2,2,J)         
-         OpFM%u%pOrientation((Node-1)*9 + 6) = OpFM%m%ActForceMotions(k)%Orientation(3,2,J)
-         OpFM%u%pOrientation((Node-1)*9 + 7) = OpFM%m%ActForceMotions(k)%Orientation(1,3,J)
-         OpFM%u%pOrientation((Node-1)*9 + 8) = OpFM%m%ActForceMotions(k)%Orientation(2,3,J)         
-         OpFM%u%pOrientation((Node-1)*9 + 9) = OpFM%m%ActForceMotions(k)%Orientation(3,3,J)
+         OpFM%u%pxForce(Node) = OpFM%m%ActForceMotionsPoints(k)%Position(1,J) +  OpFM%m%ActForceMotionsPoints(k)%TranslationDisp(1,J)
+         OpFM%u%pyForce(Node) = OpFM%m%ActForceMotionsPoints(k)%Position(2,J) +  OpFM%m%ActForceMotionsPoints(k)%TranslationDisp(2,J)
+         OpFM%u%pzForce(Node) = OpFM%m%ActForceMotionsPoints(k)%Position(3,J) +  OpFM%m%ActForceMotionsPoints(k)%TranslationDisp(3,J)            
+         OpFM%u%pOrientation((Node-1)*9 + 1) = OpFM%m%ActForceMotionsPoints(k)%Orientation(1,1,J)
+         OpFM%u%pOrientation((Node-1)*9 + 2) = OpFM%m%ActForceMotionsPoints(k)%Orientation(2,1,J)         
+         OpFM%u%pOrientation((Node-1)*9 + 3) = OpFM%m%ActForceMotionsPoints(k)%Orientation(3,1,J)
+         OpFM%u%pOrientation((Node-1)*9 + 4) = OpFM%m%ActForceMotionsPoints(k)%Orientation(1,2,J)
+         OpFM%u%pOrientation((Node-1)*9 + 5) = OpFM%m%ActForceMotionsPoints(k)%Orientation(2,2,J)         
+         OpFM%u%pOrientation((Node-1)*9 + 6) = OpFM%m%ActForceMotionsPoints(k)%Orientation(3,2,J)
+         OpFM%u%pOrientation((Node-1)*9 + 7) = OpFM%m%ActForceMotionsPoints(k)%Orientation(1,3,J)
+         OpFM%u%pOrientation((Node-1)*9 + 8) = OpFM%m%ActForceMotionsPoints(k)%Orientation(2,3,J)         
+         OpFM%u%pOrientation((Node-1)*9 + 9) = OpFM%m%ActForceMotionsPoints(k)%Orientation(3,3,J)
       END DO
       
    END DO
@@ -394,21 +411,22 @@ SUBROUTINE SetOpFMPositions(p_FAST, u_AD14, u_AD, y_ED, OpFM)
    DO K = OpFM%p%NumBl+1,OpFM%p%NMappings
 
       call Transfer_Line2_to_Line2( y_ED%TowerLn2Mesh, OpFM%m%ActForceMotions(k), OpFM%m%Line2_to_Line2_Motions(k), ErrStat2, ErrMsg2 )
+      call Transfer_Line2_to_Point( OpFM%m%ActForceMotions(k), OpFM%m%ActForceMotionsPoints(k), OpFM%m%Line2_to_Point_Motions(k), ErrStat2, ErrMsg2 )
       
       DO J=1,OpFM%p%NnodesForceTower
          Node = Node + 1
-         OpFM%u%pxForce(Node) = OpFM%m%ActForceMotions(k)%Position(1,J) +  OpFM%m%ActForceMotions(k)%TranslationDisp(1,J)
-         OpFM%u%pyForce(Node) = OpFM%m%ActForceMotions(k)%Position(2,J) +  OpFM%m%ActForceMotions(k)%TranslationDisp(2,J)
-         OpFM%u%pzForce(Node) = OpFM%m%ActForceMotions(k)%Position(3,J) +  OpFM%m%ActForceMotions(k)%TranslationDisp(3,J)            
-         OpFM%u%pOrientation((Node-1)*9 + 1) = OpFM%m%ActForceMotions(k)%Orientation(1,1,J)
-         OpFM%u%pOrientation((Node-1)*9 + 2) = OpFM%m%ActForceMotions(k)%Orientation(2,1,J)         
-         OpFM%u%pOrientation((Node-1)*9 + 3) = OpFM%m%ActForceMotions(k)%Orientation(3,1,J)
-         OpFM%u%pOrientation((Node-1)*9 + 4) = OpFM%m%ActForceMotions(k)%Orientation(1,2,J)
-         OpFM%u%pOrientation((Node-1)*9 + 5) = OpFM%m%ActForceMotions(k)%Orientation(2,2,J)         
-         OpFM%u%pOrientation((Node-1)*9 + 6) = OpFM%m%ActForceMotions(k)%Orientation(3,2,J)
-         OpFM%u%pOrientation((Node-1)*9 + 7) = OpFM%m%ActForceMotions(k)%Orientation(1,3,J)
-         OpFM%u%pOrientation((Node-1)*9 + 8) = OpFM%m%ActForceMotions(k)%Orientation(2,3,J)         
-         OpFM%u%pOrientation((Node-1)*9 + 9) = OpFM%m%ActForceMotions(k)%Orientation(3,3,J)
+         OpFM%u%pxForce(Node) = OpFM%m%ActForceMotionsPoints(k)%Position(1,J) +  OpFM%m%ActForceMotionsPoints(k)%TranslationDisp(1,J)
+         OpFM%u%pyForce(Node) = OpFM%m%ActForceMotionsPoints(k)%Position(2,J) +  OpFM%m%ActForceMotionsPoints(k)%TranslationDisp(2,J)
+         OpFM%u%pzForce(Node) = OpFM%m%ActForceMotionsPoints(k)%Position(3,J) +  OpFM%m%ActForceMotionsPoints(k)%TranslationDisp(3,J)            
+         OpFM%u%pOrientation((Node-1)*9 + 1) = OpFM%m%ActForceMotionsPoints(k)%Orientation(1,1,J)
+         OpFM%u%pOrientation((Node-1)*9 + 2) = OpFM%m%ActForceMotionsPoints(k)%Orientation(2,1,J)         
+         OpFM%u%pOrientation((Node-1)*9 + 3) = OpFM%m%ActForceMotionsPoints(k)%Orientation(3,1,J)
+         OpFM%u%pOrientation((Node-1)*9 + 4) = OpFM%m%ActForceMotionsPoints(k)%Orientation(1,2,J)
+         OpFM%u%pOrientation((Node-1)*9 + 5) = OpFM%m%ActForceMotionsPoints(k)%Orientation(2,2,J)         
+         OpFM%u%pOrientation((Node-1)*9 + 6) = OpFM%m%ActForceMotionsPoints(k)%Orientation(3,2,J)
+         OpFM%u%pOrientation((Node-1)*9 + 7) = OpFM%m%ActForceMotionsPoints(k)%Orientation(1,3,J)
+         OpFM%u%pOrientation((Node-1)*9 + 8) = OpFM%m%ActForceMotionsPoints(k)%Orientation(2,3,J)         
+         OpFM%u%pOrientation((Node-1)*9 + 9) = OpFM%m%ActForceMotionsPoints(k)%Orientation(3,3,J)
 
       END DO
       
@@ -465,6 +483,7 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
    DO K = 1,OpFM%p%NumBl
       
       call Transfer_Line2_to_Line2( y_AD%BladeLoad(k), OpFM%m%ActForceLoads(k), OpFM%m%Line2_to_Line2_Loads(k), ErrStat2, ErrMsg2, u_AD%BladeMotion(k), OpFM%m%ActForceMotions(k) )
+      call Transfer_Line2_to_Point( OpFM%m%ActForceLoads(k), OpFM%m%ActForceLoadsPoints(k), OpFM%m%Line2_to_Point_Loads(k), ErrStat2, ErrMsg2, OpFM%m%ActForceMotions(k), OpFM%m%ActForceMotionsPoints(k) )
 
       DO J = 1,u_AD%BladeMotion(k)%NNodes
         write(987,*) u_AD%BladeMotion(k)%TranslationDisp(1,j) + u_AD%BladeMotion(k)%Position(1,j), ', ', u_AD%BladeMotion(k)%TranslationDisp(2,j) + u_AD%BladeMotion(k)%Position(2,j), ', ', u_AD%BladeMotion(k)%TranslationDisp(3,j) + u_AD%BladeMotion(k)%Position(3,j), ', ', y_AD%BladeLoad(k)%Force(1,j), ', ', y_AD%BladeLoad(k)%Force(2,j), ', ', y_AD%BladeLoad(k)%Force(2,j)
@@ -472,12 +491,12 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
      
       DO J = 1, OpFM%p%NnodesForceBlade
          Node = Node + 1
-         OpFM%u%fx(Node) = OpFM%m%ActForceLoads(k)%Force(1,j) * dRforceNodes / OpFM%p%AirDens
-         OpFM%u%fy(Node) = OpFM%m%ActForceLoads(k)%Force(2,j) * dRforceNodes / OpFM%p%AirDens
-         OpFM%u%fz(Node) = OpFM%m%ActForceLoads(k)%Force(3,j) * dRforceNodes / OpFM%p%AirDens
-         OpFM%u%momentx(Node) = OpFM%m%ActForceLoads(k)%Moment(1,j) * dRforceNodes / OpFM%p%AirDens
-         OpFM%u%momenty(Node) = OpFM%m%ActForceLoads(k)%Moment(2,j) * dRforceNodes / OpFM%p%AirDens
-         OpFM%u%momentz(Node) = OpFM%m%ActForceLoads(k)%Moment(3,j) * dRforceNodes / OpFM%p%AirDens
+         OpFM%u%fx(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(1,j) / OpFM%p%AirDens
+         OpFM%u%fy(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(2,j) / OpFM%p%AirDens
+         OpFM%u%fz(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(3,j) / OpFM%p%AirDens
+         OpFM%u%momentx(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(1,j) / OpFM%p%AirDens
+         OpFM%u%momenty(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(2,j) / OpFM%p%AirDens
+         OpFM%u%momentz(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(3,j) / OpFM%p%AirDens
       END DO 
 
    END DO !K = 1,OpFM%p%NumBl
@@ -495,15 +514,16 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
    END DO
 
    call Transfer_Line2_to_Line2( y_AD%TowerLoad, OpFM%m%ActForceLoads(k), OpFM%m%Line2_to_Line2_Loads(k), ErrStat2, ErrMsg2, u_AD%TowerMotion, OpFM%m%ActForceMotions(k) )
+   call Transfer_Line2_to_Point( OpFM%m%ActForceLoads(k), OpFM%m%ActForceLoadsPoints(k), OpFM%m%Line2_to_Point_Loads(k), ErrStat2, ErrMsg2, OpFM%m%ActForceMotions(k), OpFM%m%ActForceMotionsPoints(k) )
    
    DO J=1,OpFM%p%NnodesForceTower
       Node = Node + 1
-      OpFM%u%fx(Node) = OpFM%m%ActForceLoads(k)%Force(1,j) * dHforceNodes / OpFM%p%AirDens
-      OpFM%u%fy(Node) = OpFM%m%ActForceLoads(k)%Force(2,j) * dHforceNodes / OpFM%p%AirDens
-      OpFM%u%fz(Node) = OpFM%m%ActForceLoads(k)%Force(3,j) * dHforceNodes / OpFM%p%AirDens
-      OpFM%u%momentx(Node) = OpFM%m%ActForceLoads(k)%Moment(1,j) * dHforceNodes / OpFM%p%AirDens
-      OpFM%u%momenty(Node) = OpFM%m%ActForceLoads(k)%Moment(2,j) * dHforceNodes / OpFM%p%AirDens
-      OpFM%u%momentz(Node) = OpFM%m%ActForceLoads(k)%Moment(3,j) * dHforceNodes / OpFM%p%AirDens
+      OpFM%u%fx(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(1,j) / OpFM%p%AirDens
+      OpFM%u%fy(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(2,j) / OpFM%p%AirDens
+      OpFM%u%fz(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(3,j) / OpFM%p%AirDens
+      OpFM%u%momentx(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(1,j) / OpFM%p%AirDens
+      OpFM%u%momenty(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(2,j) / OpFM%p%AirDens
+      OpFM%u%momentz(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(3,j) / OpFM%p%AirDens
    END DO
    close(987)
    
@@ -568,6 +588,11 @@ SUBROUTINE OpFM_CreateActForceMotionsMesh( p_FAST, y_ED, InitIn_OpFM, OpFM, ErrS
          CALL SetErrStat(ErrID_Fatal, 'Error allocating force nodes mesh', ErrStat, ErrMsg, RoutineName)
          RETURN
       END IF
+      ALLOCATE(OpFM%m%ActForceMotionsPoints(OpFM%p%NMappings), STAT=ErrStat2)
+      IF (ErrStat2 /= 0) THEN
+         CALL SetErrStat(ErrID_Fatal, 'Error allocating force nodes mesh', ErrStat, ErrMsg, RoutineName)
+         RETURN
+      END IF
       DO k=1,OpFM%p%NumBl
          call MeshCreate ( BlankMesh = OpFM%m%ActForceMotions(k)         &
                           ,IOS       = COMPONENT_INPUT             &
@@ -582,9 +607,30 @@ SUBROUTINE OpFM_CreateActForceMotionsMesh( p_FAST, y_ED, InitIn_OpFM, OpFM, ErrS
                CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
                IF (ErrStat >= AbortErrLev) RETURN
                OpFM%m%ActForceMotions(k)%RemapFlag = .false. 
+
+         call MeshCreate ( BlankMesh = OpFM%m%ActForceMotionsPoints(k)         &
+                          ,IOS       = COMPONENT_INPUT             &
+                          ,Nnodes    = OpFM%p%NnodesForceBlade &
+                          ,Orientation     = .true.         &
+                          ,TranslationDisp = .true.         &
+                          ,TranslationVel  = .true.         &
+                          ,RotationVel     = .true.         &
+                          ,ErrStat   = ErrStat2                    &
+                          ,ErrMess   = ErrMsg2                     &                          
+                         )
+               CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+               IF (ErrStat >= AbortErrLev) RETURN
+               OpFM%m%ActForceMotions(k)%RemapFlag = .false. 
+
          do j=1,OpFM%p%NnodesForceBlade
             call MeshPositionNode(OpFM%m%ActForceMotions(k), j, tmpActForceMotionsMesh(k)%position(:,j), errStat2, errMsg2, &
                                   orient=tmpActForceMotionsMesh(k)%Orientation(:,:,j) )
+            call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
+
+            call MeshPositionNode(OpFM%m%ActForceMotionsPoints(k), j, tmpActForceMotionsMesh(k)%position(:,j), errStat2, errMsg2, &
+                                  orient=tmpActForceMotionsMesh(k)%Orientation(:,:,j) )
+            call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
+            call MeshConstructElement(OpFM%m%ActForceMotionsPoints(k), ELEMENT_POINT, errStat2, errMsg2, p1=j )
             call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
          end do !j
 
@@ -599,6 +645,9 @@ SUBROUTINE OpFM_CreateActForceMotionsMesh( p_FAST, y_ED, InitIn_OpFM, OpFM, ErrS
            call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
         END DO ! J (blade nodes)
         call MeshCommit(OpFM%m%ActForceMotions(k), errStat2, errMsg2 )
+        call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
+        if (errStat >= AbortErrLev) return
+        call MeshCommit(OpFM%m%ActForceMotionsPoints(k), errStat2, errMsg2 )
         call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
         if (errStat >= AbortErrLev) return
       END DO
@@ -617,9 +666,30 @@ SUBROUTINE OpFM_CreateActForceMotionsMesh( p_FAST, y_ED, InitIn_OpFM, OpFM, ErrS
                CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
                IF (ErrStat >= AbortErrLev) RETURN
                OpFM%m%ActForceMotions(k)%RemapFlag = .false. 
+
+         call MeshCreate ( BlankMesh = OpFM%m%ActForceMotionsPoints(k)         &
+                          ,IOS       = COMPONENT_INPUT             &
+                          ,Nnodes    = OpFM%p%NnodesForceTower &
+                          ,Orientation     = .true.         &
+                          ,TranslationDisp = .true.         &
+                          ,TranslationVel  = .true.         &
+                          ,RotationVel     = .true.         &
+                          ,ErrStat   = ErrStat2                    &
+                          ,ErrMess   = ErrMsg2                     &
+                         )
+               CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+               IF (ErrStat >= AbortErrLev) RETURN
+               OpFM%m%ActForceMotionsPoints(k)%RemapFlag = .false. 
+
          do j=1,OpFM%p%NnodesForceTower
             call MeshPositionNode(OpFM%m%ActForceMotions(k), j, tmpActForceMotionsMesh(k)%position(:,j), errStat2, errMsg2, &
                                   orient=tmpActForceMotionsMesh(k)%Orientation(:,:,j) )
+            call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
+
+            call MeshPositionNode(OpFM%m%ActForceMotionsPoints(k), j, tmpActForceMotionsMesh(k)%position(:,j), errStat2, errMsg2, &
+                                  orient=tmpActForceMotionsMesh(k)%Orientation(:,:,j) )
+            call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
+            call MeshConstructElement(OpFM%m%ActForceMotionsPoints(k), ELEMENT_POINT, errStat2, errMsg2, p1=j )
             call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
          end do !j
         ! create elements:      
@@ -634,6 +704,9 @@ SUBROUTINE OpFM_CreateActForceMotionsMesh( p_FAST, y_ED, InitIn_OpFM, OpFM, ErrS
         END DO ! J (tower nodes)
          
          call MeshCommit(OpFM%m%ActForceMotions(k), errStat2, errMsg2 )
+            call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
+            if (errStat >= AbortErrLev) return
+         call MeshCommit(OpFM%m%ActForceMotionsPoints(k), errStat2, errMsg2 )
             call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
             if (errStat >= AbortErrLev) return
       END DO
