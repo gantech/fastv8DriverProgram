@@ -204,9 +204,13 @@ int FAST_cInterface::step() {
        for (int iNode=0; iNode < get_numForcePts(iTurb); iNode++) {
 	 std::cout << "Node " << iNode << " Position = " << cDriver_Input_from_FAST[iTurb]->pxForce[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pyForce[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pzForce[iNode] << " " << std::endl ;
        }
+       std::ofstream actuatorForcesFile;
+       actuatorForcesFile.open("actuatorForces.csv") ;
+       actuatorForcesFile << "# x, y, z, fx, fy, fz" << std::endl ;
        for (int iNode=0; iNode < get_numForcePts(iTurb); iNode++) {
-	 std::cout << "Node " << iNode << " Type " << getVelNodeType(turbineMapProcToGlob[iTurb], iNode) << " Force = " << cDriver_Input_from_FAST[iTurb]->fx[iNode] << " " << cDriver_Input_from_FAST[iTurb]->fy[iNode] << " " << cDriver_Input_from_FAST[iTurb]->fz[iNode] << " " << std::endl ;
+	 actuatorForcesFile << cDriver_Input_from_FAST[iTurb]->pxForce[iNode] << ", " << cDriver_Input_from_FAST[iTurb]->pyForce[iNode] << ", " << cDriver_Input_from_FAST[iTurb]->pzForce[iNode] << ", " << cDriver_Input_from_FAST[iTurb]->fx[iNode] << ", " << cDriver_Input_from_FAST[iTurb]->fy[iNode] << ", " << cDriver_Input_from_FAST[iTurb]->fz[iNode] << " " << std::endl ;           
        }
+       actuatorForcesFile.close() ;
      }
 
    }

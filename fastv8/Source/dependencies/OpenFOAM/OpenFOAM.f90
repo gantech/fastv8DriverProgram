@@ -195,7 +195,6 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, initOut_AD, y_AD, 
       ELSEIF (p_FAST%CompElast == Module_BD ) THEN
          !            call MeshMapCreate( BD%y(k)%BldMotion, OpFM%m%ActForceMotions(k), OpFM%m%Line2_to_Line2_Motions(k),  ErrStat2, ErrMsg2 );
       END IF
-      write(*,*) '(a1-d1).(d2-d1)', DOT_PRODUCT((y_AD%BladeLoad(k)%Position(:,1)-OpFM%m%ActForceLoads(k)%Position(:,1)),(OpFM%m%ActForceLoads(k)%Position(:,2) - OpFM%m%ActForceLoads(k)%Position(:,1)))
       call MeshMapCreate( y_AD%BladeLoad(k), OpFM%m%ActForceLoads(k), OpFM%m%Line2_to_Line2_Loads(k),  ErrStat2, ErrMsg2 );
 !      OpFM%m%ActForceLoads(k)%RemapFlag = .false.
    END DO
@@ -458,10 +457,18 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
    !.......................
    ! blade nodes
    !.......................
+
+   open(unit=987,file='AeroDyn_forces.csv')
+   write(987,*) '#x, y, z, fx, fy, fz'
+
    dRforceNodes = OpFM%p%BladeLength/OpFM%p%NnodesForceBlade
    DO K = 1,OpFM%p%NumBl
       
       call Transfer_Line2_to_Line2( y_AD%BladeLoad(k), OpFM%m%ActForceLoads(k), OpFM%m%Line2_to_Line2_Loads(k), ErrStat2, ErrMsg2, u_AD%BladeMotion(k), OpFM%m%ActForceMotions(k) )
+
+      DO J = 1,u_AD%BladeMotion(k)%NNodes
+        write(987,*) u_AD%BladeMotion(k)%TranslationDisp(1,j) + u_AD%BladeMotion(k)%Position(1,j), ', ', u_AD%BladeMotion(k)%TranslationDisp(2,j) + u_AD%BladeMotion(k)%Position(2,j), ', ', u_AD%BladeMotion(k)%TranslationDisp(3,j) + u_AD%BladeMotion(k)%Position(3,j), ', ', y_AD%BladeLoad(k)%Force(1,j), ', ', y_AD%BladeLoad(k)%Force(2,j), ', ', y_AD%BladeLoad(k)%Force(2,j)
+      END DO
      
       DO J = 1, OpFM%p%NnodesForceBlade
          Node = Node + 1
@@ -474,7 +481,7 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
       END DO 
 
    END DO !K = 1,OpFM%p%NumBl
-   
+
    !.......................
    ! tower nodes
    !.......................
@@ -483,6 +490,10 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
    ! mesh mapping from line2 mesh to point mesh
    k = SIZE(u_AD%BladeMotion) + 1
    
+   DO J = 1,u_AD%TowerMotion%NNodes
+      write(987,*) u_AD%TowerMotion%TranslationDisp(1,j) + u_AD%TowerMotion%Position(1,j), ', ', u_AD%TowerMotion%TranslationDisp(2,j) + u_AD%TowerMotion%Position(2,j), ', ', u_AD%TowerMotion%TranslationDisp(3,j) + u_AD%TowerMotion%Position(3,j), ', ', y_AD%TowerLoad%Force(1,j), ', ', y_AD%TowerLoad%Force(2,j), ', ', y_AD%TowerLoad%Force(2,j)
+   END DO
+
    call Transfer_Line2_to_Line2( y_AD%TowerLoad, OpFM%m%ActForceLoads(k), OpFM%m%Line2_to_Line2_Loads(k), ErrStat2, ErrMsg2, u_AD%TowerMotion, OpFM%m%ActForceMotions(k) )
    
    DO J=1,OpFM%p%NnodesForceTower
@@ -494,6 +505,7 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
       OpFM%u%momenty(Node) = OpFM%m%ActForceLoads(k)%Moment(2,j) * dHforceNodes / OpFM%p%AirDens
       OpFM%u%momentz(Node) = OpFM%m%ActForceLoads(k)%Moment(3,j) * dHforceNodes / OpFM%p%AirDens
    END DO
+   close(987)
    
 END SUBROUTINE SetOpFMForces
 !----------------------------------------------------------------------------------------------------------------------------------
@@ -984,11 +996,13 @@ SUBROUTINE OpFM_CreateActForceBladeTowerNodes(p_OpFM, ErrStat, ErrMsg)
   CHARACTER(ErrMsgLen)                   :: ErrMsg2     ! temporary Error message if ErrStat /= ErrID_None
   
 
+  ! Line2 to Line2 mapping expects the destination mesh to be smaller than the source mesh for deformation mapping and larger than the source mesh for load mapping. This forces me to create nodes at the very ends of the blade.
+
   !Do the blade first
   allocate(p_OpFM%forceBldRnodes(p_OpFM%NnodesForceBlade), stat=errStat2)
   dRforceNodes = p_OpFM%BladeLength/(p_OpFM%NnodesForceBlade-1)
   do i=1,p_OpFM%NnodesForceBlade
-     p_OpFM%forceBldRnodes(i) = (i-1)*dRforceNodes
+     p_OpFM%forceBldRnodes(i) = (i-1)*dRforceNodes 
   end do
 
 
@@ -1015,6 +1029,7 @@ SUBROUTINE OpFM_InterpolateForceNodesChord(InitOut_AD, p_OpFM, u_OpFM, ErrStat, 
 
   !Local variables
   INTEGER(IntKI)                         :: i,j,k,node  ! Loop variables
+  INTEGER(IntKI)                         :: nNodesBladeProps ! Number of nodes in the blade properties for a given blade
   INTEGER(IntKI)                         :: jLower      ! Index of the blade properties node just smaller than the force node
   INTEGER(IntKi)                         :: ErrStat2    ! temporary Error status of the operation
   CHARACTER(ErrMsgLen)                   :: ErrMsg2     ! temporary Error message if ErrStat /= ErrID_None
@@ -1027,15 +1042,22 @@ SUBROUTINE OpFM_InterpolateForceNodesChord(InitOut_AD, p_OpFM, u_OpFM, ErrStat, 
   ! The blades first
   do k = 1, p_OpFM%NumBl
      ! Calculate the chord at the force nodes based on interpolation
-     DO I=1,p_OpFM%NnodesForceBlade 
+     nNodesBladeProps = SIZE(InitOut_AD%BladeProps(k)%BlChord)
+     DO I=1,p_OpFM%NnodesForceBlade
         Node = Node + 1
         jLower=1
-        do while ( (InitOut_AD%BladeProps(k)%BlSpn(jLower) - p_OpFM%forceBldRnodes(I))*(InitOut_AD%BladeProps(k)%BlSpn(jLower+1) - p_OpFM%forceBldRnodes(I)) .gt. 0 ) !Determine the closest two nodes at which the blade properties are specified
+        do while ( ( (InitOut_AD%BladeProps(k)%BlSpn(jLower) - p_OpFM%forceBldRnodes(I))*(InitOut_AD%BladeProps(k)%BlSpn(jLower+1) - p_OpFM%forceBldRnodes(I)) .gt. 0 ) .and. (jLower .le. nNodesBladeProps) )!Determine the closest two nodes at which the blade properties are specified
            jLower = jLower + 1
         end do
-        rInterp =  (p_OpFM%forceBldRnodes(I) - InitOut_AD%BladeProps(k)%BlSpn(jLower))/(InitOut_AD%BladeProps(k)%BlSpn(jLower+1)-InitOut_AD%BladeProps(k)%BlSpn(jLower)) ! The location of this force node in (0,1) co-ordinates between the jLower and jLower+1 nodes
-        u_OpFM%forceNodesChord(Node) = InitOut_AD%BladeProps(k)%BlChord(jLower) + rInterp * (InitOut_AD%BladeProps(k)%BlChord(jLower+1) - InitOut_AD%BladeProps(k)%BlChord(jLower))
+        if (jLower .lt. nNodesBladeProps) then
+           rInterp =  (p_OpFM%forceBldRnodes(I) - InitOut_AD%BladeProps(k)%BlSpn(jLower))/(InitOut_AD%BladeProps(k)%BlSpn(jLower+1)-InitOut_AD%BladeProps(k)%BlSpn(jLower)) ! The location of this force node in (0,1) co-ordinates between the jLower and jLower+1 nodes
+           u_OpFM%forceNodesChord(Node) = InitOut_AD%BladeProps(k)%BlChord(jLower) + rInterp * (InitOut_AD%BladeProps(k)%BlChord(jLower+1) - InitOut_AD%BladeProps(k)%BlChord(jLower))
+        else
+           u_OpFM%forceNodesChord(Node) = InitOut_AD%BladeProps(k)%BlChord(nNodesBladeProps) !Work around for when the last node of the actuator mesh is slightly outside of the Aerodyn blade properties. Surprisingly this is not an issue with the tower.
+        end if
      END DO
+     
+     
   end do
      
 

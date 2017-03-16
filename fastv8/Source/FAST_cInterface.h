@@ -5,6 +5,7 @@
 #include "sys/stat.h"
 #include "math.h"
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <cstring>
 #include <malloc.h>
