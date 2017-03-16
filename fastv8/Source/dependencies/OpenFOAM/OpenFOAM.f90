@@ -493,7 +493,6 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
    !.......................
    ! tower nodes
    !.......................
-   dHforceNodes = OpFM%p%TowerHeight/OpFM%p%NnodesForceTower
 
    ! mesh mapping from line2 mesh to point mesh
    k = SIZE(u_AD%BladeMotion) + 1
