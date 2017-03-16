@@ -83,8 +83,8 @@ IMPLICIT NONE
     TYPE( OpFM_MiscVarType_C ) :: C_obj
     TYPE(MeshType) , DIMENSION(:), ALLOCATABLE  :: ActForceLoads      !< point mesh for transferring AeroDyn distributed loads to OpenFOAM [-]
     TYPE(MeshType) , DIMENSION(:), ALLOCATABLE  :: ActForceMotions      !< point mesh for transferring AeroDyn distributed loads to OpenFOAM (needs translationDisp) [-]
-    TYPE(MeshMapType) , DIMENSION(:), ALLOCATABLE  :: Line2_to_Point_Loads      !< mapping data structure to convert line2 loads to point loads [-]
-    TYPE(MeshMapType) , DIMENSION(:), ALLOCATABLE  :: Line2_to_Point_Motions      !< mapping data structure to convert line2 loads to point loads [-]
+    TYPE(MeshMapType) , DIMENSION(:), ALLOCATABLE  :: Line2_to_Line2_Loads      !< mapping data structure to convert line2 loads to line2 loads [-]
+    TYPE(MeshMapType) , DIMENSION(:), ALLOCATABLE  :: Line2_to_Line2_Motions      !< mapping data structure to convert line2 loads to line2 loads [-]
   END TYPE OpFM_MiscVarType
 ! =======================
 ! =========  OpFM_ParameterType_C  =======
@@ -935,34 +935,34 @@ IF (ALLOCATED(SrcMiscData%ActForceMotions)) THEN
          IF (ErrStat>=AbortErrLev) RETURN
     ENDDO
 ENDIF
-IF (ALLOCATED(SrcMiscData%Line2_to_Point_Loads)) THEN
-  i1_l = LBOUND(SrcMiscData%Line2_to_Point_Loads,1)
-  i1_u = UBOUND(SrcMiscData%Line2_to_Point_Loads,1)
-  IF (.NOT. ALLOCATED(DstMiscData%Line2_to_Point_Loads)) THEN 
-    ALLOCATE(DstMiscData%Line2_to_Point_Loads(i1_l:i1_u),STAT=ErrStat2)
+IF (ALLOCATED(SrcMiscData%Line2_to_Line2_Loads)) THEN
+  i1_l = LBOUND(SrcMiscData%Line2_to_Line2_Loads,1)
+  i1_u = UBOUND(SrcMiscData%Line2_to_Line2_Loads,1)
+  IF (.NOT. ALLOCATED(DstMiscData%Line2_to_Line2_Loads)) THEN 
+    ALLOCATE(DstMiscData%Line2_to_Line2_Loads(i1_l:i1_u),STAT=ErrStat2)
     IF (ErrStat2 /= 0) THEN 
-      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstMiscData%Line2_to_Point_Loads.', ErrStat, ErrMsg,RoutineName)
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstMiscData%Line2_to_Line2_Loads.', ErrStat, ErrMsg,RoutineName)
       RETURN
     END IF
   END IF
-    DO i1 = LBOUND(SrcMiscData%Line2_to_Point_Loads,1), UBOUND(SrcMiscData%Line2_to_Point_Loads,1)
-      CALL NWTC_Library_Copymeshmaptype( SrcMiscData%Line2_to_Point_Loads(i1), DstMiscData%Line2_to_Point_Loads(i1), CtrlCode, ErrStat2, ErrMsg2 )
+    DO i1 = LBOUND(SrcMiscData%Line2_to_Line2_Loads,1), UBOUND(SrcMiscData%Line2_to_Line2_Loads,1)
+      CALL NWTC_Library_Copymeshmaptype( SrcMiscData%Line2_to_Line2_Loads(i1), DstMiscData%Line2_to_Line2_Loads(i1), CtrlCode, ErrStat2, ErrMsg2 )
          CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
          IF (ErrStat>=AbortErrLev) RETURN
     ENDDO
 ENDIF
-IF (ALLOCATED(SrcMiscData%Line2_to_Point_Motions)) THEN
-  i1_l = LBOUND(SrcMiscData%Line2_to_Point_Motions,1)
-  i1_u = UBOUND(SrcMiscData%Line2_to_Point_Motions,1)
-  IF (.NOT. ALLOCATED(DstMiscData%Line2_to_Point_Motions)) THEN 
-    ALLOCATE(DstMiscData%Line2_to_Point_Motions(i1_l:i1_u),STAT=ErrStat2)
+IF (ALLOCATED(SrcMiscData%Line2_to_Line2_Motions)) THEN
+  i1_l = LBOUND(SrcMiscData%Line2_to_Line2_Motions,1)
+  i1_u = UBOUND(SrcMiscData%Line2_to_Line2_Motions,1)
+  IF (.NOT. ALLOCATED(DstMiscData%Line2_to_Line2_Motions)) THEN 
+    ALLOCATE(DstMiscData%Line2_to_Line2_Motions(i1_l:i1_u),STAT=ErrStat2)
     IF (ErrStat2 /= 0) THEN 
-      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstMiscData%Line2_to_Point_Motions.', ErrStat, ErrMsg,RoutineName)
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstMiscData%Line2_to_Line2_Motions.', ErrStat, ErrMsg,RoutineName)
       RETURN
     END IF
   END IF
-    DO i1 = LBOUND(SrcMiscData%Line2_to_Point_Motions,1), UBOUND(SrcMiscData%Line2_to_Point_Motions,1)
-      CALL NWTC_Library_Copymeshmaptype( SrcMiscData%Line2_to_Point_Motions(i1), DstMiscData%Line2_to_Point_Motions(i1), CtrlCode, ErrStat2, ErrMsg2 )
+    DO i1 = LBOUND(SrcMiscData%Line2_to_Line2_Motions,1), UBOUND(SrcMiscData%Line2_to_Line2_Motions,1)
+      CALL NWTC_Library_Copymeshmaptype( SrcMiscData%Line2_to_Line2_Motions(i1), DstMiscData%Line2_to_Line2_Motions(i1), CtrlCode, ErrStat2, ErrMsg2 )
          CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
          IF (ErrStat>=AbortErrLev) RETURN
     ENDDO
@@ -990,17 +990,17 @@ DO i1 = LBOUND(MiscData%ActForceMotions,1), UBOUND(MiscData%ActForceMotions,1)
 ENDDO
   DEALLOCATE(MiscData%ActForceMotions)
 ENDIF
-IF (ALLOCATED(MiscData%Line2_to_Point_Loads)) THEN
-DO i1 = LBOUND(MiscData%Line2_to_Point_Loads,1), UBOUND(MiscData%Line2_to_Point_Loads,1)
-  CALL NWTC_Library_Destroymeshmaptype( MiscData%Line2_to_Point_Loads(i1), ErrStat, ErrMsg )
+IF (ALLOCATED(MiscData%Line2_to_Line2_Loads)) THEN
+DO i1 = LBOUND(MiscData%Line2_to_Line2_Loads,1), UBOUND(MiscData%Line2_to_Line2_Loads,1)
+  CALL NWTC_Library_Destroymeshmaptype( MiscData%Line2_to_Line2_Loads(i1), ErrStat, ErrMsg )
 ENDDO
-  DEALLOCATE(MiscData%Line2_to_Point_Loads)
+  DEALLOCATE(MiscData%Line2_to_Line2_Loads)
 ENDIF
-IF (ALLOCATED(MiscData%Line2_to_Point_Motions)) THEN
-DO i1 = LBOUND(MiscData%Line2_to_Point_Motions,1), UBOUND(MiscData%Line2_to_Point_Motions,1)
-  CALL NWTC_Library_Destroymeshmaptype( MiscData%Line2_to_Point_Motions(i1), ErrStat, ErrMsg )
+IF (ALLOCATED(MiscData%Line2_to_Line2_Motions)) THEN
+DO i1 = LBOUND(MiscData%Line2_to_Line2_Motions,1), UBOUND(MiscData%Line2_to_Line2_Motions,1)
+  CALL NWTC_Library_Destroymeshmaptype( MiscData%Line2_to_Line2_Motions(i1), ErrStat, ErrMsg )
 ENDDO
-  DEALLOCATE(MiscData%Line2_to_Point_Motions)
+  DEALLOCATE(MiscData%Line2_to_Line2_Motions)
 ENDIF
  END SUBROUTINE OpFM_DestroyMisc
 
@@ -1086,47 +1086,47 @@ ENDIF
       END IF
     END DO
   END IF
-  Int_BufSz   = Int_BufSz   + 1     ! Line2_to_Point_Loads allocated yes/no
-  IF ( ALLOCATED(InData%Line2_to_Point_Loads) ) THEN
-    Int_BufSz   = Int_BufSz   + 2*1  ! Line2_to_Point_Loads upper/lower bounds for each dimension
-    DO i1 = LBOUND(InData%Line2_to_Point_Loads,1), UBOUND(InData%Line2_to_Point_Loads,1)
-      Int_BufSz   = Int_BufSz + 3  ! Line2_to_Point_Loads: size of buffers for each call to pack subtype
-      CALL NWTC_Library_Packmeshmaptype( Re_Buf, Db_Buf, Int_Buf, InData%Line2_to_Point_Loads(i1), ErrStat2, ErrMsg2, .TRUE. ) ! Line2_to_Point_Loads 
+  Int_BufSz   = Int_BufSz   + 1     ! Line2_to_Line2_Loads allocated yes/no
+  IF ( ALLOCATED(InData%Line2_to_Line2_Loads) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! Line2_to_Line2_Loads upper/lower bounds for each dimension
+    DO i1 = LBOUND(InData%Line2_to_Line2_Loads,1), UBOUND(InData%Line2_to_Line2_Loads,1)
+      Int_BufSz   = Int_BufSz + 3  ! Line2_to_Line2_Loads: size of buffers for each call to pack subtype
+      CALL NWTC_Library_Packmeshmaptype( Re_Buf, Db_Buf, Int_Buf, InData%Line2_to_Line2_Loads(i1), ErrStat2, ErrMsg2, .TRUE. ) ! Line2_to_Line2_Loads 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
         IF (ErrStat >= AbortErrLev) RETURN
 
-      IF(ALLOCATED(Re_Buf)) THEN ! Line2_to_Point_Loads
+      IF(ALLOCATED(Re_Buf)) THEN ! Line2_to_Line2_Loads
          Re_BufSz  = Re_BufSz  + SIZE( Re_Buf  )
          DEALLOCATE(Re_Buf)
       END IF
-      IF(ALLOCATED(Db_Buf)) THEN ! Line2_to_Point_Loads
+      IF(ALLOCATED(Db_Buf)) THEN ! Line2_to_Line2_Loads
          Db_BufSz  = Db_BufSz  + SIZE( Db_Buf  )
          DEALLOCATE(Db_Buf)
       END IF
-      IF(ALLOCATED(Int_Buf)) THEN ! Line2_to_Point_Loads
+      IF(ALLOCATED(Int_Buf)) THEN ! Line2_to_Line2_Loads
          Int_BufSz = Int_BufSz + SIZE( Int_Buf )
          DEALLOCATE(Int_Buf)
       END IF
     END DO
   END IF
-  Int_BufSz   = Int_BufSz   + 1     ! Line2_to_Point_Motions allocated yes/no
-  IF ( ALLOCATED(InData%Line2_to_Point_Motions) ) THEN
-    Int_BufSz   = Int_BufSz   + 2*1  ! Line2_to_Point_Motions upper/lower bounds for each dimension
-    DO i1 = LBOUND(InData%Line2_to_Point_Motions,1), UBOUND(InData%Line2_to_Point_Motions,1)
-      Int_BufSz   = Int_BufSz + 3  ! Line2_to_Point_Motions: size of buffers for each call to pack subtype
-      CALL NWTC_Library_Packmeshmaptype( Re_Buf, Db_Buf, Int_Buf, InData%Line2_to_Point_Motions(i1), ErrStat2, ErrMsg2, .TRUE. ) ! Line2_to_Point_Motions 
+  Int_BufSz   = Int_BufSz   + 1     ! Line2_to_Line2_Motions allocated yes/no
+  IF ( ALLOCATED(InData%Line2_to_Line2_Motions) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*1  ! Line2_to_Line2_Motions upper/lower bounds for each dimension
+    DO i1 = LBOUND(InData%Line2_to_Line2_Motions,1), UBOUND(InData%Line2_to_Line2_Motions,1)
+      Int_BufSz   = Int_BufSz + 3  ! Line2_to_Line2_Motions: size of buffers for each call to pack subtype
+      CALL NWTC_Library_Packmeshmaptype( Re_Buf, Db_Buf, Int_Buf, InData%Line2_to_Line2_Motions(i1), ErrStat2, ErrMsg2, .TRUE. ) ! Line2_to_Line2_Motions 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
         IF (ErrStat >= AbortErrLev) RETURN
 
-      IF(ALLOCATED(Re_Buf)) THEN ! Line2_to_Point_Motions
+      IF(ALLOCATED(Re_Buf)) THEN ! Line2_to_Line2_Motions
          Re_BufSz  = Re_BufSz  + SIZE( Re_Buf  )
          DEALLOCATE(Re_Buf)
       END IF
-      IF(ALLOCATED(Db_Buf)) THEN ! Line2_to_Point_Motions
+      IF(ALLOCATED(Db_Buf)) THEN ! Line2_to_Line2_Motions
          Db_BufSz  = Db_BufSz  + SIZE( Db_Buf  )
          DEALLOCATE(Db_Buf)
       END IF
-      IF(ALLOCATED(Int_Buf)) THEN ! Line2_to_Point_Motions
+      IF(ALLOCATED(Int_Buf)) THEN ! Line2_to_Line2_Motions
          Int_BufSz = Int_BufSz + SIZE( Int_Buf )
          DEALLOCATE(Int_Buf)
       END IF
@@ -1243,18 +1243,18 @@ ENDIF
       ENDIF
     END DO
   END IF
-  IF ( .NOT. ALLOCATED(InData%Line2_to_Point_Loads) ) THEN
+  IF ( .NOT. ALLOCATED(InData%Line2_to_Line2_Loads) ) THEN
     IntKiBuf( Int_Xferred ) = 0
     Int_Xferred = Int_Xferred + 1
   ELSE
     IntKiBuf( Int_Xferred ) = 1
     Int_Xferred = Int_Xferred + 1
-    IntKiBuf( Int_Xferred    ) = LBOUND(InData%Line2_to_Point_Loads,1)
-    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%Line2_to_Point_Loads,1)
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%Line2_to_Line2_Loads,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%Line2_to_Line2_Loads,1)
     Int_Xferred = Int_Xferred + 2
 
-    DO i1 = LBOUND(InData%Line2_to_Point_Loads,1), UBOUND(InData%Line2_to_Point_Loads,1)
-      CALL NWTC_Library_Packmeshmaptype( Re_Buf, Db_Buf, Int_Buf, InData%Line2_to_Point_Loads(i1), ErrStat2, ErrMsg2, OnlySize ) ! Line2_to_Point_Loads 
+    DO i1 = LBOUND(InData%Line2_to_Line2_Loads,1), UBOUND(InData%Line2_to_Line2_Loads,1)
+      CALL NWTC_Library_Packmeshmaptype( Re_Buf, Db_Buf, Int_Buf, InData%Line2_to_Line2_Loads(i1), ErrStat2, ErrMsg2, OnlySize ) ! Line2_to_Line2_Loads 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
         IF (ErrStat >= AbortErrLev) RETURN
 
@@ -1284,18 +1284,18 @@ ENDIF
       ENDIF
     END DO
   END IF
-  IF ( .NOT. ALLOCATED(InData%Line2_to_Point_Motions) ) THEN
+  IF ( .NOT. ALLOCATED(InData%Line2_to_Line2_Motions) ) THEN
     IntKiBuf( Int_Xferred ) = 0
     Int_Xferred = Int_Xferred + 1
   ELSE
     IntKiBuf( Int_Xferred ) = 1
     Int_Xferred = Int_Xferred + 1
-    IntKiBuf( Int_Xferred    ) = LBOUND(InData%Line2_to_Point_Motions,1)
-    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%Line2_to_Point_Motions,1)
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%Line2_to_Line2_Motions,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%Line2_to_Line2_Motions,1)
     Int_Xferred = Int_Xferred + 2
 
-    DO i1 = LBOUND(InData%Line2_to_Point_Motions,1), UBOUND(InData%Line2_to_Point_Motions,1)
-      CALL NWTC_Library_Packmeshmaptype( Re_Buf, Db_Buf, Int_Buf, InData%Line2_to_Point_Motions(i1), ErrStat2, ErrMsg2, OnlySize ) ! Line2_to_Point_Motions 
+    DO i1 = LBOUND(InData%Line2_to_Line2_Motions,1), UBOUND(InData%Line2_to_Line2_Motions,1)
+      CALL NWTC_Library_Packmeshmaptype( Re_Buf, Db_Buf, Int_Buf, InData%Line2_to_Line2_Motions(i1), ErrStat2, ErrMsg2, OnlySize ) ! Line2_to_Line2_Motions 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
         IF (ErrStat >= AbortErrLev) RETURN
 
@@ -1472,20 +1472,20 @@ ENDIF
       IF(ALLOCATED(Int_Buf)) DEALLOCATE(Int_Buf)
     END DO
   END IF
-  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! Line2_to_Point_Loads not allocated
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! Line2_to_Line2_Loads not allocated
     Int_Xferred = Int_Xferred + 1
   ELSE
     Int_Xferred = Int_Xferred + 1
     i1_l = IntKiBuf( Int_Xferred    )
     i1_u = IntKiBuf( Int_Xferred + 1)
     Int_Xferred = Int_Xferred + 2
-    IF (ALLOCATED(OutData%Line2_to_Point_Loads)) DEALLOCATE(OutData%Line2_to_Point_Loads)
-    ALLOCATE(OutData%Line2_to_Point_Loads(i1_l:i1_u),STAT=ErrStat2)
+    IF (ALLOCATED(OutData%Line2_to_Line2_Loads)) DEALLOCATE(OutData%Line2_to_Line2_Loads)
+    ALLOCATE(OutData%Line2_to_Line2_Loads(i1_l:i1_u),STAT=ErrStat2)
     IF (ErrStat2 /= 0) THEN 
-       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%Line2_to_Point_Loads.', ErrStat, ErrMsg,RoutineName)
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%Line2_to_Line2_Loads.', ErrStat, ErrMsg,RoutineName)
        RETURN
     END IF
-    DO i1 = LBOUND(OutData%Line2_to_Point_Loads,1), UBOUND(OutData%Line2_to_Point_Loads,1)
+    DO i1 = LBOUND(OutData%Line2_to_Line2_Loads,1), UBOUND(OutData%Line2_to_Line2_Loads,1)
       Buf_size=IntKiBuf( Int_Xferred )
       Int_Xferred = Int_Xferred + 1
       IF(Buf_size > 0) THEN
@@ -1519,7 +1519,7 @@ ENDIF
         Int_Buf = IntKiBuf( Int_Xferred:Int_Xferred+Buf_size-1 )
         Int_Xferred = Int_Xferred + Buf_size
       END IF
-      CALL NWTC_Library_Unpackmeshmaptype( Re_Buf, Db_Buf, Int_Buf, OutData%Line2_to_Point_Loads(i1), ErrStat2, ErrMsg2 ) ! Line2_to_Point_Loads 
+      CALL NWTC_Library_Unpackmeshmaptype( Re_Buf, Db_Buf, Int_Buf, OutData%Line2_to_Line2_Loads(i1), ErrStat2, ErrMsg2 ) ! Line2_to_Line2_Loads 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
         IF (ErrStat >= AbortErrLev) RETURN
 
@@ -1528,20 +1528,20 @@ ENDIF
       IF(ALLOCATED(Int_Buf)) DEALLOCATE(Int_Buf)
     END DO
   END IF
-  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! Line2_to_Point_Motions not allocated
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! Line2_to_Line2_Motions not allocated
     Int_Xferred = Int_Xferred + 1
   ELSE
     Int_Xferred = Int_Xferred + 1
     i1_l = IntKiBuf( Int_Xferred    )
     i1_u = IntKiBuf( Int_Xferred + 1)
     Int_Xferred = Int_Xferred + 2
-    IF (ALLOCATED(OutData%Line2_to_Point_Motions)) DEALLOCATE(OutData%Line2_to_Point_Motions)
-    ALLOCATE(OutData%Line2_to_Point_Motions(i1_l:i1_u),STAT=ErrStat2)
+    IF (ALLOCATED(OutData%Line2_to_Line2_Motions)) DEALLOCATE(OutData%Line2_to_Line2_Motions)
+    ALLOCATE(OutData%Line2_to_Line2_Motions(i1_l:i1_u),STAT=ErrStat2)
     IF (ErrStat2 /= 0) THEN 
-       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%Line2_to_Point_Motions.', ErrStat, ErrMsg,RoutineName)
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%Line2_to_Line2_Motions.', ErrStat, ErrMsg,RoutineName)
        RETURN
     END IF
-    DO i1 = LBOUND(OutData%Line2_to_Point_Motions,1), UBOUND(OutData%Line2_to_Point_Motions,1)
+    DO i1 = LBOUND(OutData%Line2_to_Line2_Motions,1), UBOUND(OutData%Line2_to_Line2_Motions,1)
       Buf_size=IntKiBuf( Int_Xferred )
       Int_Xferred = Int_Xferred + 1
       IF(Buf_size > 0) THEN
@@ -1575,7 +1575,7 @@ ENDIF
         Int_Buf = IntKiBuf( Int_Xferred:Int_Xferred+Buf_size-1 )
         Int_Xferred = Int_Xferred + Buf_size
       END IF
-      CALL NWTC_Library_Unpackmeshmaptype( Re_Buf, Db_Buf, Int_Buf, OutData%Line2_to_Point_Motions(i1), ErrStat2, ErrMsg2 ) ! Line2_to_Point_Motions 
+      CALL NWTC_Library_Unpackmeshmaptype( Re_Buf, Db_Buf, Int_Buf, OutData%Line2_to_Line2_Motions(i1), ErrStat2, ErrMsg2 ) ! Line2_to_Line2_Motions 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
         IF (ErrStat >= AbortErrLev) RETURN
 

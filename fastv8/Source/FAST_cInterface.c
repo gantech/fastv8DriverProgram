@@ -201,14 +201,14 @@ int FAST_cInterface::step() {
      checkError(ErrStat, ErrMsg);
 
      if ( isDebug() ) {
-       /* for (int iNode=0; iNode < get_numVelPts(iTurb); iNode++) { */
-       /*   std::cout << "Node " << iNode << " Position = " << cDriver_Input_from_FAST[iTurb]->pxVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pyVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pzVel[iNode] << " " << std::endl ; */
-       /* } */
+       for (int iNode=0; iNode < get_numForcePts(iTurb); iNode++) {
+	 std::cout << "Node " << iNode << " Position = " << cDriver_Input_from_FAST[iTurb]->pxForce[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pyForce[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pzForce[iNode] << " " << std::endl ;
+       }
        std::ofstream actuatorForcesFile;
        actuatorForcesFile.open("actuatorForces.csv") ;
        actuatorForcesFile << "# x, y, z, fx, fy, fz" << std::endl ;
        for (int iNode=0; iNode < get_numForcePts(iTurb); iNode++) {
-           actuatorForcesFile << cDriver_Input_from_FAST[iTurb]->pxForce[iNode] << ", " << cDriver_Input_from_FAST[iTurb]->pyForce[iNode] << ", " << cDriver_Input_from_FAST[iTurb]->pzForce[iNode] << ", " << cDriver_Input_from_FAST[iTurb]->fx[iNode] << ", " << cDriver_Input_from_FAST[iTurb]->fy[iNode] << ", " << cDriver_Input_from_FAST[iTurb]->fz[iNode] << " " << std::endl ;           
+	 actuatorForcesFile << cDriver_Input_from_FAST[iTurb]->pxForce[iNode] << ", " << cDriver_Input_from_FAST[iTurb]->pyForce[iNode] << ", " << cDriver_Input_from_FAST[iTurb]->pzForce[iNode] << ", " << cDriver_Input_from_FAST[iTurb]->fx[iNode] << ", " << cDriver_Input_from_FAST[iTurb]->fy[iNode] << ", " << cDriver_Input_from_FAST[iTurb]->fz[iNode] << " " << std::endl ;           
        }
        actuatorForcesFile.close() ;
      }
@@ -470,7 +470,7 @@ void FAST_cInterface::computeTorqueThrust(int iTurbGlob, double * torque, double
 }
     
 ActuatorNodeType FAST_cInterface::getVelNodeType(int iTurbGlob, int iNode) {
-  // Return the type of actuator node for the given node number. The node ordering (from FAST) is 
+  // Return the type of velocity node for the given node number. The node ordering (from FAST) is 
   // Node 0 - Hub node
   // Blade 1 nodes
   // Blade 2 nodes
