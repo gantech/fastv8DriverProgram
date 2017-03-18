@@ -665,12 +665,18 @@ subroutine Init_u( u, p, InputFileData, InitInp, errStat, errMsg )
    
    call AllocAry( u%InflowOnBlade, 3_IntKi, p%NumBlNds, p%numBlades, 'u%InflowOnBlade', ErrStat2, ErrMsg2 )
       call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
+   call AllocAry( u%DensityOnBlade, p%NumBlNds, p%numBlades, 'u%DensityOnBlade', ErrStat2, ErrMsg2 )
+      call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
+   call AllocAry( u%DensityOnTower, p%NumTwrNds, 'u%DensityOnTower', ErrStat2, ErrMsg2 ) ! could be size zero
+      call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
    call AllocAry( u%InflowOnTower, 3_IntKi, p%NumTwrNds, 'u%InflowOnTower', ErrStat2, ErrMsg2 ) ! could be size zero
       call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
                 
    if (errStat >= AbortErrLev) return      
-      
+
+   u%AirDens = InputFileData%AirDens
    u%InflowOnBlade = 0.0_ReKi
+   u%DensityOnBlade = InputFileData%AirDens
    
       ! Meshes for motion inputs (ElastoDyn and/or BeamDyn)
          !................
@@ -679,6 +685,7 @@ subroutine Init_u( u, p, InputFileData, InitInp, errStat, errMsg )
    if (p%NumTwrNds > 0) then
       
       u%InflowOnTower = 0.0_ReKi 
+      u%DensityOnTower = InputFileData%AirDens
       
       call MeshCreate ( BlankMesh = u%TowerMotion   &
                        ,IOS       = COMPONENT_INPUT &
@@ -1112,7 +1119,7 @@ subroutine AD_CalcOutput( t, u, p, x, xd, z, OtherState, y, m, ErrStat, ErrMsg )
    call BEMT_CalcOutput(t, m%BEMT_u(indx), p%BEMT, x%BEMT, xd%BEMT, z%BEMT, OtherState%BEMT, p%AFI%AFInfo, m%BEMT_y, m%BEMT, ErrStat2, ErrMsg2 )
       call SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
                   
-   call SetOutputsFromBEMT(p, m, y )
+   call SetOutputsFromBEMT(p, u, m, y )
                           
    if ( p%TwrAero ) then
       call ADTwr_CalcOutput(p, u, m, y, ErrStat2, ErrMsg2 )
@@ -1383,9 +1390,10 @@ subroutine SetInputsForBEMT(p, u, m, indx, errStat, errMsg)
 end subroutine SetInputsForBEMT
 !----------------------------------------------------------------------------------------------------------------------------------
 !> This subroutine converts outputs from BEMT (stored in m%BEMT_y) into values on the AeroDyn BladeLoad output mesh.
-subroutine SetOutputsFromBEMT(p, m, y )
+subroutine SetOutputsFromBEMT(p, u, m, y )
 
    type(AD_ParameterType),  intent(in   )  :: p                               !< AD parameters
+   type(AD_InputType),      intent(in)     :: u                               !< AD inputs
    type(AD_OutputType),     intent(inout)  :: y                               !< AD outputs 
    type(AD_MiscVarType),    intent(inout)  :: m                               !< Misc/optimization variables
    !type(BEMT_OutputType),   intent(in   )  :: BEMT_y                          ! BEMT outputs
@@ -1404,7 +1412,7 @@ subroutine SetOutputsFromBEMT(p, m, y )
    do k=1,p%NumBlades
       do j=1,p%NumBlNds
                       
-         q = 0.5 * p%airDens * m%BEMT_y%Vrel(j,k)**2              ! dynamic pressure of the jth node in the kth blade
+         q = 0.5 * u%DensityOnBlade(j,k) * m%BEMT_y%Vrel(j,k)**2              ! dynamic pressure of the jth node in the kth blade
          force(1) =  m%BEMT_y%cx(j,k) * q * p%BEMT%chord(j,k)     ! X = normal force per unit length (normal to the plane, not chord) of the jth node in the kth blade
          force(2) = -m%BEMT_y%cy(j,k) * q * p%BEMT%chord(j,k)     ! Y = tangential force per unit length (tangential to the plane, not chord) of the jth node in the kth blade
          moment(3)=  m%BEMT_y%cm(j,k) * q * p%BEMT%chord(j,k)**2  ! M = pitching moment per unit length of the jth node in the kth blade
@@ -1860,7 +1868,7 @@ SUBROUTINE ADTwr_CalcOutput(p, u, m, y, ErrStat, ErrMsg )
       VL(2) = dot_product( V_Rel, tmp )            ! relative local y-component of wind speed of the jth node in the tower
       
       m%W_Twr(j)  =  TwoNorm( VL )            ! relative wind speed normal to the tower at node j      
-      q     = 0.5 * p%TwrCd(j) * p%AirDens * p%TwrDiam(j) * m%W_Twr(j)
+      q     = 0.5 * p%TwrCd(j) * u%DensityOnTower(j) * p%TwrDiam(j) * m%W_Twr(j)
       
          ! force per unit length of the jth node in the tower
       tmp(1) = q * VL(1)

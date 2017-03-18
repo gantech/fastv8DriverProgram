@@ -393,13 +393,15 @@ SUBROUTINE AD_InputSolve_IfW( p_FAST, u_AD, y_IfW, y_OpFM, ErrStat, ErrMsg )
             node = node + 1
          end do
       end do
-                  
+      u_AD%DensityOnBlade(:,:) = u_AD%AirDens
+      
       if ( allocated(u_AD%InflowOnTower) ) then
          Nnodes = size(u_AD%InflowOnTower,2)
          do j=1,Nnodes
             u_AD%InflowOnTower(:,j) = y_IfW%VelocityUVW(:,node)
             node = node + 1
          end do      
+         u_AD%DensityOnTower(:) = u_AD%AirDens
       end if
          
    ELSEIF ( p_FAST%CompInflow == MODULE_OpFM ) THEN
