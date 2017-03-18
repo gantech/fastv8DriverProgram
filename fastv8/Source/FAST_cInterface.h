@@ -113,7 +113,7 @@ class FAST_cInterface {
   void getForceNodeOrientation(double *currentOrientation, int iNode);
   void getForce(std::vector<double> & force, int iNode);
   double getChord(int iNode);
-  void setVelocity(std::vector<double> & velocity, int iNode);
+  void setVelocityDensity(std::vector<double> & velocity, double & density, int iNode);
   int get_ntStart() { return ntStart; }
   int get_ntEnd() { return ntEnd; }
   bool isDryRun() { return dryRun; }

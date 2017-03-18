@@ -46,12 +46,11 @@ MODULE OpenFOAM
 
 CONTAINS
 !----------------------------------------------------------------------------------------------------------------------------------
-SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, initOut_AD, y_AD, y_ED, OpFM, InitOut, ErrStat, ErrMsg )
+SUBROUTINE Init_OpFM( InitInp, p_FAST, u_AD14, u_AD, initOut_AD, y_AD, y_ED, OpFM, InitOut, ErrStat, ErrMsg )
 !..................................................................................................................................
 
    TYPE(OpFM_InitInputType),        INTENT(IN   )  :: InitInp     ! Input data for initialization routine
    TYPE(FAST_ParameterType),        INTENT(IN   )  :: p_FAST      ! Parameters for the glue code
-   REAL(ReKi),                      INTENT(IN   )  :: AirDens     ! Air Density kg/m^3
    TYPE(AD14_InputType),            INTENT(IN   )  :: u_AD14      ! AeroDyn14 input data
    TYPE(AD_InputType),              INTENT(IN   )  :: u_AD        ! AeroDyn input data
    TYPE(AD_OutputType),             INTENT(IN   )  :: y_AD        ! AeroDyn output data (for mesh mapping)
@@ -110,11 +109,6 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, initOut_AD, y_AD, 
    end if
 
    OpFM%p%NnodesForce = 1 +  OpFM%p%NumBl * InitInp%NumActForcePtsBlade + InitInp%NumActForcePtsTower
-
-      ! air density, required for normalizing values sent to OpenFOAM:
-   OpFM%p%AirDens = AirDens
-   if ( EqualRealNos( AirDens, 0.0_ReKi ) ) &
-      CALL SetErrStat( ErrID_Fatal, 'Air density cannot be zero for OpenFOAM integration. Check that AeroDyn is used and that air density is set properly', ErrStat,ErrMsg,RoutineName)
 
       !............................................................................................
       ! Allocate arrays and define initial guesses for the OpenFOAM inputs here:
@@ -235,6 +229,7 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, initOut_AD, y_AD, 
    CALL AllocPAry( OpFM%y%u, OpFM%p%NnodesVel, 'u', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
    CALL AllocPAry( OpFM%y%v, OpFM%p%NnodesVel, 'v', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
    CALL AllocPAry( OpFM%y%w, OpFM%p%NnodesVel, 'w', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
+   CALL AllocPAry( OpFM%y%rho, OpFM%p%NnodesVel, 'rho', ErrStat2, ErrMsg2 ); CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
    if (InitInp%NumSC2Ctrl > 0) then
       CALL AllocPAry( OpFM%y%SuperController, InitInp%NumSC2Ctrl, 'y%SuperController', ErrStat2, ErrMsg2 )
       CALL SetErrStat( ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName )
@@ -246,6 +241,7 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, initOut_AD, y_AD, 
    OpFM%y%c_obj%u_Len = OpFM%p%NnodesVel; OpFM%y%c_obj%u = C_LOC( OpFM%y%u(1) )
    OpFM%y%c_obj%v_Len = OpFM%p%NnodesVel; OpFM%y%c_obj%v = C_LOC( OpFM%y%v(1) )
    OpFM%y%c_obj%w_Len = OpFM%p%NnodesVel; OpFM%y%c_obj%w = C_LOC( OpFM%y%w(1) )
+   OpFM%y%c_obj%rho_Len = OpFM%p%NnodesVel; OpFM%y%c_obj%rho = C_LOC( OpFM%y%rho(1) )
 
    if (InitInp%NumSC2Ctrl > 0) then
       OpFM%y%c_obj%SuperController_Len = InitInp%NumSC2Ctrl
@@ -489,12 +485,12 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
      
       DO J = 1, OpFM%p%NnodesForceBlade
          Node = Node + 1
-         OpFM%u%fx(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(1,j) / OpFM%p%AirDens
-         OpFM%u%fy(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(2,j) / OpFM%p%AirDens
-         OpFM%u%fz(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(3,j) / OpFM%p%AirDens
-         OpFM%u%momentx(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(1,j) / OpFM%p%AirDens
-         OpFM%u%momenty(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(2,j) / OpFM%p%AirDens
-         OpFM%u%momentz(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(3,j) / OpFM%p%AirDens
+         OpFM%u%fx(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(1,j) 
+         OpFM%u%fy(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(2,j) 
+         OpFM%u%fz(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(3,j) 
+         OpFM%u%momentx(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(1,j) 
+         OpFM%u%momenty(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(2,j) 
+         OpFM%u%momentz(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(3,j) 
       END DO 
 
    END DO !K = 1,OpFM%p%NumBl
@@ -519,12 +515,12 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
 
    DO J=1,OpFM%p%NnodesForceTower
       Node = Node + 1
-      OpFM%u%fx(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(1,j) / OpFM%p%AirDens
-      OpFM%u%fy(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(2,j) / OpFM%p%AirDens
-      OpFM%u%fz(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(3,j) / OpFM%p%AirDens
-      OpFM%u%momentx(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(1,j) / OpFM%p%AirDens
-      OpFM%u%momenty(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(2,j) / OpFM%p%AirDens
-      OpFM%u%momentz(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(3,j) / OpFM%p%AirDens
+      OpFM%u%fx(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(1,j) 
+      OpFM%u%fy(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(2,j) 
+      OpFM%u%fz(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(3,j) 
+      OpFM%u%momentx(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(1,j) 
+      OpFM%u%momenty(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(2,j) 
+      OpFM%u%momentz(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(3,j) 
    END DO
    close(987)
    

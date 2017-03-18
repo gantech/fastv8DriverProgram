@@ -45,7 +45,6 @@ typedef	^	^	MeshMapType	Line2_to_Point_Motions	{:}	-	-	"mapping data structure t
 
 
 # ..... Parameters ................................................................................................................
-typedef	OpenFOAM/OpFM	ParameterType	ReKi	AirDens	-	-	-	"Air density for normalization of loads sent to OpenFOAM"	kg/m^3
 typedef	OpenFOAM/OpFM	ParameterType	IntKi	NumBl	-	-	-	"Number of blades"	-
 typedef	OpenFOAM/OpFM	ParameterType	IntKi	NMappings	-	-	-	"Number of mappings"	-
 typedef	OpenFOAM/OpFM	ParameterType	IntKi	NnodesVel	-	-	-	"number of velocity nodes on FAST v8-OpenFOAM interface"	-
@@ -79,5 +78,6 @@ typedef	^	InputType	ReKi	SuperController	{:}	-	-	"inputs to the super controller
 typedef	OpenFOAM/OpFM	OutputType	ReKi	u	{:}	-	-	"U-component wind speed (in the X-direction) at interface nodes"	m/s
 typedef	^	OutputType	ReKi	v	{:}	-	-	"V-component wind speed (in the Y-direction) at interface nodes"	m/s
 typedef	^	OutputType	ReKi	w	{:}	-	-	"W-component wind speed (in the Z-direction) at interface nodes"	m/s
+typedef	^	OutputType	ReKi	rho	{:}	-	-	"Air density at interface nodes"	m/s
 typedef	^	OutputType	ReKi	SuperController	{:}	-	-	"outputs of the super controller (to the turbine controller)"	-
 typedef	^	OutputType	ReKi	WriteOutput	{:}	-	-	"Data to be written to an output file: see WriteOutputHdr for names of each variable"	"see WriteOutputUnt"

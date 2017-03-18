@@ -377,6 +377,7 @@ void FAST_cInterface::setOutputsToFAST(OpFM_InputType_t* cDriver_Input_from_FAST
       cDriver_Output_to_FAST->u[j] = (float) 10.0*pow((cDriver_Input_from_FAST->pzVel[j] / 90.0), 0.2); // 0.2 power law wind profile using reference 10 m/s at 90 meters
       cDriver_Output_to_FAST->v[j] = 0.0;
       cDriver_Output_to_FAST->w[j] = 0.0;
+      cDriver_Output_to_FAST->rho[j] = 1.225;
    }
 
    // call supercontroller
@@ -432,12 +433,13 @@ double FAST_cInterface::getChord(int iNode) {
 
 }
 
-void FAST_cInterface::setVelocity(std::vector<double> & currentVelocity, int iNode) {
+void FAST_cInterface::setVelocityDensity(std::vector<double> & currentVelocity, double & currentDensity, int iNode) {
 
-  // Set velocity at current node of current turbine - Only one turbine for now
+  // Set velocity and density at current node of current turbine - Only one turbine for now
   cDriver_Output_to_FAST[0]->u[iNode] = currentVelocity[0];
   cDriver_Output_to_FAST[0]->v[iNode] = currentVelocity[1];
   cDriver_Output_to_FAST[0]->w[iNode] = currentVelocity[2];
+  cDriver_Output_to_FAST[0]->rho[iNode] = currentDensity;
 
 }
 

@@ -415,6 +415,7 @@ SUBROUTINE AD_InputSolve_IfW( p_FAST, u_AD, y_IfW, y_OpFM, ErrStat, ErrMsg )
             u_AD%InflowOnBlade(1,j,k) = y_OpFM%u(node)
             u_AD%InflowOnBlade(2,j,k) = y_OpFM%v(node)
             u_AD%InflowOnBlade(3,j,k) = y_OpFM%w(node)
+            u_AD%DensityOnBlade(j,k) = y_OpFM%rho(node)
             node = node + 1
          end do
       end do
@@ -425,6 +426,7 @@ SUBROUTINE AD_InputSolve_IfW( p_FAST, u_AD, y_IfW, y_OpFM, ErrStat, ErrMsg )
             u_AD%InflowOnTower(1,j) = y_OpFM%u(node)
             u_AD%InflowOnTower(2,j) = y_OpFM%v(node)
             u_AD%InflowOnTower(3,j) = y_OpFM%w(node)
+            u_AD%DensityOnTower(j) = y_OpFM%rho(node)
             node = node + 1
          end do      
       end if      
@@ -432,7 +434,8 @@ SUBROUTINE AD_InputSolve_IfW( p_FAST, u_AD, y_IfW, y_OpFM, ErrStat, ErrMsg )
    ELSE
       
       u_AD%InflowOnBlade = 0.0_ReKi ! whole array
-      
+      u_AD%DensityOnBlade = 0.0_ReKi
+
    END IF
    
    
