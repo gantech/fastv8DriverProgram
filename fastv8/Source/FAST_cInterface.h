@@ -17,6 +17,19 @@
 #endif
 #include "SC.h"
 
+
+struct globTurbineDataType {
+  int TurbID;
+  std::string FASTInputFileName;
+  std::string FASTRestartFileName;
+  std::vector<double> TurbineBasePos;
+  std::vector<double> TurbineHubPos;
+  int numForcePtsBlade;
+  int numForcePtsTwr;
+};
+  
+  
+
 enum ActuatorNodeType {
   HUB = 0,
   BLADE = 1,
@@ -31,12 +44,14 @@ class FAST_cInterface {
   bool dryRun;        // If this is true, class will simply go through allocation and deallocation of turbine data
   bool debug;   // Write out extra information if this flags is turned on
   bool timeZero; // Flag to determine whether the Solution0 function has to be called or not.
+  globTurbineDataType *  globTurbineData;
   int nTurbinesProc;
   int nTurbinesGlob;
   bool restart;
   double dtFAST;
   double tMax;
-  float ** TurbinePos;
+  float ** TurbineBasePos;
+  float ** TurbineHubPos;
   int * TurbID;
   char ** FASTInputFileName;
   char ** CheckpointFileRoot;
@@ -101,6 +116,8 @@ class FAST_cInterface {
   
   int readInputFile(std::string cInterfaceInputFile);  
   int readInputFile(const YAML::Node &);  
+  int setup();
+  int setTurbineProcNo(int iTurbGlob, int procNo) { turbineMapGlobToProc[iTurbGlob] = procNo; }
   void setRestart(const bool & isRestart);
   void setTstart(const double & cfdTstart);
   void setDt(const double & cfdDt);
@@ -108,6 +125,7 @@ class FAST_cInterface {
   int init();
   int solution0();
   int step();
+  void getHubPos(double *currentCoords, int iTurbGlob);
   void getVelNodeCoordinates(double *currentCoords, int iNode);
   void getForceNodeCoordinates(double *currentCoords, int iNode);
   void getForceNodeOrientation(double *currentOrientation, int iNode);
@@ -144,7 +162,7 @@ class FAST_cInterface {
 
   void readTurbineData(int iTurb, YAML::Node turbNode);
   void allocateInputData();
-  void allocateTurbinesToProcs(YAML::Node cDriverNode);
+  void allocateTurbinesToProcs();
   void loadSuperController(YAML::Node c);
   
   void fillScInputsGlob() ;

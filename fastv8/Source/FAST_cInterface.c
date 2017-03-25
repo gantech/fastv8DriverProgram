@@ -106,7 +106,7 @@ int FAST_cInterface::init() {
       // this calls the Init() routines of each module
 
      for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
-       FAST_OpFM_Init(&iTurb, &tMax, FASTInputFileName[iTurb], &TurbID[iTurb], &numScOutputs, &numScInputs, &numForcePtsBlade[iTurb], &numForcePtsTwr[iTurb], TurbinePos[iTurb], &AbortErrLev, &dtFAST, &numBlades[iTurb], &numVelPtsBlade[iTurb], cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb], cDriverSC_Input_from_FAST[iTurb], cDriverSC_Output_to_FAST[iTurb], &ErrStat, ErrMsg);
+       FAST_OpFM_Init(&iTurb, &tMax, FASTInputFileName[iTurb], &TurbID[iTurb], &numScOutputs, &numScInputs, &numForcePtsBlade[iTurb], &numForcePtsTwr[iTurb], TurbineBasePos[iTurb], &AbortErrLev, &dtFAST, &numBlades[iTurb], &numVelPtsBlade[iTurb], cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb], cDriverSC_Input_from_FAST[iTurb], cDriverSC_Output_to_FAST[iTurb], &ErrStat, ErrMsg);
        checkError(ErrStat, ErrMsg);
        
        numVelPtsTwr[iTurb] = cDriver_Output_to_FAST[iTurb]->u_Len - numBlades[iTurb]*numVelPtsBlade[iTurb] - 1;
@@ -248,11 +248,6 @@ int FAST_cInterface::readInputFile(std::string cInterfaceInputFile ) {
 	debug = false;
       }
 
-      allocateTurbinesToProcs(cDriverInp);
-
-      allocateInputData(); // Allocate memory for all inputs that are dependent on the number of turbines
-
-      
       restart = cDriverInp["restart"].as<bool>();
       tStart = cDriverInp["tStart"].as<double>();
       tEnd = cDriverInp["tEnd"].as<double>();
@@ -268,13 +263,20 @@ int FAST_cInterface::readInputFile(std::string cInterfaceInputFile ) {
 	ntEnd = int((tEnd - tStart)/dtFAST);
       }
 
+      globTurbineData = new globTurbineDataType[nTurbinesGlob];
+
       for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
-	//	if (cDriverInp["Turbine" + std::to_string(iTurb)] == YAML::Node) {
-	  readTurbineData(iTurb, cDriverInp["Turbine" + std::to_string(turbineMapProcToGlob[iTurb])] );
-	  //	} else {
-	  //	  throw std::runtime_error("Node for Turbine" + std::to_string(iTurb) + " not present in input file");
-	  //	}
+	if (cDriverInp["Turbine" + std::to_string(iTurb)]) {
+	  readTurbineData(iTurb, cDriverInp["Turbine" + std::to_string(iTurb)] );
+	  std::cout << "Blah" << std::endl ;
+	} else {
+	  throw std::runtime_error("Node for Turbine" + std::to_string(iTurb) + " not present in input file");
+	  return 1;
+	}
       }
+
+      allocateTurbinesToProcs();
+      allocateInputData(); // Allocate memory for all inputs that are dependent on the number of turbines
 
       if ( !dryRun ) {
 	init();
@@ -283,12 +285,25 @@ int FAST_cInterface::readInputFile(std::string cInterfaceInputFile ) {
       
     } else {
       throw std::runtime_error("Number of turbines < 0 ");
+      return 1;
     }
     
   } else {
     throw std::runtime_error("Input file " + cInterfaceInputFile + " does not exist or I cannot access it");
+    return 1;
   }
+
+  return 0;
   
+}
+
+int FAST_cInterface::setup() {
+
+  allocateTurbinesToProcs();
+    
+  allocateInputData(); // Allocate memory for all inputs that are dependent on the number of turbines
+
+  return 0;
 }
 
 int FAST_cInterface::readInputFile(const YAML::Node & cDriverInp) {
@@ -309,11 +324,6 @@ int FAST_cInterface::readInputFile(const YAML::Node & cDriverInp) {
       debug = false;
     }
 
-    allocateTurbinesToProcs(cDriverInp);
-    
-    allocateInputData(); // Allocate memory for all inputs that are dependent on the number of turbines
-    
-    
     /* restart - Has to come from cfd solver */ 
     /* tStart - Has to come from cfd solver */
     /* tEnd - Has to come from cfd solver */
@@ -323,8 +333,14 @@ int FAST_cInterface::readInputFile(const YAML::Node & cDriverInp) {
     
     loadSuperController(cDriverInp);
     
-    for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
-      readTurbineData(iTurb, cDriverInp["Turbine" + std::to_string(turbineMapProcToGlob[iTurb])] );
+    globTurbineData = new globTurbineDataType[nTurbinesGlob];
+    for (int iTurb=0; iTurb < nTurbinesGlob; iTurb++) {
+      if (cDriverInp["Turbine" + std::to_string(iTurb)]) {
+      	readTurbineData(iTurb, cDriverInp["Turbine" + std::to_string(iTurb)] );
+      } else {
+      	throw std::runtime_error("Node for Turbine" + std::to_string(iTurb) + " not present in input file");
+      	return 1;
+      }
     }
     
   } else {
@@ -387,6 +403,15 @@ void FAST_cInterface::setOutputsToFAST(OpFM_InputType_t* cDriver_Input_from_FAST
 
 
    return;
+}
+
+void FAST_cInterface::getHubPos(double *currentCoords, int iTurbGlob) {
+
+    // Get hub position of Turbine 'iTurbGlob'
+    currentCoords[0] = globTurbineData[iTurbGlob].TurbineHubPos[0] ;
+    currentCoords[1] = globTurbineData[iTurbGlob].TurbineHubPos[1] ;
+    currentCoords[2] = globTurbineData[iTurbGlob].TurbineHubPos[2] ;
+
 }
 
 void FAST_cInterface::getVelNodeCoordinates(double *currentCoords, int iNode) {
@@ -520,7 +545,7 @@ void FAST_cInterface::allocateInputData() {
   //Allocates memory for all the input data to be read from the file
 
   TurbID = new int[nTurbinesProc];
-  TurbinePos = new float* [nTurbinesProc];
+  TurbineBasePos = new float* [nTurbinesProc];
   FASTInputFileName = new char * [nTurbinesProc];
   CheckpointFileRoot = new char * [nTurbinesProc];
   numBlades = new int[nTurbinesProc];
@@ -530,9 +555,21 @@ void FAST_cInterface::allocateInputData() {
   numVelPtsTwr = new int[nTurbinesProc];
   
   for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
-    TurbinePos[iTurb] = new float[3];
+    
+    TurbineBasePos[iTurb] = new float[3];
     FASTInputFileName[iTurb] = new char[INTERFACE_STRING_LENGTH];
     CheckpointFileRoot[iTurb] = new char[INTERFACE_STRING_LENGTH];
+
+    int globProc = turbineMapProcToGlob[iTurb];
+    TurbID[iTurb] = globTurbineData[globProc].TurbID;
+    std::strcpy(FASTInputFileName[iTurb], globTurbineData[globProc].FASTInputFileName.c_str()) ;
+    std::strcpy(CheckpointFileRoot[iTurb], globTurbineData[globProc].FASTRestartFileName.c_str() );
+    for(int i=0;i<3;i++) {
+      TurbineBasePos[iTurb][i] = globTurbineData[globProc].TurbineBasePos[i];
+    }
+    numForcePtsBlade[iTurb] = globTurbineData[globProc].numForcePtsBlade;
+    numForcePtsTwr[iTurb] = globTurbineData[globProc].numForcePtsTwr;
+
   }
 
   return;
@@ -541,28 +578,27 @@ void FAST_cInterface::allocateInputData() {
 void FAST_cInterface::readTurbineData(int iTurb, YAML::Node turbNode) {
 
   //Read turbine data for a given turbine using the YAML node
-  TurbID[iTurb] = turbNode["turb_id"].as<int>();
-  std::strcpy(FASTInputFileName[iTurb], turbNode["FAST_input_filename"].as<std::string>().c_str()) ;
-  std::strcpy(CheckpointFileRoot[iTurb], turbNode["restart_filename"].as<std::string>().c_str() );
-  if (turbNode["turbine_pos"].IsSequence() ) {
-    std::vector<double> tp = turbNode["turbine_pos"].as<std::vector<double> >() ;
-    for(int i=0;i<3;i++) {
-      TurbinePos[iTurb][i] = tp[i];
-    }
+  globTurbineData[iTurb].TurbID = turbNode["turb_id"].as<int>();
+  globTurbineData[iTurb].FASTInputFileName = turbNode["FAST_input_filename"].as<std::string>() ;
+  globTurbineData[iTurb].FASTRestartFileName = turbNode["restart_filename"].as<std::string>() ;
+  if (turbNode["turbine_base_pos"].IsSequence() ) {
+    globTurbineData[iTurb].TurbineBasePos = turbNode["turbine_base_pos"].as<std::vector<double> >() ;
   }
-  numForcePtsBlade[iTurb] = turbNode["num_force_pts_blade"].as<int>();
-  numForcePtsTwr[iTurb] = turbNode["num_force_pts_tower"].as<int>();
+  if (turbNode["turbine_hub_pos"].IsSequence() ) {
+    globTurbineData[iTurb].TurbineHubPos = turbNode["turbine_hub_pos"].as<std::vector<double> >() ;
+  }
+  globTurbineData[iTurb].numForcePtsBlade = turbNode["num_force_pts_blade"].as<int>();
+  globTurbineData[iTurb].numForcePtsTwr = turbNode["num_force_pts_tower"].as<int>();
 
   return ;
 }
 
 
-void FAST_cInterface::allocateTurbinesToProcs(YAML::Node cDriverNode) {
+void FAST_cInterface::allocateTurbinesToProcs() {
   
   // Allocate turbines to each processor
   
   for (int iTurb=0; iTurb < nTurbinesGlob; iTurb++) {
-    turbineMapGlobToProc[iTurb] = cDriverNode["Turbine" + std::to_string(iTurb)]["procNo"].as<int>();
     if (dryRun) {
       if(worldMPIRank == 0) {
 	std::cout << "iTurb = " << iTurb << " turbineMapGlobToProc[iTurb] = " << turbineMapGlobToProc[iTurb] << std::endl ;
@@ -624,11 +660,11 @@ void FAST_cInterface::end() {
     }
 
     for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
-      delete[] TurbinePos[iTurb];
+      delete[] TurbineBasePos[iTurb];
       delete[] FASTInputFileName[iTurb];
       delete[] CheckpointFileRoot[iTurb];
     }
-    delete[] TurbinePos;
+    delete[] TurbineBasePos;
     delete[] FASTInputFileName;
     delete[] CheckpointFileRoot;
     delete[] TurbID;
