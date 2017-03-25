@@ -112,11 +112,11 @@ int FAST_cInterface::init() {
        numVelPtsTwr[iTurb] = cDriver_Output_to_FAST[iTurb]->u_Len - numBlades[iTurb]*numVelPtsBlade[iTurb] - 1;
 
 
-       /* if ( isDebug() ) { */
-       /* 	 for (int iNode=0; iNode < get_numVelPts(iTurb); iNode++) { */
-       /* 	   std::cout << "Node " << iNode << " Position = " << cDriver_Input_from_FAST[iTurb]->pxVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pyVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pzVel[iNode] << " " << std::endl ; */
-       /* 	 } */
-       /* } */
+       if ( isDebug() ) {
+       	 for (int iNode=0; iNode < get_numVelPtsLoc(iTurb); iNode++) {
+       	   std::cout << "Node " << iNode << " Position = " << cDriver_Input_from_FAST[iTurb]->pxVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pyVel[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pzVel[iNode] << " " << std::endl ;
+       	 }
+       }
      }
      
    }
@@ -189,25 +189,25 @@ int FAST_cInterface::step() {
      //  set wind speeds at original locations 
      setOutputsToFAST(cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb]);
 
-     // this advances the states, calls CalcOutput, and solves for next inputs. Predictor-corrector loop is imbeded here:
-     // (note OpenFOAM could do subcycling around this step)
-     /* if ( isDebug() ) { */
-     /*   for (int iNode=0; iNode < get_numVelPts(iTurb); iNode++) { */
-     /* 	 std::cout << "Node " << iNode << " Velocity = " << cDriver_Output_to_FAST[iTurb]->u[iNode] << " " << cDriver_Output_to_FAST[iTurb]->v[iNode] << " " << cDriver_Output_to_FAST[iTurb]->w[iNode] << " " << std::endl ; */
-     /*   } */
-     /* } */
+     //     this advances the states, calls CalcOutput, and solves for next inputs. Predictor-corrector loop is imbeded here:
+     //     (note OpenFOAM could do subcycling around this step)
+     if ( isDebug() ) {
+       for (int iNode=0; iNode < get_numVelPtsLoc(iTurb); iNode++) {
+     	 std::cout << "Node " << iNode << " Velocity = " << cDriver_Output_to_FAST[iTurb]->u[iNode] << " " << cDriver_Output_to_FAST[iTurb]->v[iNode] << " " << cDriver_Output_to_FAST[iTurb]->w[iNode] << " " << std::endl ;
+       }
+     }
 
      FAST_OpFM_Step(&iTurb, &ErrStat, ErrMsg);
      checkError(ErrStat, ErrMsg);
 
      if ( isDebug() ) {
-       for (int iNode=0; iNode < get_numForcePts(iTurb); iNode++) {
+       for (int iNode=0; iNode < get_numForcePtsLoc(iTurb); iNode++) {
 	 std::cout << "Node " << iNode << " Position = " << cDriver_Input_from_FAST[iTurb]->pxForce[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pyForce[iNode] << " " << cDriver_Input_from_FAST[iTurb]->pzForce[iNode] << " " << std::endl ;
        }
        std::ofstream actuatorForcesFile;
        actuatorForcesFile.open("actuatorForces.csv") ;
        actuatorForcesFile << "# x, y, z, fx, fy, fz" << std::endl ;
-       for (int iNode=0; iNode < get_numForcePts(iTurb); iNode++) {
+       for (int iNode=0; iNode < get_numForcePtsLoc(iTurb); iNode++) {
 	 actuatorForcesFile << cDriver_Input_from_FAST[iTurb]->pxForce[iNode] << ", " << cDriver_Input_from_FAST[iTurb]->pyForce[iNode] << ", " << cDriver_Input_from_FAST[iTurb]->pzForce[iNode] << ", " << cDriver_Input_from_FAST[iTurb]->fx[iNode] << ", " << cDriver_Input_from_FAST[iTurb]->fy[iNode] << ", " << cDriver_Input_from_FAST[iTurb]->fz[iNode] << " " << std::endl ;           
        }
        actuatorForcesFile.close() ;
@@ -275,13 +275,6 @@ int FAST_cInterface::readInputFile(std::string cInterfaceInputFile ) {
 	}
       }
 
-      allocateTurbinesToProcs();
-      allocateInputData(); // Allocate memory for all inputs that are dependent on the number of turbines
-
-      if ( !dryRun ) {
-	init();
-	solution0();
-      }
       
     } else {
       throw std::runtime_error("Number of turbines < 0 ");
@@ -295,15 +288,6 @@ int FAST_cInterface::readInputFile(std::string cInterfaceInputFile ) {
 
   return 0;
   
-}
-
-int FAST_cInterface::setup() {
-
-  allocateTurbinesToProcs();
-    
-  allocateInputData(); // Allocate memory for all inputs that are dependent on the number of turbines
-
-  return 0;
 }
 
 int FAST_cInterface::readInputFile(const YAML::Node & cDriverInp) {
@@ -407,62 +391,73 @@ void FAST_cInterface::setOutputsToFAST(OpFM_InputType_t* cDriver_Input_from_FAST
 
 void FAST_cInterface::getHubPos(double *currentCoords, int iTurbGlob) {
 
-    // Get hub position of Turbine 'iTurbGlob'
-    currentCoords[0] = globTurbineData[iTurbGlob].TurbineHubPos[0] ;
-    currentCoords[1] = globTurbineData[iTurbGlob].TurbineHubPos[1] ;
-    currentCoords[2] = globTurbineData[iTurbGlob].TurbineHubPos[2] ;
+  // Get hub position of Turbine 'iTurbGlob'
+  currentCoords[0] = globTurbineData[iTurbGlob].TurbineHubPos[0] ;
+  currentCoords[1] = globTurbineData[iTurbGlob].TurbineHubPos[1] ;
+  currentCoords[2] = globTurbineData[iTurbGlob].TurbineHubPos[2] ;
+  
+}
+
+void FAST_cInterface::getVelNodeCoordinates(double *currentCoords, int iNode, int iTurbGlob) {
+
+  // Set coordinates at current node of current turbine 
+  int iTurbLoc = get_localTurbNo(iTurbGlob);
+  for(int j=0; j < iTurbLoc; j++) iNode = iNode - get_numVelPtsLoc(iTurbLoc);
+  currentCoords[0] = cDriver_Input_from_FAST[iTurbLoc]->pxVel[iNode] ;
+  currentCoords[1] = cDriver_Input_from_FAST[iTurbLoc]->pyVel[iNode] ;
+  currentCoords[2] = cDriver_Input_from_FAST[iTurbLoc]->pzVel[iNode] ;
+  
+}
+
+void FAST_cInterface::getForceNodeCoordinates(double *currentCoords, int iNode, int iTurbGlob) {
+
+  // Set coordinates at current node of current turbine 
+  int iTurbLoc = get_localTurbNo(iTurbGlob);
+  currentCoords[0] = cDriver_Input_from_FAST[iTurbLoc]->pxForce[iNode] ;
+  currentCoords[1] = cDriver_Input_from_FAST[iTurbLoc]->pyForce[iNode] ;
+  currentCoords[2] = cDriver_Input_from_FAST[iTurbLoc]->pzForce[iNode] ;
 
 }
 
-void FAST_cInterface::getVelNodeCoordinates(double *currentCoords, int iNode) {
+void FAST_cInterface::getForceNodeOrientation(double *currentOrientation, int iNode, int iTurbGlob) {
 
-    // Set coordinates at current node of current turbine - Only one turbine for now
-    currentCoords[0] = cDriver_Input_from_FAST[0]->pxVel[iNode] ;
-    currentCoords[1] = cDriver_Input_from_FAST[0]->pyVel[iNode] ;
-    currentCoords[2] = cDriver_Input_from_FAST[0]->pzVel[iNode] ;
-
-}
-
-void FAST_cInterface::getForceNodeCoordinates(double *currentCoords, int iNode) {
-
-  // Set coordinates at current node of current turbine - Only one turbine for now
-  currentCoords[0] = cDriver_Input_from_FAST[0]->pxForce[iNode] ;
-  currentCoords[1] = cDriver_Input_from_FAST[0]->pyForce[iNode] ;
-  currentCoords[2] = cDriver_Input_from_FAST[0]->pzForce[iNode] ;
+  // Set orientation at current node of current turbine 
+  int iTurbLoc = get_localTurbNo(iTurbGlob);
+  for(int j=0; j < iTurbLoc; j++) iNode = iNode - get_numForcePtsLoc(iTurbLoc);
+  for(int i=0;i<9;i++) {
+    currentOrientation[i] = cDriver_Input_from_FAST[iTurbLoc]->pxForce[iNode*9+i] ;
+  }
 
 }
 
-void FAST_cInterface::getForceNodeOrientation(double *currentOrientation, int iNode) {
+void FAST_cInterface::getForce(std::vector<double> & currentForce, int iNode, int iTurbGlob) {
 
-    // Set orientation at current node of current turbine - Only one turbine for now
-    for(int i=0;i<9;i++) {
-        currentOrientation[i] = cDriver_Input_from_FAST[0]->pxForce[iNode*9+i] ;
-    }
-
-}
-
-void FAST_cInterface::getForce(std::vector<double> & currentForce, int iNode) {
-
-  // Set forces at current node of current turbine - Only one turbine for now
-  currentForce[0] = -cDriver_Input_from_FAST[0]->fx[iNode] ;
-  currentForce[1] = -cDriver_Input_from_FAST[0]->fy[iNode] ;
-  currentForce[2] = -cDriver_Input_from_FAST[0]->fz[iNode] ;
+  // Set forces at current node of current turbine 
+  int iTurbLoc = get_localTurbNo(iTurbGlob);
+  for(int j=0; j < iTurbLoc; j++) iNode = iNode - get_numForcePtsLoc(iTurbLoc);
+  currentForce[0] = -cDriver_Input_from_FAST[iTurbLoc]->fx[iNode] ;
+  currentForce[1] = -cDriver_Input_from_FAST[iTurbLoc]->fy[iNode] ;
+  currentForce[2] = -cDriver_Input_from_FAST[iTurbLoc]->fz[iNode] ;
 
 }
 
-double FAST_cInterface::getChord(int iNode) {
+double FAST_cInterface::getChord(int iNode, int iTurbGlob) {
 
-  // Return blade chord/tower diameter at current node of current turbine - Only one turbine for now
-  return cDriver_Input_from_FAST[0]->forceNodesChord[iNode] ;
+  // Return blade chord/tower diameter at current node of current turbine 
+  int iTurbLoc = get_localTurbNo(iTurbGlob);
+  for(int j=0; j < iTurbLoc; j++) iNode = iNode - get_numForcePtsLoc(iTurbLoc);
+  return cDriver_Input_from_FAST[iTurbLoc]->forceNodesChord[iNode] ;
 
 }
 
-void FAST_cInterface::setVelocity(std::vector<double> & currentVelocity, int iNode) {
+void FAST_cInterface::setVelocity(std::vector<double> & currentVelocity, int iNode, int iTurbGlob) {
 
-  // Set velocity at current node of current turbine - Only one turbine for now
-  cDriver_Output_to_FAST[0]->u[iNode] = currentVelocity[0];
-  cDriver_Output_to_FAST[0]->v[iNode] = currentVelocity[1];
-  cDriver_Output_to_FAST[0]->w[iNode] = currentVelocity[2];
+  // Set velocity at current node of current turbine - 
+  int iTurbLoc = get_localTurbNo(iTurbGlob);
+  for(int j=0; j < iTurbLoc; j++) iNode = iNode - get_numVelPtsLoc(iTurbLoc);
+  cDriver_Output_to_FAST[iTurbLoc]->u[iNode] = currentVelocity[0];
+  cDriver_Output_to_FAST[iTurbLoc]->v[iNode] = currentVelocity[1];
+  cDriver_Output_to_FAST[iTurbLoc]->w[iNode] = currentVelocity[2];
 
 }
 
@@ -474,13 +469,13 @@ void FAST_cInterface::computeTorqueThrust(int iTurbGlob, double * torque, double
     torque[0] = 0.0; torque[1] = 0.0; torque[2] = 0.0;    
     
     int iTurbLoc = get_localTurbNo(iTurbGlob) ;
-    for (int k=0; k < get_numBlades(iTurbLoc); k++) {
+    for (int k=0; k < get_numBladesLoc(iTurbLoc); k++) {
         for (int j=0; j < numForcePtsBlade[iTurbLoc]; j++) {
             int iNode = 1 + numForcePtsBlade[iTurbLoc]*k + j ;
             
-            thrust[0] = thrust[0] + cDriver_Input_from_FAST[0]->fx[iNode] ;
-            thrust[1] = thrust[1] + cDriver_Input_from_FAST[0]->fy[iNode] ;
-            thrust[2] = thrust[2] + cDriver_Input_from_FAST[0]->fz[iNode] ;
+            thrust[0] = thrust[0] + cDriver_Input_from_FAST[iTurbLoc]->fx[iNode] ;
+            thrust[1] = thrust[1] + cDriver_Input_from_FAST[iTurbLoc]->fy[iNode] ;
+            thrust[2] = thrust[2] + cDriver_Input_from_FAST[iTurbLoc]->fz[iNode] ;
 
             relLoc[0] = cDriver_Input_from_FAST[iTurbLoc]->pxForce[iNode] - cDriver_Input_from_FAST[iTurbLoc]->pxForce[0] ;
             relLoc[1] = cDriver_Input_from_FAST[iTurbLoc]->pyForce[iNode] - cDriver_Input_from_FAST[iTurbLoc]->pyForce[0];
@@ -503,8 +498,9 @@ ActuatorNodeType FAST_cInterface::getVelNodeType(int iTurbGlob, int iNode) {
   // Tower nodes
 
   int iTurbLoc = get_localTurbNo(iTurbGlob);
+  for(int j=0; j < iTurbLoc; j++) iNode = iNode - get_numVelPtsLoc(iTurbGlob);
   if (iNode) {
-    if ( (iNode + 1 - (get_numVelPts(iTurbLoc) - get_numVelPtsTwr(iTurbLoc)) ) > 0) {
+    if ( (iNode + 1 - (get_numVelPtsLoc(iTurbLoc) - get_numVelPtsTwrLoc(iTurbGlob)) ) > 0) {
       return TOWER; 
     }
     else {
@@ -526,8 +522,9 @@ ActuatorNodeType FAST_cInterface::getForceNodeType(int iTurbGlob, int iNode) {
   // Tower nodes
 
   int iTurbLoc = get_localTurbNo(iTurbGlob);
+  for(int j=0; j < iTurbLoc; j++) iNode = iNode - get_numForcePtsLoc(iTurbGlob);
   if (iNode) {
-    if ( (iNode + 1 - (get_numForcePts(iTurbLoc) - get_numForcePtsTwr(iTurbLoc)) ) > 0) {
+    if ( (iNode + 1 - (get_numForcePtsLoc(iTurbGlob) - get_numForcePtsTwrLoc(iTurbGlob)) ) > 0) {
       return TOWER; 
     }
     else {
@@ -542,6 +539,53 @@ ActuatorNodeType FAST_cInterface::getForceNodeType(int iTurbGlob, int iNode) {
 
 void FAST_cInterface::allocateInputData() {
 	
+  for (int iTurb=0; iTurb < nTurbinesGlob; iTurb++) {
+    if (dryRun) {
+      if(worldMPIRank == 0) {
+	std::cout << "iTurb = " << iTurb << " turbineMapGlobToProc[iTurb] = " << turbineMapGlobToProc[iTurb] << std::endl ;
+      }
+    }
+    if(worldMPIRank == turbineMapGlobToProc[iTurb]) {
+      turbineMapProcToGlob[nTurbinesProc] = iTurb;
+      reverseTurbineMapProcToGlob[iTurb] = nTurbinesProc;
+      nTurbinesProc++ ;
+    }
+    turbineSetProcs.insert(turbineMapGlobToProc[iTurb]);
+  }
+#ifdef HAVE_MPI  
+  if ( dryRun ) {
+    MPI_Barrier(MPI_COMM_WORLD);  
+  }
+#endif
+
+  int nProcsWithTurbines=0;
+  turbineProcs = new int[turbineSetProcs.size()];
+  for (std::set<int>::const_iterator p = turbineSetProcs.begin(); p != turbineSetProcs.end(); p++) {
+    turbineProcs[nProcsWithTurbines] = *p;
+
+    if (dryRun) {
+      if ( worldMPIRank == turbineProcs[nProcsWithTurbines] ) {
+	for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
+	  std::cout << "Proc " << worldMPIRank << " loc iTurb " << iTurb << " glob iTurb " << turbineMapProcToGlob[iTurb] << std::endl ;
+	}
+      }
+#ifdef HAVE_MPI
+      MPI_Barrier(MPI_COMM_WORLD);  
+#endif
+    }
+
+    nProcsWithTurbines++ ;
+  }
+    
+#ifdef HAVE_MPI
+  // Construct a group containing all procs running atleast 1 turbine in FAST
+  MPI_Group_incl(worldMPIGroup, nProcsWithTurbines, turbineProcs, &fastMPIGroup) ;
+  int fastMPIcommTag = MPI_Comm_create(MPI_COMM_WORLD, fastMPIGroup, &fastMPIComm);
+  if (MPI_COMM_NULL != fastMPIComm) {
+    MPI_Comm_rank(fastMPIComm, &fastMPIRank);
+  }
+#endif
+
   //Allocates memory for all the input data to be read from the file
 
   TurbID = new int[nTurbinesProc];
@@ -594,58 +638,13 @@ void FAST_cInterface::readTurbineData(int iTurb, YAML::Node turbNode) {
 }
 
 
-void FAST_cInterface::allocateTurbinesToProcs() {
+void FAST_cInterface::allocateTurbinesToProcsSimple() {
   
-  // Allocate turbines to each processor
+  // Allocate turbines to each processor - round robin fashion
+  int nProcs ;
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcs);
+  for(int j = 0; j < nTurbinesGlob; j++)  turbineMapGlobToProc[j] = j % nProcs ;
   
-  for (int iTurb=0; iTurb < nTurbinesGlob; iTurb++) {
-    if (dryRun) {
-      if(worldMPIRank == 0) {
-	std::cout << "iTurb = " << iTurb << " turbineMapGlobToProc[iTurb] = " << turbineMapGlobToProc[iTurb] << std::endl ;
-      }
-    }
-    if(worldMPIRank == turbineMapGlobToProc[iTurb]) {
-      turbineMapProcToGlob[nTurbinesProc] = iTurb;
-      reverseTurbineMapProcToGlob[iTurb] = nTurbinesProc;
-      nTurbinesProc++ ;
-    }
-    turbineSetProcs.insert(turbineMapGlobToProc[iTurb]);
-  }
-#ifdef HAVE_MPI  
-  if ( dryRun ) {
-    MPI_Barrier(MPI_COMM_WORLD);  
-  }
-#endif
-
-  int nProcsWithTurbines=0;
-  turbineProcs = new int[turbineSetProcs.size()];
-  for (std::set<int>::const_iterator p = turbineSetProcs.begin(); p != turbineSetProcs.end(); p++) {
-    turbineProcs[nProcsWithTurbines] = *p;
-
-    if (dryRun) {
-      if ( worldMPIRank == turbineProcs[nProcsWithTurbines] ) {
-	for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
-	  std::cout << "Proc " << worldMPIRank << " loc iTurb " << iTurb << " glob iTurb " << turbineMapProcToGlob[iTurb] << std::endl ;
-	}
-      }
-#ifdef HAVE_MPI
-      MPI_Barrier(MPI_COMM_WORLD);  
-#endif
-    }
-
-    nProcsWithTurbines++ ;
-  }
-    
-#ifdef HAVE_MPI
-  // Construct a group containing all procs running atleast 1 turbine in FAST
-  MPI_Group_incl(worldMPIGroup, nProcsWithTurbines, turbineProcs, &fastMPIGroup) ;
-  int fastMPIcommTag = MPI_Comm_create(MPI_COMM_WORLD, fastMPIGroup, &fastMPIComm);
-  if (MPI_COMM_NULL != fastMPIComm) {
-    MPI_Comm_rank(fastMPIComm, &fastMPIRank);
-  }
-#endif
-
-  return ;
 }
 
 
