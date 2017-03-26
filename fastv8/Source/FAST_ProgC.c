@@ -31,7 +31,9 @@ int main() {
   if ( !FAST.isDryRun() ) {
     FAST.init();
     // Set velocity at the aerodyn nodes here if necessary
-    FAST.solution0();
+    if (FAST.isTimeZero()) {
+      FAST.solution0();
+    }
   }
 
 
@@ -40,10 +42,12 @@ int main() {
     for (int nt = FAST.get_ntStart(); nt < FAST.get_ntEnd(); nt++) {
       // Set velocity at the aerodyn nodes here if necessary
       FAST.step();
-      FAST.computeTorqueThrust(0,torque,thrust);
-      std::cout.precision(16);
-      std::cout << "Torque = " << torque[0] << " " << torque[1] << " " << torque[2] << std::endl ;
-      std::cout << "Thrust = " << thrust[0] << " " << thrust[1] << " " << thrust[2] << std::endl ;      
+      if (FAST.isDebug() ) {
+	FAST.computeTorqueThrust(0,torque,thrust);
+	std::cout.precision(16);
+	std::cout << "Torque = " << torque[0] << " " << torque[1] << " " << torque[2] << std::endl ;
+	std::cout << "Thrust = " << thrust[0] << " " << thrust[1] << " " << thrust[2] << std::endl ;      
+      }
     }
   }
 

@@ -158,23 +158,6 @@ int FAST_cInterface::solution0() {
 
 int FAST_cInterface::step() {
 
-  if ( (((nt_global - ntStart) % nEveryCheckPoint) == 0 )  && (nt_global != ntStart) ) {
-    //sprintf(CheckpointFileRoot, "../../CertTest/Test18.%d", nt_global);
-    for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
-      sprintf(CheckpointFileRoot[iTurb], " "); // if blank, it will use FAST convention <RootName>.nt_global
-      FAST_CreateCheckpoint(&iTurb, CheckpointFileRoot[iTurb], &ErrStat, ErrMsg);
-      checkError(ErrStat, ErrMsg);
-    }
-    if(scStatus) {
-#ifdef HAVE_MPI
-      if (fastMPIRank == 0) {
-#endif
-      sc->writeRestartFile(nt_global);
-#ifdef HAVE_MPI
-      }
-#endif
-    }
-  }
   /* ******************************
      set inputs from this code and call FAST:
   ********************************* */
@@ -222,6 +205,24 @@ int FAST_cInterface::step() {
 
    nt_global = nt_global + 1;
   
+   if ( (((nt_global - ntStart) % nEveryCheckPoint) == 0 )  && (nt_global != ntStart) ) {
+     //sprintf(CheckpointFileRoot, "../../CertTest/Test18.%d", nt_global);
+     for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
+       sprintf(CheckpointFileRoot[iTurb], " "); // if blank, it will use FAST convention <RootName>.nt_global
+       FAST_CreateCheckpoint(&iTurb, CheckpointFileRoot[iTurb], &ErrStat, ErrMsg);
+       checkError(ErrStat, ErrMsg);
+     }
+     if(scStatus) {
+#ifdef HAVE_MPI
+       if (fastMPIRank == 0) {
+#endif
+	 sc->writeRestartFile(nt_global);
+#ifdef HAVE_MPI
+       }
+#endif
+     }
+   }
+   
    return 0;
 }
 
@@ -265,10 +266,9 @@ int FAST_cInterface::readInputFile(std::string cInterfaceInputFile ) {
 
       globTurbineData = new globTurbineDataType[nTurbinesGlob];
 
-      for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
+      for (int iTurb=0; iTurb < nTurbinesGlob; iTurb++) {
 	if (cDriverInp["Turbine" + std::to_string(iTurb)]) {
 	  readTurbineData(iTurb, cDriverInp["Turbine" + std::to_string(iTurb)] );
-	  std::cout << "Blah" << std::endl ;
 	} else {
 	  throw std::runtime_error("Node for Turbine" + std::to_string(iTurb) + " not present in input file");
 	  return 1;
@@ -585,8 +585,6 @@ void FAST_cInterface::allocateInputData() {
     MPI_Comm_rank(fastMPIComm, &fastMPIRank);
   }
 #endif
-
-  //Allocates memory for all the input data to be read from the file
 
   TurbID = new int[nTurbinesProc];
   TurbineBasePos = new float* [nTurbinesProc];
