@@ -11,10 +11,10 @@
 #include <malloc.h>
 #include <stdexcept>
 #include "yaml-cpp/yaml.h"
-#include "dlfcn.h"
 #ifdef HAVE_MPI
   #include "mpi.h"
 #endif
+#include "SuperController_Types.h"
 #include "SC.h"
 
 
@@ -64,16 +64,9 @@ class FAST_cInterface {
   int * numForcePtsTwr;
   int * numVelPtsBlade;
   int * numVelPtsTwr;
-  int numScOutputs;  // # outputs from the supercontroller == # inputs to the controller == NumSC2Ctrl
-  int numScInputs;   // # inputs to the supercontroller == # outputs from the controller == NumCtrl2SC
-  double ** scOutputsGlob;  // # outputs from the supercontroller for all turbines
-  double ** scInputsGlob;   // # inputs to the supercontroller for all turbines
   
   OpFM_InputType_t ** cDriver_Input_from_FAST;
   OpFM_OutputType_t ** cDriver_Output_to_FAST;
-
-  SC_InputType_t ** cDriverSC_Input_from_FAST;
-  SC_OutputType_t ** cDriverSC_Output_to_FAST;
 
   // Turbine Number is DIFFERENT from TurbID. Turbine Number simply runs from 0:n-1 locally and globally.
   std::map<int, int> turbineMapGlobToProc; // Mapping global turbine number to processor number
@@ -82,17 +75,17 @@ class FAST_cInterface {
   std::set<int> turbineSetProcs; // Set of processors containing atleast one turbine 
   int * turbineProcs; // Same as the turbineSetProcs, but as an integer array
 
-  //Supercontroller stuff
+  // Supercontroller stuff
   bool scStatus;
-  std::string scLibFile;
-  // Dynamic load stuff copied from 'C++ dlopen mini HOWTO' on tldp.org
-  void *scLibHandle ; 
-  typedef SuperController* create_sc_t(); 
-  create_sc_t * create_SuperController;
-  typedef void destroy_sc_t(SuperController *); 
-  destroy_sc_t * destroy_SuperController;
-  SuperController * sc;
+  int numScOutputs;  // # outputs from the supercontroller == # inputs to the controller == NumSC2Ctrl
+  int numScInputs;   // # inputs to the supercontroller == # outputs from the controller == NumCtrl2SC
+  double ** sc_outputsTurbine;  // # outputs from the supercontroller for all turbines
+  double ** sc_outputsTurbine;   // # inputs to the supercontroller for all turbines
+  SC_InputType_t ** cDriverSC_Input_from_FAST;
+  SC_OutputType_t ** cDriverSC_Output_to_FAST;
+  SuperController sc;
 
+  
 #ifdef HAVE_MPI
   int fastMPIGroupSize;
   MPI_Group fastMPIGroup;

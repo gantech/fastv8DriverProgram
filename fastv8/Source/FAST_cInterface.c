@@ -97,7 +97,7 @@ int FAST_cInterface::init() {
      }
 
      if(scStatus) {
-	 sc->readRestartFile(nt_global);
+	 sc.readRestartFile(nt_global);
      }
 
    
@@ -134,9 +134,9 @@ int FAST_cInterface::solution0() {
      
      if(scStatus) {
 
-       sc->init(nTurbinesGlob, numScInputs, numScOutputs);
+       sc.init(nTurbinesGlob);
 
-       sc->calcOutputs(scOutputsGlob);
+       sc.calcOutputs(sc_outputsTurbine);
        fillScOutputsLoc();
      }
 
@@ -163,7 +163,7 @@ int FAST_cInterface::step() {
   ********************************* */
 
    if(scStatus) {
-     sc->calcOutputs(scOutputsGlob);
+     sc.calcOutputs(sc_outputsTurbine);
      fillScOutputsLoc();
    }
 
@@ -199,7 +199,7 @@ int FAST_cInterface::step() {
    }
 
    if(scStatus) {
-     sc->updateStates(scInputsGlob); // Go from 'n' to 'n+1' based on input at previous time step
+     sc.updateStates(sc_inputsInputsGlob); // Go from 'n' to 'n+1' based on input at previous time step
      fillScInputsGlob(); // Update inputs to super controller for 'n+1'
    }
 
@@ -216,7 +216,7 @@ int FAST_cInterface::step() {
 #ifdef HAVE_MPI
        if (fastMPIRank == 0) {
 #endif
-	 sc->writeRestartFile(nt_global);
+	 sc.writeRestartFile(nt_global);
 #ifdef HAVE_MPI
        }
 #endif
@@ -255,7 +255,7 @@ int FAST_cInterface::readInputFile(std::string cInterfaceInputFile ) {
       tMax = cDriverInp["tMax"].as<double>();
       nEveryCheckPoint = cDriverInp["nEveryCheckPoint"].as<int>();
 
-      loadSuperController(cDriverInp);
+      loadSupercontroller(cDriverInp);
 
       if (restart == false) {
 	ntStart = 0;
@@ -315,7 +315,7 @@ int FAST_cInterface::readInputFile(const YAML::Node & cDriverInp) {
     tMax = cDriverInp["tMax"].as<double>(); // tMax is the total duration to which you want to run FAST. This should be the same as the end time given in the FAST fst file. Choose this carefully as FAST writes the output file only at this point if you choose the binary file output.
     nEveryCheckPoint = cDriverInp["n_every_checkpoint"].as<int>();
     
-    loadSuperController(cDriverInp);
+    loadSupercontroller(cDriverInp);
     
     globTurbineData = new globTurbineDataType[nTurbinesGlob];
     for (int iTurb=0; iTurb < nTurbinesGlob; iTurb++) {
@@ -672,36 +672,14 @@ void FAST_cInterface::end() {
     delete[] numForcePtsTwr;
     
     if ( !dryRun ) {
-      for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
-	if (cDriver_Input_from_FAST[iTurb] != NULL) {
-	  free(cDriver_Input_from_FAST[iTurb]);
-	  cDriver_Input_from_FAST[iTurb] = NULL;
-	}
-	if (cDriver_Output_to_FAST[iTurb] != NULL) {
-	  free(cDriver_Output_to_FAST[iTurb]);
-	  cDriver_Output_to_FAST[iTurb] = NULL;
-	}
-      }
       delete[] cDriver_Input_from_FAST;
       delete[] cDriver_Output_to_FAST;
 
       if (scStatus) {
-	for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
-	  if (cDriverSC_Input_from_FAST[iTurb] != NULL) {
-	    free(cDriverSC_Input_from_FAST[iTurb]);
-	    cDriverSC_Input_from_FAST[iTurb] = NULL;
-	  }
-	  if (cDriverSC_Output_to_FAST[iTurb] != NULL) {
-	    free(cDriverSC_Output_to_FAST[iTurb]);
-	    cDriverSC_Output_to_FAST[iTurb] = NULL;
-	  }
-	}
 	delete[] cDriverSC_Input_from_FAST;
 	delete[] cDriverSC_Output_to_FAST;
-	
-	delete2DArray(scInputsGlob);
-	delete2DArray(scOutputsGlob);
-	
+	delete2DArray(sc_inputsTurbine);
+	delete2DArray(sc_outputsTurbine);
       }
 
     }
@@ -714,121 +692,75 @@ void FAST_cInterface::end() {
     MPI_Group_free(&worldMPIGroup);
 #endif    
 
-    if(scStatus) {
-
-      destroy_SuperController(sc) ;
-
-      if(scLibHandle != NULL) {
-	// close the library
-	std::cout << "Closing library...\n";
-	dlclose(scLibHandle);
-      }
-      
-    }
-
   }
 
-
-void FAST_cInterface::loadSuperController(YAML::Node c) {
+void FAST_cInterface::loadSupercontroller(YAML::Node c) {
 
   if(c["superController"]) {
-    scStatus = c["superController"].as<bool>();
-    scLibFile = c["scLibFile"].as<std::string>();
-
-    // open the library
-    scLibHandle = dlopen(scLibFile.c_str(), RTLD_LAZY);
-    if (!scLibHandle) {
-      std::cerr << "Cannot open library: " << dlerror() << '\n';
-    }
-    
-    create_SuperController = (create_sc_t*) dlsym(scLibHandle, "create_sc");
-    // reset errors
-    dlerror();
-    const char *dlsym_error = dlerror();
-    if (dlsym_error) {
-      std::cerr << "Cannot load symbol 'create_sc': " << dlsym_error << '\n';
-      dlclose(scLibHandle);
-    }
-
-    destroy_SuperController = (destroy_sc_t*) dlsym(scLibHandle, "destroy_sc");
-    // reset errors
-    dlerror();
-    const char *dlsym_error_us = dlerror();
-    if (dlsym_error_us) {
-      std::cerr << "Cannot load symbol 'destroy_sc': " << dlsym_error_us << '\n';
-      dlclose(scLibHandle);
-    }
-
-    sc = create_SuperController() ;
-
-    numScInputs = c["numScInputs"].as<int>();
-    numScOutputs = c["numScOutputs"].as<int>();
-
-    if ( (numScInputs > 0) && (numScOutputs > 0)) {
-      scOutputsGlob = create2DArray<double>(nTurbinesGlob, numScOutputs);
-      scInputsGlob = create2DArray<double>(nTurbinesGlob, numScInputs);
-      for (int iTurb=0; iTurb < nTurbinesGlob; iTurb++) {
-	for(int iInput=0; iInput < numScInputs; iInput++) {
-	  scInputsGlob[iTurb][iInput] = 0.0 ; // Initialize to zero
-	}
-	for(int iOutput=0; iOutput < numScOutputs; iOutput++) {
-	  scOutputsGlob[iTurb][iOutput] = 0.0 ; // Initialize to zero
-	}
+      scStatus = c["superController"].as<bool>();
+      if (scStatus) {
+          if (c["numScInputs"] && c["numScOutputs"]) {
+              numScInputs = c["numScInputs"].as<int>();
+              numScOutputs = c["numScOutputs"].as<int>();
+          
+              if ( (numScInputs > 0) && (numScOutputs > 0)) {
+                  sc_outputsTurbine = create2DArray<double>(nTurbinesGlob, numScOutputs);
+                  sc_inputsTurbine = create2DArray<double>(nTurbinesGlob, numScInputs);
+                  sc.load(c);
+              } else {
+                  std::cerr <<  "Make sure numScInputs and numScOutputs are greater than zero" << std::endl;
+              }
+          } else  {
+              std::cerr << "numScInputs and/or numScOutputs not specified in the input file"
+          }
       }
-
-    } else {
-      std::cerr <<  "Make sure numScInputs and numScOutputs are greater than zero" << std::endl;
-    }
-    
-   } else {
-    scStatus = false;
-    numScInputs = 0;
-    numScOutputs = 0;
-   }
+  } else {
+      scStatus = false;
+      numScInputs = 0;
+      numScOutputs = 0;
+  }
+  
 
 }
 
-
-void FAST_cInterface::fillScInputsGlob() {
+void SuperController::fillScInputsGlob() {
   
   // Fills the global array containing inputs to the supercontroller from all turbines
 
   for(int iTurb=0; iTurb < nTurbinesGlob; iTurb++) {
     for(int iInput=0; iInput < numScInputs; iInput++) {
-      scInputsGlob[iTurb][iInput] = 0.0; // Initialize to zero 
+      sc_inputsTurbine[iTurb][iInput] = 0.0; // Initialize to zero 
     }
   }
   
   for(int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
     for(int iInput=0; iInput < numScInputs; iInput++) {
-      scInputsGlob[turbineMapProcToGlob[iTurb]][iInput] = cDriverSC_Input_from_FAST[iTurb]->toSC[iInput] ;
+      sc_inputsTurbine[turbineMapProcToGlob[iTurb]][iInput] = cDriverSC_Input_from_FAST[iTurb]->toSC[iInput] ;
     }
   }
   
   
 #ifdef HAVE_MPI
   if (MPI_COMM_NULL != fastMPIComm) {
-    MPI_Allreduce(MPI_IN_PLACE, scInputsGlob[0], numScInputs*nTurbinesGlob, MPI_DOUBLE, MPI_SUM, fastMPIComm) ;
+    MPI_Allreduce(MPI_IN_PLACE, sc_inputsTurbine[0], numScInputs*nTurbinesGlob, MPI_DOUBLE, MPI_SUM, fastMPIComm) ;
   }
 #endif
   
-
+ 
 }
 
 
-void FAST_cInterface::fillScOutputsLoc() {
+void SuperController::fillScOutputsLoc() {
   
   // Fills the local array containing outputs from the supercontroller to each turbine
   
   for(int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
     for(int iOutput=0; iOutput < numScOutputs; iOutput++) {
-      cDriverSC_Output_to_FAST[iTurb]->fromSC[iOutput] = scOutputsGlob[turbineMapProcToGlob[iTurb]][iOutput] ;
+      cDriverSC_Output_to_FAST[iTurb]->fromSC[iOutput] = sc_outputsTurbine[turbineMapProcToGlob[iTurb]][iOutput] ;
     }
   }
 
 }
-
-
 
 
 
