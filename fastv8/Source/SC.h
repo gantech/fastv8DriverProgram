@@ -1,8 +1,8 @@
-
 #include <sstream>
 #include <iostream>
-#include "hdf5.h"
 #include <string>
+#include "yaml-cpp/yaml.h"
+#include "hdf5.h"
 #include "dlfcn.h"
 
 class SuperController {
@@ -27,10 +27,10 @@ class SuperController {
   std::string scLibFile;
   // Dynamic load stuff copied from 'C++ dlopen mini HOWTO' on tldp.org
   void *scLibHandle ; 
-  typedef void sc_updateStates_t(double ** sc_inputsTurbine, double ** turbineStates_n, double ** turbineStates_np1, double * globStates_n, double * globStates_np1); 
+  typedef void sc_updateStates_t(int nTurbines, int nScInputsTurbine, double ** sc_inputsTurbine, int nTurbineStates, double ** turbineStates_n, double ** turbineStates_np1, int nGlobStates, double * globStates_n, double * globStates_np1); 
   sc_updateStates_t * sc_updateStates;
-  typedef void sc_calcOutputs_t(double ** sc_inputsTurbine, double ** turbineStates, double * globStates, double ** sc_outputsTurbine); 
-  sc_updateStates_t * sc_updateStates;
+  typedef void sc_calcOutputs_t(int nTurbines, int nScInputsTurbine, double ** sc_inputsTurbine, int nTurbineStates, double ** turbineStates, int nGlobStates, double * globStates, int nScOutputsTurbine, double ** sc_outputsTurbine); 
+  sc_calcOutputs_t * sc_calcOutputs;
 
 
  public:
@@ -39,9 +39,9 @@ class SuperController {
 
   ~SuperController() ;
 
-  void init(int n, int numScInputs, int numScOutputs);
+  void init(int nTurbinesGlob);
   
-  void loadSuperController(YAML::Node c);
+  void load(YAML::Node c);
 
   void calcOutputs(double ** sc_inputsTurbine, double ** sc_outputsTurbine) ;
 

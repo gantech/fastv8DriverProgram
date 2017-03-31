@@ -136,7 +136,7 @@ int FAST_cInterface::solution0() {
 
        sc.init(nTurbinesGlob);
 
-       sc.calcOutputs(sc_outputsTurbine);
+       sc.calcOutputs(sc_inputsTurbine, sc_outputsTurbine);
        fillScOutputsLoc();
      }
 
@@ -163,7 +163,7 @@ int FAST_cInterface::step() {
   ********************************* */
 
    if(scStatus) {
-     sc.calcOutputs(sc_outputsTurbine);
+     sc.calcOutputs(sc_inputsTurbine, sc_outputsTurbine);
      fillScOutputsLoc();
    }
 
@@ -199,7 +199,8 @@ int FAST_cInterface::step() {
    }
 
    if(scStatus) {
-     sc.updateStates(sc_inputsInputsGlob); // Go from 'n' to 'n+1' based on input at previous time step
+     sc.updateStates(sc_inputsTurbine); // Predict state at 'n+1' based on inputs
+     sc.advanceStates(); // Advance states from 'n' to 'n+1'
      fillScInputsGlob(); // Update inputs to super controller for 'n+1'
    }
 
@@ -708,11 +709,11 @@ void FAST_cInterface::loadSupercontroller(YAML::Node c) {
                   sc_inputsTurbine = create2DArray<double>(nTurbinesGlob, numScInputs);
                   sc.load(c);
               } else {
-                  std::cerr <<  "Make sure numScInputs and numScOutputs are greater than zero" << std::endl;
+                  std::cerr <<  "Make sure numScInputs and numScOutputs are greater than zero" << std::endl ;
               }
           } else  {
-              std::cerr << "numScInputs and/or numScOutputs not specified in the input file"
-          }
+	    std::cerr << "numScInputs and/or numScOutputs not specified in the input file" << std::endl ;
+	  }
       }
   } else {
       scStatus = false;
@@ -723,7 +724,7 @@ void FAST_cInterface::loadSupercontroller(YAML::Node c) {
 
 }
 
-void SuperController::fillScInputsGlob() {
+void FAST_cInterface::fillScInputsGlob() {
   
   // Fills the global array containing inputs to the supercontroller from all turbines
 
@@ -750,7 +751,7 @@ void SuperController::fillScInputsGlob() {
 }
 
 
-void SuperController::fillScOutputsLoc() {
+void FAST_cInterface::fillScOutputsLoc() {
   
   // Fills the local array containing outputs from the supercontroller to each turbine
   

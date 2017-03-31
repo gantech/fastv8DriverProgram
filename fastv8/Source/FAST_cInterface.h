@@ -79,8 +79,8 @@ class FAST_cInterface {
   bool scStatus;
   int numScOutputs;  // # outputs from the supercontroller == # inputs to the controller == NumSC2Ctrl
   int numScInputs;   // # inputs to the supercontroller == # outputs from the controller == NumCtrl2SC
+  double ** sc_inputsTurbine;   // # inputs to the supercontroller for all turbines
   double ** sc_outputsTurbine;  // # outputs from the supercontroller for all turbines
-  double ** sc_outputsTurbine;   // # inputs to the supercontroller for all turbines
   SC_InputType_t ** cDriverSC_Input_from_FAST;
   SC_OutputType_t ** cDriverSC_Output_to_FAST;
   SuperController sc;
@@ -168,7 +168,7 @@ class FAST_cInterface {
   int get_numForcePtsTwrLoc(int iTurbLoc) { return numForcePtsTwr[iTurbLoc]; }
   int get_numForcePtsLoc(int iTurbLoc) { return 1 + numBlades[iTurbLoc]*numForcePtsBlade[iTurbLoc] + numForcePtsTwr[iTurbLoc]; }
 
-  void loadSuperController(YAML::Node c);
+  void loadSupercontroller(YAML::Node c);
   void fillScInputsGlob() ;
   void fillScOutputsLoc() ;
 

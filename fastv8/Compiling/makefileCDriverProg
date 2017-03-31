@@ -57,7 +57,7 @@ endif
    # Name of compiler to use and flags to use.
 ifeq ($(COMPILER),gnu)
         CFLAGS = $(OPT_OPTIONS) -fPIC -fpermissive -std=c++11 -DHAVE_MPI
-	LDFLAGS = -fPIC -L$(FASTLIB_DIR) -L$(YAMLCPPLIB_DIR) -lFAST_cInterface$(EXE_EXT) -lFAST$(EXE_EXT) -lmap-1.20.10 -lyaml-cpp -ldl -lgfortran
+	LDFLAGS = -fPIC -L$(FASTLIB_DIR) -L$(YAMLCPPLIB_DIR) -lFAST_cInterface$(EXE_EXT) -lFAST$(EXE_EXT) -lmap-1.20.10 -lyaml-cpp -ldl -lgfortran -lz -lhdf5_hl -lhdf5 
 	ifeq ($(LAPACK),lapack)
 		LAPACK_LINK = -L$(FASTLIB_DIR)$(BITS) -llapack -lblas -llapacke -lm
 	else ifeq ($(LAPACK),mkl)
@@ -111,7 +111,7 @@ $(INTER_DIR)/FAST_cInterface.o: $(SOURCE_DIR)/FAST_cInterface.c $(SOURCE_DIR)/FA
 
 $(INTER_DIR)/SC.o: $(SOURCE_DIR)/SC.c $(SOURCE_DIR)/SC.h 
 	$(CPP)  $(CFLAGS) -c $< -I$(YAMLCPPINCLUDE_DIR) -o $@ 
-p
+
 $(INTER_DIR)/FAST_ProgC.o: $(SOURCE_DIR)/FAST_ProgC.c $(SOURCE_DIR)/FAST_cInterface.h $(INTER_DIR)/FAST_cInterface.o $(SOURCE_DIR)/dependencies/OpenFOAM/OpenFOAM_Types.h $(SOURCE_DIR)/dependencies/SuperController/SuperController_Types.h
 	$(CPP)  $(CFLAGS) -c $< -I$(SOURCE_DIR) -I$(SOURCE_DIR)/dependencies/OpenFOAM/ -I$(SOURCE_DIR)/dependencies/SuperController -I$(YAMLCPPINCLUDE_DIR) -o $@
 
@@ -123,7 +123,7 @@ $(INTER_DIR):
    # For linking 
 
 $(FASTLIB_DIR)/libFAST_cInterface$(EXE_EXT).a: $(INTER_DIR)/FAST_cInterface.o $(INTER_DIR)/SC.o
-	ar rcs $(FASTLIB_DIR)/libFAST_cInterface$(EXE_EXT).a $(INTER_DIR)/FAST_cInterface.o $(INTER_DIR)/SC.o 
+	ar rcs $(FASTLIB_DIR)/libFAST_cInterface$(EXE_EXT).a $(INTER_DIR)/FAST_cInterface.o $(INTER_DIR)/SC.o
 	cp $(SOURCE_DIR)/FAST_cInterface.h $(SOURCE_DIR)/FAST_Library.h $(SOURCE_DIR)/dependencies/OpenFOAM/OpenFOAM_Types.h $(SOURCE_DIR)/dependencies/SuperController/SuperController_Types.h $(SOURCE_DIR)/SC.h ../include
 
 $(DEST_DIR)/FAST_ProgC$(EXE_EXT): $(FASTLIB_DIR)/libFAST_cInterface$(EXE_EXT).a $(INTER_DIR)/FAST_ProgC.o

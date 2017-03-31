@@ -28,10 +28,14 @@ template <typename T> void delete2DArray(T** arr) {
 
 
 SuperController::SuperController():
+nScInputsTurbine(0),
+nScOutputsTurbine(0),
 nGlobStates(0),
 nTurbineStates(0),
 globStates(NULL),
-turbineStates(NULL)
+globStates_np1(NULL),
+turbineStates(NULL),
+turbineStates_np1(NULL)
 {
   
 }
@@ -49,7 +53,6 @@ SuperController::~SuperController() {
   if (NULL != globStates_np1) delete [] globStates_np1;
   if (NULL != turbineStates) delete2DArray(turbineStates);
   if (NULL != turbineStates_np1) delete2DArray(turbineStates_np1);
-  }
 
 }
 
@@ -85,19 +88,17 @@ void SuperController::load(YAML::Node c) {
         
         sc_updateStates = (sc_updateStates_t*) dlsym(scLibHandle, "sc_updateStates");
         // reset errors
-        dlerror();
         const char *dlsym_error_us = dlerror();
-        if (dlsym_error) {
+        if (dlsym_error_us) {
             std::cerr << "Cannot load symbol 'sc_updateStates': " << dlsym_error_us << '\n';
             dlclose(scLibHandle);
         }
         
-        sc_calcOutput = (sc_calcOutput_t*) dlsym(scLibHandle, "sc_calcOutput");
+        sc_calcOutputs = (sc_calcOutputs_t*) dlsym(scLibHandle, "sc_calcOutputs");
         // reset errors
-        dlerror();
         const char *dlsym_error_co = dlerror();
-        if (dlsym_error_us) {
-            std::cerr << "Cannot load symbol 'sc_calcOutput': " << dlsym_error_co << '\n';
+        if (dlsym_error_co) {
+            std::cerr << "Cannot load symbol 'sc_calcOutputs': " << dlsym_error_co << '\n';
             dlclose(scLibHandle);
         }
     } else {
@@ -122,7 +123,7 @@ void SuperController::init(int nTurbinesGlob) {
 
 void SuperController::calcOutputs(double ** sc_inputsTurbine, double ** sc_outputsTurbine) {
 
-    sc_calcOutputs(sc_inputsTurbine, turbineStates, globStates, sc_outputsTurbine);   
+  sc_calcOutputs(nTurbines, nScInputsTurbine, sc_inputsTurbine, nTurbineStates, turbineStates, nGlobStates, globStates, nScOutputsTurbine, sc_outputsTurbine);   
 
 /*   for(int iTurb=0; iTurb < nTurbines; iTurb++) { */
 /*     for(int i=0; i < nScOutputsTurbine; i++) { */
@@ -136,12 +137,13 @@ void SuperController::calcOutputs(double ** sc_inputsTurbine, double ** sc_outpu
 /*   std::cout << "nScInputsTurbine = "  << nScInputsTurbine  << std::endl ; */
 /*   std::cout << "nScOutputsTurbine = " << nScOutputsTurbine << std::endl ; */
 
-/*   for(int iTurb=0; iTurb < nTurbines; iTurb++) { */
-/*     for(int iInput=0; iInput < nScInputsTurbine; iInput++) { */
-/*       std::cout << "iTurb = " << iTurb << ", iInput = " << iInput << ",  " ; */
-/*       std::cout << sc_inputsTurbine[iTurb][iInput] << std::endl ; */
-/*     } */
-/*   } */
+  for(int iTurb=0; iTurb < nTurbines; iTurb++) {
+    //    for(int iOutput=0; iOutput < nScInputsTurbine; iOutput++) {
+    std::cout << "iTurb = " << iTurb ;
+    std::cout << ", iInput = 0,  " << sc_inputsTurbine[iTurb][0] << std::endl ;
+    std::cout << ", iOutput = 0,  " << sc_outputsTurbine[iTurb][0] << std::endl ;
+    //    }
+  }
 
 /* #endif */
 
@@ -160,6 +162,7 @@ void SuperController::advanceStates() {
     }
   }
 
+}
 
 void SuperController::updateStates(double ** sc_inputsTurbine) {
 
@@ -184,7 +187,7 @@ void SuperController::updateStates(double ** sc_inputsTurbine) {
     /*  20-40s: 1 degrees */
     /*  40-60s: 2.5 degrees */
 
-  sc_updateStates(sc_inputsTurbine, turbineStates_n, turbineStates_np1, globStates_n, globStates_np1)
+  sc_updateStates(nTurbines, nScInputsTurbine, sc_inputsTurbine, nTurbineStates, turbineStates, turbineStates_np1, nGlobStates, globStates, globStates_np1) ;
 
 /*   //Copy inputs into states first */
 /*   for(int iTurb=0; iTurb < nTurbines; iTurb++) { */
@@ -209,7 +212,7 @@ void SuperController::updateStates(double ** sc_inputsTurbine) {
 /*     turbineStates[1][nScInputsTurbine] = 2.5 * d2R ;     */
 /*   } */
 
-}
+    }
 
 int SuperController::readRestartFile(int n_t_global) {
 
@@ -233,12 +236,14 @@ int SuperController::readRestartFile(int n_t_global) {
     H5Aclose(attr);
 
     globStates = new double[nGlobStates]; 
+    globStates_np1 = new double[nGlobStates]; 
 
     attr = H5Aopen(restartFile, "nTurbineStates", H5P_DEFAULT);
     ret = H5Aread(attr, H5T_NATIVE_INT, &nTurbineStates) ;
     H5Aclose(attr);
 
     turbineStates = create2DArray<double>(nTurbines, nTurbineStates);
+    turbineStates_np1 = create2DArray<double>(nTurbines, nTurbineStates);
 
 #ifdef DEBUG
     std::cout << "nTurbines = " << nTurbines << std::endl ;
@@ -254,11 +259,19 @@ int SuperController::readRestartFile(int n_t_global) {
     hid_t dataSet = H5Dopen2(restartFile, "/globStates", H5P_DEFAULT);
     herr_t status = H5Dread(dataSet, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, globStates);
     status = H5Dclose(dataSet);
+
+    dataSet = H5Dopen2(restartFile, "/globStates_np1", H5P_DEFAULT);
+    status = H5Dread(dataSet, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, globStates_np1);
+    status = H5Dclose(dataSet);
   }
   
   if (nTurbineStates > 0) {
     hid_t dataSet = H5Dopen2(restartFile, "turbineStates", H5P_DEFAULT);
     herr_t status = H5Dread(dataSet, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, turbineStates[0]);
+    status = H5Dclose(dataSet);
+
+    dataSet = H5Dopen2(restartFile, "turbineStates_np1", H5P_DEFAULT);
+    status = H5Dread(dataSet, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, turbineStates_np1[0]);
     status = H5Dclose(dataSet);
   }
 
@@ -325,23 +338,33 @@ int SuperController::writeRestartFile(int n_t_global) {
     
     status = H5Dclose(dataSet);
     status = H5Sclose(dataSpace);
+
+    dataSpace = H5Screate_simple(1, dims, NULL);
+    dataSet = H5Dcreate2(restartFile, "/globStates_np1", H5T_NATIVE_DOUBLE, dataSpace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);    
+    status = H5Dwrite(dataSet, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, globStates_np1);
+    
+    status = H5Dclose(dataSet);
+    status = H5Sclose(dataSpace);
+
+
   }
   
   if (nTurbineStates > 0) {
 
-    for(int iTurb=0; iTurb < nTurbines; iTurb++) {
-      for(int i=0; i < nTurbineStates; i++) {
-	std::cout << "iTurb = " << iTurb << ", i = " << i << ",  " ;
-	std::cout << turbineStates[iTurb][i] << std::endl ;
-      }
-    }
-
     hsize_t dims[2];
     dims[0] = nTurbines;
     dims[1] = nTurbineStates;
+
     hid_t dataSpace = H5Screate_simple(2, dims, NULL);
     hid_t dataSet = H5Dcreate2(restartFile, "turbineStates", H5T_NATIVE_DOUBLE, dataSpace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);    
     herr_t status = H5Dwrite(dataSet, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, turbineStates[0]);
+    
+    status = H5Dclose(dataSet);
+    status = H5Sclose(dataSpace);
+
+    dataSpace = H5Screate_simple(2, dims, NULL);
+    dataSet = H5Dcreate2(restartFile, "turbineStates_np1", H5T_NATIVE_DOUBLE, dataSpace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);    
+    status = H5Dwrite(dataSet, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, turbineStates_np1[0]);
     
     status = H5Dclose(dataSet);
     status = H5Sclose(dataSpace);
