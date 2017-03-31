@@ -68,7 +68,8 @@ class FAST_cInterface {
   int numScInputs;   // # inputs to the supercontroller == # outputs from the controller == NumCtrl2SC
   double ** scOutputsGlob;  // # outputs from the supercontroller for all turbines
   double ** scInputsGlob;   // # inputs to the supercontroller for all turbines
-  
+
+  std::vector<std::vector< std::vector<double> > > forceNodeVel; // Velocity at force nodes - Store temporarily to interpolate to the velocity nodes
   OpFM_InputType_t ** cDriver_Input_from_FAST;
   OpFM_OutputType_t ** cDriver_Output_to_FAST;
 
@@ -134,7 +135,7 @@ class FAST_cInterface {
   ActuatorNodeType getVelNodeType(int iTurbGlob, int iNode);
   void getVelNodeCoordinates(double *currentCoords, int iNode, int iTurbGlob);
   void setVelocity(std::vector<double> & velocity, int iNode, int iTurbGlob);
-
+  void interpolateVel_ForceToVelNodes();
   ActuatorNodeType getForceNodeType(int iTurbGlob, int iNode);
   void getForceNodeCoordinates(double *currentCoords, int iNode, int iTurbGlob);
   void getForceNodeOrientation(double *currentOrientation, int iNode, int iTurbGlob);

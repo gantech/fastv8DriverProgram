@@ -65,6 +65,13 @@ int FAST_cInterface::init() {
 
    // Allocate memory for OpFM Input types in FAST
 
+   forceNodeVel.resize(nTurbinesProc);
+   for(int j = 0; j < nTurbinesProc; j++)  {
+     forceNodeVel[j].resize(get_numForcePtsLoc(j)) ;
+     for (int k = 0; k < get_numForcePtsLoc(j); k++) forceNodeVel[j][k].resize(3) ;
+   }
+
+     
    cDriver_Input_from_FAST = new OpFM_InputType_t* [nTurbinesProc] ;
    cDriver_Output_to_FAST = new OpFM_OutputType_t* [nTurbinesProc] ;
    for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
@@ -454,12 +461,104 @@ void FAST_cInterface::setVelocity(std::vector<double> & currentVelocity, int iNo
 
   // Set velocity at current node of current turbine - 
   int iTurbLoc = get_localTurbNo(iTurbGlob);
-  for(int j=0; j < iTurbLoc; j++) iNode = iNode - get_numVelPtsLoc(iTurbLoc);
-  cDriver_Output_to_FAST[iTurbLoc]->u[iNode] = currentVelocity[0];
-  cDriver_Output_to_FAST[iTurbLoc]->v[iNode] = currentVelocity[1];
-  cDriver_Output_to_FAST[iTurbLoc]->w[iNode] = currentVelocity[2];
-
+  for(int j=0; j < iTurbLoc; j++) iNode = iNode - get_numForcePtsLoc(iTurbLoc);
+  forceNodeVel[iTurbLoc][iNode][0] = currentVelocity[0];
+  forceNodeVel[iTurbLoc][iNode][1] = currentVelocity[1];
+  forceNodeVel[iTurbLoc][iNode][2] = currentVelocity[2];
 }
+
+void FAST_cInterface::interpolateVel_ForceToVelNodes() {
+
+  // Interpolates the velocity from the force nodes to the velocity nodes
+  
+  for(int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
+    // Hub location
+    cDriver_Output_to_FAST[iTurb]->u[0] = forceNodeVel[iTurb][0][0];
+    cDriver_Output_to_FAST[iTurb]->v[0] = forceNodeVel[iTurb][0][1];
+    cDriver_Output_to_FAST[iTurb]->w[0] = forceNodeVel[iTurb][0][2];
+
+    // Do the blades first
+    int nBlades = get_numBladesLoc(iTurb);
+    for(int iBlade=0; iBlade < nBlades; iBlade++) {
+
+      // Create interpolating parameter - Distance from hub
+      int nForcePtsBlade = get_numForcePtsBladeLoc(iTurb);
+      std::vector<double> rDistForce(nForcePtsBlade) ;
+      for(int j=0; j < nForcePtsBlade; j++) {
+	int iNodeForce = 1 + iBlade * nForcePtsBlade + j ; //The number of actuator force points is always the same for all blades
+	rDistForce[j] = sqrt( 
+                             (cDriver_Input_from_FAST[iTurb]->pxForce[iNodeForce] - cDriver_Input_from_FAST[iTurb]->pxForce[0])*(cDriver_Input_from_FAST[iTurb]->pxForce[iNodeForce] - cDriver_Input_from_FAST[iTurb]->pxForce[0])  
+		           + (cDriver_Input_from_FAST[iTurb]->pyForce[iNodeForce] - cDriver_Input_from_FAST[iTurb]->pyForce[0])*(cDriver_Input_from_FAST[iTurb]->pyForce[iNodeForce] - cDriver_Input_from_FAST[iTurb]->pyForce[0])  
+		           + (cDriver_Input_from_FAST[iTurb]->pzForce[iNodeForce] - cDriver_Input_from_FAST[iTurb]->pzForce[0])*(cDriver_Input_from_FAST[iTurb]->pzForce[iNodeForce] - cDriver_Input_from_FAST[iTurb]->pzForce[0])  			
+			    );
+      }
+
+      // Interpolate to the velocity nodes
+      int nVelPtsBlade = get_numVelPtsBladeLoc(iTurb);
+      for(int j=0; j < nVelPtsBlade; j++) {
+	int iNodeVel = 1 + iBlade * nVelPtsBlade + j ; //Assumes the same number of velocity (Aerodyn) nodes for all blades
+	double rDistVel = sqrt( 
+			      (cDriver_Input_from_FAST[iTurb]->pxVel[iNodeVel] - cDriver_Input_from_FAST[iTurb]->pxVel[0])*(cDriver_Input_from_FAST[iTurb]->pxVel[iNodeVel] - cDriver_Input_from_FAST[iTurb]->pxVel[0])  
+		            + (cDriver_Input_from_FAST[iTurb]->pyVel[iNodeVel] - cDriver_Input_from_FAST[iTurb]->pyVel[0])*(cDriver_Input_from_FAST[iTurb]->pyVel[iNodeVel] - cDriver_Input_from_FAST[iTurb]->pyVel[0])  
+		            + (cDriver_Input_from_FAST[iTurb]->pzVel[iNodeVel] - cDriver_Input_from_FAST[iTurb]->pzVel[0])*(cDriver_Input_from_FAST[iTurb]->pzVel[iNodeVel] - cDriver_Input_from_FAST[iTurb]->pzVel[0])  			
+			      );
+	//Find nearest two force nodes
+	int jForceLower = 0;
+	while (  ((rDistForce[jForceLower]-rDistVel)*(rDistForce[jForceLower+1]-rDistVel) >  0) && (jForceLower < (nForcePtsBlade-1)  ) ) {
+	  jForceLower = jForceLower + 1;
+	}
+	int iNodeForceLower = 1 + iBlade * nForcePtsBlade + jForceLower ; 
+	double rInterp = (rDistVel - rDistForce[jForceLower])/(rDistForce[jForceLower+1]-rDistForce[jForceLower]);
+	cDriver_Output_to_FAST[iTurb]->u[iNodeVel] = forceNodeVel[iTurb][iNodeForceLower][0] + rInterp * (forceNodeVel[iTurb][iNodeForceLower+1][0] - forceNodeVel[iTurb][iNodeForceLower][0] );
+	cDriver_Output_to_FAST[iTurb]->v[iNodeVel] = forceNodeVel[iTurb][iNodeForceLower][1] + rInterp * (forceNodeVel[iTurb][iNodeForceLower+1][1] - forceNodeVel[iTurb][iNodeForceLower][1] );
+	cDriver_Output_to_FAST[iTurb]->w[iNodeVel] = forceNodeVel[iTurb][iNodeForceLower][2] + rInterp * (forceNodeVel[iTurb][iNodeForceLower+1][2] - forceNodeVel[iTurb][iNodeForceLower][2] );
+      }
+    }
+
+    // Now the tower if present and used
+    int nVelPtsTower = get_numVelPtsTwrLoc(iTurb);
+    if ( nVelPtsTower > 0 ) {
+
+      // Create interpolating parameter - Distance from first node from ground
+      int nForcePtsTower = get_numForcePtsTwrLoc(iTurb);
+      std::vector<double> hDistForce(nForcePtsTower) ;
+      int iNodeBotTowerForce = 1 + nBlades * get_numForcePtsBladeLoc(iTurb); // The number of actuator force points is always the same for all blades
+      for(int j=0; j < nForcePtsTower; j++) {
+	int iNodeForce = iNodeBotTowerForce + j ; 
+	hDistForce[j] = sqrt( 
+			     (cDriver_Input_from_FAST[iTurb]->pxForce[iNodeForce] - cDriver_Input_from_FAST[iTurb]->pxForce[iNodeBotTowerForce])*(cDriver_Input_from_FAST[iTurb]->pxForce[iNodeForce] - cDriver_Input_from_FAST[iTurb]->pxForce[iNodeBotTowerForce])  
+                           + (cDriver_Input_from_FAST[iTurb]->pyForce[iNodeForce] - cDriver_Input_from_FAST[iTurb]->pyForce[iNodeBotTowerForce])*(cDriver_Input_from_FAST[iTurb]->pyForce[iNodeForce] - cDriver_Input_from_FAST[iTurb]->pyForce[iNodeBotTowerForce])  
+			   + (cDriver_Input_from_FAST[iTurb]->pzForce[iNodeForce] - cDriver_Input_from_FAST[iTurb]->pzForce[iNodeBotTowerForce])*(cDriver_Input_from_FAST[iTurb]->pzForce[iNodeForce] - cDriver_Input_from_FAST[iTurb]->pzForce[iNodeBotTowerForce])	
+			    );
+      }
+      
+      
+      int iNodeBotTowerVel = 1 + nBlades * get_numVelPtsBladeLoc(iTurb); // Assumes the same number of velocity (Aerodyn) nodes for all blades
+      for(int j=0; j < nVelPtsTower; j++) {
+	int iNodeVel = iNodeBotTowerVel + j ; 
+	double hDistVel = sqrt( 
+			       (cDriver_Input_from_FAST[iTurb]->pxVel[iNodeVel] - cDriver_Input_from_FAST[iTurb]->pxVel[iNodeBotTowerVel])*(cDriver_Input_from_FAST[iTurb]->pxVel[iNodeVel] - cDriver_Input_from_FAST[iTurb]->pxVel[iNodeBotTowerVel])  
+                             + (cDriver_Input_from_FAST[iTurb]->pyVel[iNodeVel] - cDriver_Input_from_FAST[iTurb]->pyVel[iNodeBotTowerVel])*(cDriver_Input_from_FAST[iTurb]->pyVel[iNodeVel] - cDriver_Input_from_FAST[iTurb]->pyVel[iNodeBotTowerVel])  
+                             + (cDriver_Input_from_FAST[iTurb]->pzVel[iNodeVel] - cDriver_Input_from_FAST[iTurb]->pzVel[iNodeBotTowerVel])*(cDriver_Input_from_FAST[iTurb]->pzVel[iNodeVel] - cDriver_Input_from_FAST[iTurb]->pzVel[iNodeBotTowerVel])  			
+	                      );
+	//Find nearest two force nodes
+	int jForceLower = 0;
+	while (  ((hDistForce[jForceLower]-hDistVel)*(hDistForce[jForceLower+1]-hDistVel) >  0) && (jForceLower < (nForcePtsTower-1)  ) ) {
+	  jForceLower = jForceLower + 1;
+	}
+	int iNodeForceLower = iNodeBotTowerForce + jForceLower ; 
+	double rInterp = (hDistVel - hDistForce[jForceLower])/(hDistForce[jForceLower+1]-hDistForce[jForceLower]);
+	cDriver_Output_to_FAST[iTurb]->u[iNodeVel] = forceNodeVel[iTurb][iNodeForceLower][0] + rInterp * (forceNodeVel[iTurb][iNodeForceLower+1][0] - forceNodeVel[iTurb][iNodeForceLower][0] );
+	cDriver_Output_to_FAST[iTurb]->v[iNodeVel] = forceNodeVel[iTurb][iNodeForceLower][1] + rInterp * (forceNodeVel[iTurb][iNodeForceLower+1][1] - forceNodeVel[iTurb][iNodeForceLower][1] );
+	cDriver_Output_to_FAST[iTurb]->w[iNodeVel] = forceNodeVel[iTurb][iNodeForceLower][2] + rInterp * (forceNodeVel[iTurb][iNodeForceLower+1][2] - forceNodeVel[iTurb][iNodeForceLower][2] );
+      }
+    }    
+    
+  }
+  
+}
+
+
 
 void FAST_cInterface::computeTorqueThrust(int iTurbGlob, double * torque, double * thrust) {
 
