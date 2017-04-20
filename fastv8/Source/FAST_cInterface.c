@@ -64,13 +64,6 @@ int FAST_cInterface::init() {
    FAST_AllocateTurbines(&nTurbinesProc, &ErrStat, ErrMsg);
 
    // Allocate memory for OpFM Input types in FAST
-
-   forceNodeVel.resize(nTurbinesProc);
-   for(int j = 0; j < nTurbinesProc; j++)  {
-     forceNodeVel[j].resize(get_numForcePtsLoc(j)) ;
-     for (int k = 0; k < get_numForcePtsLoc(j); k++) forceNodeVel[j][k].resize(3) ;
-   }
-
      
    cDriver_Input_from_FAST = new OpFM_InputType_t* [nTurbinesProc] ;
    cDriver_Output_to_FAST = new OpFM_OutputType_t* [nTurbinesProc] ;
@@ -112,12 +105,16 @@ int FAST_cInterface::init() {
      
       // this calls the Init() routines of each module
 
+     forceNodeVel.resize(nTurbinesProc);
      for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
        FAST_OpFM_Init(&iTurb, &tMax, FASTInputFileName[iTurb], &TurbID[iTurb], &numScOutputs, &numScInputs, &numForcePtsBlade[iTurb], &numForcePtsTwr[iTurb], TurbineBasePos[iTurb], &AbortErrLev, &dtFAST, &numBlades[iTurb], &numVelPtsBlade[iTurb], cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb], cDriverSC_Input_from_FAST[iTurb], cDriverSC_Output_to_FAST[iTurb], &ErrStat, ErrMsg);
        checkError(ErrStat, ErrMsg);
        
        numVelPtsTwr[iTurb] = cDriver_Output_to_FAST[iTurb]->u_Len - numBlades[iTurb]*numVelPtsBlade[iTurb] - 1;
 
+       int nfPts = get_numForcePtsLoc(iTurb);
+       forceNodeVel[iTurb].resize(nfPts) ;
+       for (int k = 0; k < nfPts; k++) forceNodeVel[iTurb][k].resize(3) ;
 
        if ( isDebug() ) {
        	 for (int iNode=0; iNode < get_numVelPtsLoc(iTurb); iNode++) {
@@ -410,9 +407,9 @@ void FAST_cInterface::getVelNodeCoordinates(double *currentCoords, int iNode, in
   // Set coordinates at current node of current turbine 
   int iTurbLoc = get_localTurbNo(iTurbGlob);
   for(int j=0; j < iTurbLoc; j++) iNode = iNode - get_numVelPtsLoc(iTurbLoc);
-  currentCoords[0] = cDriver_Input_from_FAST[iTurbLoc]->pxVel[iNode] ;
-  currentCoords[1] = cDriver_Input_from_FAST[iTurbLoc]->pyVel[iNode] ;
-  currentCoords[2] = cDriver_Input_from_FAST[iTurbLoc]->pzVel[iNode] ;
+  currentCoords[0] = cDriver_Input_from_FAST[iTurbLoc]->pxVel[iNode] + TurbineBasePos[iTurbLoc][0];
+  currentCoords[1] = cDriver_Input_from_FAST[iTurbLoc]->pyVel[iNode] + TurbineBasePos[iTurbLoc][0];
+  currentCoords[2] = cDriver_Input_from_FAST[iTurbLoc]->pzVel[iNode] + TurbineBasePos[iTurbLoc][0];
   
 }
 
@@ -420,9 +417,9 @@ void FAST_cInterface::getForceNodeCoordinates(double *currentCoords, int iNode, 
 
   // Set coordinates at current node of current turbine 
   int iTurbLoc = get_localTurbNo(iTurbGlob);
-  currentCoords[0] = cDriver_Input_from_FAST[iTurbLoc]->pxForce[iNode] ;
-  currentCoords[1] = cDriver_Input_from_FAST[iTurbLoc]->pyForce[iNode] ;
-  currentCoords[2] = cDriver_Input_from_FAST[iTurbLoc]->pzForce[iNode] ;
+  currentCoords[0] = cDriver_Input_from_FAST[iTurbLoc]->pxForce[iNode] + TurbineBasePos[iTurbLoc][0];
+  currentCoords[1] = cDriver_Input_from_FAST[iTurbLoc]->pyForce[iNode] + TurbineBasePos[iTurbLoc][1];
+  currentCoords[2] = cDriver_Input_from_FAST[iTurbLoc]->pzForce[iNode] + TurbineBasePos[iTurbLoc][2];
 
 }
 
@@ -430,7 +427,7 @@ void FAST_cInterface::getForceNodeOrientation(double *currentOrientation, int iN
 
   // Set orientation at current node of current turbine 
   int iTurbLoc = get_localTurbNo(iTurbGlob);
-  for(int j=0; j < iTurbLoc; j++) iNode = iNode - get_numForcePtsLoc(iTurbLoc);
+  for(int j=0; j < iTurbLoc; j++) iNode = iNode - get_numForcePtsLoc(j);
   for(int i=0;i<9;i++) {
     currentOrientation[i] = cDriver_Input_from_FAST[iTurbLoc]->pxForce[iNode*9+i] ;
   }
@@ -441,7 +438,7 @@ void FAST_cInterface::getForce(std::vector<double> & currentForce, int iNode, in
 
   // Set forces at current node of current turbine 
   int iTurbLoc = get_localTurbNo(iTurbGlob);
-  for(int j=0; j < iTurbLoc; j++) iNode = iNode - get_numForcePtsLoc(iTurbLoc);
+  for(int j=0; j < iTurbLoc; j++) iNode = iNode - get_numForcePtsLoc(j);
   currentForce[0] = -cDriver_Input_from_FAST[iTurbLoc]->fx[iNode] ;
   currentForce[1] = -cDriver_Input_from_FAST[iTurbLoc]->fy[iNode] ;
   currentForce[2] = -cDriver_Input_from_FAST[iTurbLoc]->fz[iNode] ;
@@ -452,16 +449,16 @@ double FAST_cInterface::getChord(int iNode, int iTurbGlob) {
 
   // Return blade chord/tower diameter at current node of current turbine 
   int iTurbLoc = get_localTurbNo(iTurbGlob);
-  for(int j=0; j < iTurbLoc; j++) iNode = iNode - get_numForcePtsLoc(iTurbLoc);
+  for(int j=0; j < iTurbLoc; j++) iNode = iNode - get_numForcePtsLoc(j);
   return cDriver_Input_from_FAST[iTurbLoc]->forceNodesChord[iNode] ;
 
 }
 
-void FAST_cInterface::setVelocity(std::vector<double> & currentVelocity, int iNode, int iTurbGlob) {
+void FAST_cInterface::setVelocity(double * currentVelocity, int iNode, int iTurbGlob) {
 
   // Set velocity at current node of current turbine - 
   int iTurbLoc = get_localTurbNo(iTurbGlob);
-  for(int j=0; j < iTurbLoc; j++) iNode = iNode - get_numForcePtsLoc(iTurbLoc);
+  for(int j=0; j < iTurbLoc; j++) iNode = iNode - get_numForcePtsLoc(j);
   forceNodeVel[iTurbLoc][iNode][0] = currentVelocity[0];
   forceNodeVel[iTurbLoc][iNode][1] = currentVelocity[1];
   forceNodeVel[iTurbLoc][iNode][2] = currentVelocity[2];
@@ -588,7 +585,7 @@ void FAST_cInterface::computeTorqueThrust(int iTurbGlob, double * torque, double
     }
 }
     
-ActuatorNodeType FAST_cInterface::getVelNodeType(int iTurbGlob, int iNode) {
+ActuatorNodeType FAST_cInterface::getVelNodeType(int iNode, int iTurbGlob) {
   // Return the type of velocity node for the given node number. The node ordering (from FAST) is 
   // Node 0 - Hub node
   // Blade 1 nodes
@@ -612,7 +609,7 @@ ActuatorNodeType FAST_cInterface::getVelNodeType(int iTurbGlob, int iNode) {
   
 }
 
-ActuatorNodeType FAST_cInterface::getForceNodeType(int iTurbGlob, int iNode) {
+ActuatorNodeType FAST_cInterface::getForceNodeType(int iNode, int iTurbGlob) {
   // Return the type of actuator force node for the given node number. The node ordering (from FAST) is 
   // Node 0 - Hub node
   // Blade 1 nodes
@@ -621,9 +618,9 @@ ActuatorNodeType FAST_cInterface::getForceNodeType(int iTurbGlob, int iNode) {
   // Tower nodes
 
   int iTurbLoc = get_localTurbNo(iTurbGlob);
-  for(int j=0; j < iTurbLoc; j++) iNode = iNode - get_numForcePtsLoc(iTurbGlob);
+  for(int j=0; j < iTurbLoc; j++) iNode = iNode - get_numForcePtsLoc(j);
   if (iNode) {
-    if ( (iNode + 1 - (get_numForcePtsLoc(iTurbGlob) - get_numForcePtsTwrLoc(iTurbGlob)) ) > 0) {
+    if ( (iNode + 1 - (get_numForcePtsLoc(iTurbLoc) - get_numForcePtsTwrLoc(iTurbLoc)) ) > 0) {
       return TOWER; 
     }
     else {

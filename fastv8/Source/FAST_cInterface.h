@@ -134,7 +134,7 @@ class FAST_cInterface {
 
   ActuatorNodeType getVelNodeType(int iTurbGlob, int iNode);
   void getVelNodeCoordinates(double *currentCoords, int iNode, int iTurbGlob);
-  void setVelocity(std::vector<double> & velocity, int iNode, int iTurbGlob);
+  void setVelocity(double *velocity, int iNode, int iTurbGlob);
   void interpolateVel_ForceToVelNodes();
   ActuatorNodeType getForceNodeType(int iTurbGlob, int iNode);
   void getForceNodeCoordinates(double *currentCoords, int iNode, int iTurbGlob);
