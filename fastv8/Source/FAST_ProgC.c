@@ -25,7 +25,7 @@ void readTurbineData(int iTurb, fastInputs & fi, YAML::Node turbNode) {
 
 }
 
-void readInputFile(fastInputs & fi, std::string cInterfaceInputFile) {
+void readInputFile(fastInputs & fi, std::string cInterfaceInputFile, double * tEnd) {
 
   fi.comm = MPI_COMM_WORLD;
 
@@ -46,8 +46,8 @@ void readInputFile(fastInputs & fi, std::string cInterfaceInputFile) {
 	fi.debug = cDriverInp["debug"].as<bool>();
       } 
       
-      fi.ntStart = cDriverInp["ntStart"].as<int>();
-      fi.ntEnd = cDriverInp["ntEnd"].as<int>();
+      fi.tStart = cDriverInp["tStart"].as<double>();
+      *tEnd = cDriverInp["tEnd"].as<double>();
       fi.nEveryCheckPoint = cDriverInp["nEveryCheckPoint"].as<int>();
       fi.dtFAST = cDriverInp["dtFAST"].as<double>();
       fi.tMax = cDriverInp["tMax"].as<double>(); // tMax is the total duration to which you want to run FAST. This should be the same or greater than the max time given in the FAST fst file. Choose this carefully as FAST writes the output file only at this point if you choose the binary file output.
@@ -86,6 +86,9 @@ int main() {
   double torque[] = {0.0,0.0,0.0};
   double thrust[] = {0.0,0.0,0.0};  
 
+  double tEnd ; // This doesn't belong in the FAST - C++ interface 
+  int ntEnd ; // This doesn't belong in the FAST - C++ interface
+  
   iErr = MPI_Init(NULL, NULL);
   iErr = MPI_Comm_size( MPI_COMM_WORLD, &nProcs);
   iErr = MPI_Comm_rank( MPI_COMM_WORLD, &rank);
@@ -94,14 +97,15 @@ int main() {
   FAST_cInterface FAST;
   fastInputs fi ;
   try {
-    readInputFile(fi, cDriverInputFile);
+    readInputFile(fi, cDriverInputFile, &tEnd);
   }
   catch( const std::runtime_error & ex) {
     std::cerr << ex.what() << std::endl ;
     std::cerr << "Program quitting now" << std::endl ;
     return 1;
   }
-  
+  ntEnd = tEnd/fi.dtFAST;  //Calculate the last time step
+
   FAST.setInputs(fi);
   FAST.allocateTurbinesToProcsSimple(); 
   // Or allocate turbines to procs by calling "setTurbineProcNo(iTurbGlob, procId)" for turbine.
@@ -117,7 +121,7 @@ int main() {
 
 
   if( !FAST.isDryRun() ) {
-    for (int nt = FAST.get_ntStart(); nt < FAST.get_ntEnd(); nt++) {
+    for (int nt = FAST.get_ntStart(); nt < ntEnd; nt++) {
       // Set velocity at the aerodyn nodes here if necessary
       FAST.step();
       if (FAST.isDebug() ) {

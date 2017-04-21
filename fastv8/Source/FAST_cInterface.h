@@ -47,7 +47,7 @@ class fastInputs {
   int nTurbinesGlob;  
   bool dryRun;
   bool debug; 
-  int ntStart, ntEnd;
+  double tStart;
   int nEveryCheckPoint;  
   double tMax;
   double dtFAST;  
@@ -85,9 +85,9 @@ class FAST_cInterface {
   std::vector<int> TurbID;
   std::vector<std::vector<char> > FASTInputFileName;
   std::vector<std::vector<char> > CheckpointFileRoot;
-  double tStart, tEnd;
+  double tStart;
   int nt_global;           
-  int ntStart, ntEnd;      // The time step to start and end the FAST simulation
+  int ntStart;      // The time step to start the FAST simulation
   int nEveryCheckPoint;    // Check point files will be written every 'nEveryCheckPoint' time steps
   std::vector<int> numBlades;           // Number of blades
   std::vector<int> numForcePtsBlade;
@@ -167,7 +167,6 @@ class FAST_cInterface {
   double getChord(int iNode, int iTurbGlob);
 
   int get_ntStart() { return ntStart; }
-  int get_ntEnd() { return ntEnd; }
   bool isDryRun() { return dryRun; }
   bool isDebug() { return debug; }
   bool isRestart() { return restart; }

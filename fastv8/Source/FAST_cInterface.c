@@ -31,8 +31,7 @@ fastInputs::fastInputs():
 nTurbinesGlob(0),
 dryRun(false),
 debug(false),
-ntStart(-1),
-ntEnd(-1),
+tStart(-1.0),
 nEveryCheckPoint(-1),
 tMax(0.0),
 dtFAST(0.0),
@@ -226,12 +225,13 @@ void FAST_cInterface::setInputs(const fastInputs & fi ) {
       
       debug = fi.debug;
 
-      ntStart = fi.ntStart;
-      ntEnd = fi.ntEnd;
+      tStart = fi.tStart;
       nEveryCheckPoint = fi.nEveryCheckPoint;
       tMax = fi.tMax;
       loadSuperController(fi);
       dtFAST = fi.dtFAST;
+      
+      ntStart = int(tStart/dtFAST);
       
       nt_global = ntStart;
       if (ntStart > 0) {
