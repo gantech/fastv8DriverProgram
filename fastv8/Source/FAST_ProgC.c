@@ -1,6 +1,83 @@
 #include "FAST_cInterface.h"
+#include "yaml-cpp/yaml.h"
 #include <iostream>
 #include <mpi.h>
+
+inline bool checkFileExists(const std::string& name) {
+  struct stat buffer;   
+  return (stat (name.c_str(), &buffer) == 0); 
+}
+
+void readTurbineData(int iTurb, fastInputs & fi, YAML::Node turbNode) {
+
+  //Read turbine data for a given turbine using the YAML node
+  fi.globTurbineData[iTurb].TurbID = turbNode["turb_id"].as<int>();
+  fi.globTurbineData[iTurb].FASTInputFileName = turbNode["FAST_input_filename"].as<std::string>() ;
+  fi.globTurbineData[iTurb].FASTRestartFileName = turbNode["restart_filename"].as<std::string>() ;
+  if (turbNode["turbine_base_pos"].IsSequence() ) {
+    fi.globTurbineData[iTurb].TurbineBasePos = turbNode["turbine_base_pos"].as<std::vector<double> >() ;
+  }
+  if (turbNode["turbine_hub_pos"].IsSequence() ) {
+    fi.globTurbineData[iTurb].TurbineHubPos = turbNode["turbine_hub_pos"].as<std::vector<double> >() ;
+  }
+  fi.globTurbineData[iTurb].numForcePtsBlade = turbNode["num_force_pts_blade"].as<int>();
+  fi.globTurbineData[iTurb].numForcePtsTwr = turbNode["num_force_pts_tower"].as<int>();
+
+}
+
+void readInputFile(fastInputs & fi, std::string cInterfaceInputFile) {
+
+  fi.comm = MPI_COMM_WORLD;
+
+  // Check if the input file exists and read it
+  if ( checkFileExists(cInterfaceInputFile) ) {
+
+    YAML::Node cDriverInp = YAML::LoadFile(cInterfaceInputFile);
+
+    fi.nTurbinesGlob = cDriverInp["nTurbinesGlob"].as<int>();
+
+    if (fi.nTurbinesGlob > 0) {
+      
+      if(cDriverInp["dry_run"]) {
+	fi.dryRun = cDriverInp["dry_run"].as<bool>();
+      } 
+      
+      if(cDriverInp["debug"]) {
+	fi.debug = cDriverInp["debug"].as<bool>();
+      } 
+      
+      fi.ntStart = cDriverInp["ntStart"].as<int>();
+      fi.ntEnd = cDriverInp["ntEnd"].as<int>();
+      fi.nEveryCheckPoint = cDriverInp["nEveryCheckPoint"].as<int>();
+      fi.dtFAST = cDriverInp["dtFAST"].as<double>();
+      fi.tMax = cDriverInp["tMax"].as<double>(); // tMax is the total duration to which you want to run FAST. This should be the same or greater than the max time given in the FAST fst file. Choose this carefully as FAST writes the output file only at this point if you choose the binary file output.
+      
+      if(cDriverInp["superController"]) {
+	fi.scStatus = cDriverInp["superController"].as<bool>();
+	fi.scLibFile = cDriverInp["scLibFile"].as<std::string>();
+	fi.numScInputs = cDriverInp["numScInputs"].as<int>();
+	fi.numScOutputs = cDriverInp["numScOutputs"].as<int>();
+      }
+      
+      fi.globTurbineData.resize(fi.nTurbinesGlob);
+      for (int iTurb=0; iTurb < fi.nTurbinesGlob; iTurb++) {
+	if (cDriverInp["Turbine" + std::to_string(iTurb)]) {
+	  readTurbineData(iTurb, fi, cDriverInp["Turbine" + std::to_string(iTurb)] );
+	} else {
+	  throw std::runtime_error("Node for Turbine" + std::to_string(iTurb) + " not present in input file or I cannot read it");
+	}
+      }
+      
+    } else {
+      throw std::runtime_error("Number of turbines <= 0 ");
+    }
+    
+  } else {
+    throw std::runtime_error("Input file " + cInterfaceInputFile + " does not exist or I cannot access it");
+  }
+
+}
+
 
 int main() {
   int iErr;
@@ -15,23 +92,24 @@ int main() {
 
   std::string cDriverInputFile="cDriver.i";
   FAST_cInterface FAST;
+  fastInputs fi ;
   try {
-    FAST.readInputFile(cDriverInputFile);
+    readInputFile(fi, cDriverInputFile);
   }
   catch( const std::runtime_error & ex) {
     std::cerr << ex.what() << std::endl ;
     std::cerr << "Program quitting now" << std::endl ;
     return 1;
   }
-
+  
+  FAST.setInputs(fi);
   FAST.allocateTurbinesToProcsSimple(); 
   // Or allocate turbines to procs by calling "setTurbineProcNo(iTurbGlob, procId)" for turbine.
-  FAST.allocateInputData(); // Allocate memory for all inputs that are dependent on the number of turbines
 
   if ( !FAST.isDryRun() ) {
     FAST.init();
     // Set velocity at the aerodyn nodes here if necessary
-    if (FAST.isTimeZero()) {
+    if (!FAST.isRestart()) {
       FAST.solution0();
     }
   }

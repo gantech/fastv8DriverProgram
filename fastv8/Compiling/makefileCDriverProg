@@ -57,7 +57,7 @@ endif
    # Name of compiler to use and flags to use.
 ifeq ($(COMPILER),gnu)
         CFLAGS = $(OPT_OPTIONS) -fPIC -fpermissive -std=c++11 -DHAVE_MPI
-	LDFLAGS = -fPIC -L$(FASTLIB_DIR) -L$(YAMLCPPLIB_DIR) -lFAST_cInterface$(EXE_EXT) -lFAST$(EXE_EXT) -lmap-1.20.10 -lyaml-cpp -ldl
+	LDFLAGS = -fPIC -L$(FASTLIB_DIR) -L$(YAMLCPPLIB_DIR) -lFAST_cInterface$(EXE_EXT) -lFAST$(EXE_EXT) -lmap-1.20.10 -lyaml-cpp -ldl -lgfortran
 	ifeq ($(LAPACK),lapack)
 		LAPACK_LINK = -L$(FASTLIB_DIR)$(BITS) -llapack -lblas -llapacke -lm
 	else ifeq ($(LAPACK),mkl)
