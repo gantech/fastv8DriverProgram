@@ -80,38 +80,38 @@ class FAST_cInterface {
   bool restart;
   double dtFAST;
   double tMax;
-  float ** TurbineBasePos;
-  float ** TurbineHubPos;
-  int * TurbID;
-  char ** FASTInputFileName;
-  char ** CheckpointFileRoot;
+  std::vector<std::vector<float> > TurbineBasePos;
+  std::vector<std::vector<float> > TurbineHubPos;
+  std::vector<int> TurbID;
+  std::vector<std::vector<char> > FASTInputFileName;
+  std::vector<std::vector<char> > CheckpointFileRoot;
   double tStart, tEnd;
   int nt_global;           
   int ntStart, ntEnd;      // The time step to start and end the FAST simulation
   int nEveryCheckPoint;    // Check point files will be written every 'nEveryCheckPoint' time steps
-  int * numBlades;           // Number of blades
-  int * numForcePtsBlade;
-  int * numForcePtsTwr;
-  int * numVelPtsBlade;
-  int * numVelPtsTwr;
+  std::vector<int> numBlades;           // Number of blades
+  std::vector<int> numForcePtsBlade;
+  std::vector<int> numForcePtsTwr;
+  std::vector<int> numVelPtsBlade;
+  std::vector<int> numVelPtsTwr;
   int numScOutputs;  // # outputs from the supercontroller == # inputs to the controller == NumSC2Ctrl
   int numScInputs;   // # inputs to the supercontroller == # outputs from the controller == NumCtrl2SC
-  double ** scOutputsGlob;  // # outputs from the supercontroller for all turbines
-  double ** scInputsGlob;   // # inputs to the supercontroller for all turbines
+  std::vector<double> scOutputsGlob;  // # outputs from the supercontroller for all turbines
+  std::vector<double> scInputsGlob;   // # inputs to the supercontroller for all turbines
 
   std::vector<std::vector< std::vector<double> > > forceNodeVel; // Velocity at force nodes - Store temporarily to interpolate to the velocity nodes
-  OpFM_InputType_t * cDriver_Input_from_FAST;
-  OpFM_OutputType_t * cDriver_Output_to_FAST;
+  std::vector<OpFM_InputType_t> cDriver_Input_from_FAST;
+  std::vector<OpFM_OutputType_t> cDriver_Output_to_FAST;
 
-  SC_InputType_t * cDriverSC_Input_from_FAST;
-  SC_OutputType_t * cDriverSC_Output_to_FAST;
+  std::vector<SC_InputType_t> cDriverSC_Input_from_FAST;
+  std::vector<SC_OutputType_t> cDriverSC_Output_to_FAST;
 
   // Turbine Number is DIFFERENT from TurbID. Turbine Number simply runs from 0:n-1 locally and globally.
   std::map<int, int> turbineMapGlobToProc; // Mapping global turbine number to processor number
   std::map<int, int> turbineMapProcToGlob; // Mapping local to global turbine number
   std::map<int, int> reverseTurbineMapProcToGlob; // Reverse Mapping global turbine number to local turbine number
   std::set<int> turbineSetProcs; // Set of processors containing atleast one turbine 
-  int * turbineProcs; // Same as the turbineSetProcs, but as an integer array
+  std::vector<int> turbineProcs; // Same as the turbineSetProcs, but as an integer array
 
   //Supercontroller stuff
   bool scStatus;

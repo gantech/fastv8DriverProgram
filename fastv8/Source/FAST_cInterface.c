@@ -74,7 +74,7 @@ void FAST_cInterface::init() {
 
      for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
        /* note that this will set nt_global inside the FAST library */
-       FAST_OpFM_Restart(&iTurb, CheckpointFileRoot[iTurb], &AbortErrLev, &dtFAST, &numBlades[iTurb], &numVelPtsBlade[iTurb], &ntStart, &cDriver_Input_from_FAST[iTurb], &cDriver_Output_to_FAST[iTurb], &cDriverSC_Input_from_FAST[iTurb], &cDriverSC_Output_to_FAST[iTurb], &ErrStat, ErrMsg);
+       FAST_OpFM_Restart(&iTurb, CheckpointFileRoot[iTurb].data(), &AbortErrLev, &dtFAST, &numBlades[iTurb], &numVelPtsBlade[iTurb], &ntStart, &cDriver_Input_from_FAST[iTurb], &cDriver_Output_to_FAST[iTurb], &cDriverSC_Input_from_FAST[iTurb], &cDriverSC_Output_to_FAST[iTurb], &ErrStat, ErrMsg);
        checkError(ErrStat, ErrMsg);
        nt_global = ntStart;
      }
@@ -90,7 +90,7 @@ void FAST_cInterface::init() {
 
      forceNodeVel.resize(nTurbinesProc);
      for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
-       FAST_OpFM_Init(&iTurb, &tMax, FASTInputFileName[iTurb], &TurbID[iTurb], &numScOutputs, &numScInputs, &numForcePtsBlade[iTurb], &numForcePtsTwr[iTurb], TurbineBasePos[iTurb], &AbortErrLev, &dtFAST, &numBlades[iTurb], &numVelPtsBlade[iTurb], &cDriver_Input_from_FAST[iTurb], &cDriver_Output_to_FAST[iTurb], &cDriverSC_Input_from_FAST[iTurb], &cDriverSC_Output_to_FAST[iTurb], &ErrStat, ErrMsg);
+       FAST_OpFM_Init(&iTurb, &tMax, FASTInputFileName[iTurb].data(), &TurbID[iTurb], &numScOutputs, &numScInputs, &numForcePtsBlade[iTurb], &numForcePtsTwr[iTurb], TurbineBasePos[iTurb].data(), &AbortErrLev, &dtFAST, &numBlades[iTurb], &numVelPtsBlade[iTurb], &cDriver_Input_from_FAST[iTurb], &cDriver_Output_to_FAST[iTurb], &cDriverSC_Input_from_FAST[iTurb], &cDriverSC_Output_to_FAST[iTurb], &ErrStat, ErrMsg);
        checkError(ErrStat, ErrMsg);
        
        numVelPtsTwr[iTurb] = cDriver_Output_to_FAST[iTurb].u_Len - numBlades[iTurb]*numVelPtsBlade[iTurb] - 1;
@@ -188,10 +188,9 @@ void FAST_cInterface::step() {
    nt_global = nt_global + 1;
   
    if ( (((nt_global - ntStart) % nEveryCheckPoint) == 0 )  && (nt_global != ntStart) ) {
-     //sprintf(CheckpointFileRoot, "../../CertTest/Test18.%d", nt_global);
      for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
-       sprintf(CheckpointFileRoot[iTurb], " "); // if blank, it will use FAST convention <RootName>.nt_global
-       FAST_CreateCheckpoint(&iTurb, CheckpointFileRoot[iTurb], &ErrStat, ErrMsg);
+       sprintf(CheckpointFileRoot[iTurb].data(), " "); // if blank, it will use FAST convention <RootName>.nt_global
+       FAST_CreateCheckpoint(&iTurb, CheckpointFileRoot[iTurb].data(), &ErrStat, ErrMsg);
        checkError(ErrStat, ErrMsg);
      }
      if(scStatus) {
@@ -541,7 +540,7 @@ void FAST_cInterface::allocateMemory() {
 #endif
 
   int nProcsWithTurbines=0;
-  turbineProcs = new int[turbineSetProcs.size()];
+  turbineProcs.resize(turbineSetProcs.size());
   for (std::set<int>::const_iterator p = turbineSetProcs.begin(); p != turbineSetProcs.end(); p++) {
     turbineProcs[nProcsWithTurbines] = *p;
 
@@ -561,33 +560,33 @@ void FAST_cInterface::allocateMemory() {
     
 #ifdef HAVE_MPI
   // Construct a group containing all procs running atleast 1 turbine in FAST
-  MPI_Group_incl(worldMPIGroup, nProcsWithTurbines, turbineProcs, &fastMPIGroup) ;
+  MPI_Group_incl(worldMPIGroup, nProcsWithTurbines, &turbineProcs[0], &fastMPIGroup) ;
   int fastMPIcommTag = MPI_Comm_create(MPI_COMM_WORLD, fastMPIGroup, &fastMPIComm);
   if (MPI_COMM_NULL != fastMPIComm) {
     MPI_Comm_rank(fastMPIComm, &fastMPIRank);
   }
 #endif
 
-  TurbID = new int[nTurbinesProc];
-  TurbineBasePos = new float* [nTurbinesProc];
-  FASTInputFileName = new char * [nTurbinesProc];
-  CheckpointFileRoot = new char * [nTurbinesProc];
-  numBlades = new int[nTurbinesProc];
-  numForcePtsBlade = new int[nTurbinesProc];
-  numForcePtsTwr = new int[nTurbinesProc];
-  numVelPtsBlade = new int[nTurbinesProc];
-  numVelPtsTwr = new int[nTurbinesProc];
+  TurbID.resize(nTurbinesProc);
+  TurbineBasePos.resize(nTurbinesProc);
+  FASTInputFileName.resize(nTurbinesProc);
+  CheckpointFileRoot.resize(nTurbinesProc);
+  numBlades.resize(nTurbinesProc);
+  numForcePtsBlade.resize(nTurbinesProc);
+  numForcePtsTwr.resize(nTurbinesProc);
+  numVelPtsBlade.resize(nTurbinesProc);
+  numVelPtsTwr.resize(nTurbinesProc);
   
   for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
     
-    TurbineBasePos[iTurb] = new float[3];
-    FASTInputFileName[iTurb] = new char[INTERFACE_STRING_LENGTH];
-    CheckpointFileRoot[iTurb] = new char[INTERFACE_STRING_LENGTH];
+    TurbineBasePos[iTurb].resize(3);
+    FASTInputFileName[iTurb].resize(INTERFACE_STRING_LENGTH);
+    CheckpointFileRoot[iTurb].resize(INTERFACE_STRING_LENGTH);
 
     int globProc = turbineMapProcToGlob[iTurb];
     TurbID[iTurb] = globTurbineData[globProc].TurbID;
-    std::strcpy(FASTInputFileName[iTurb], globTurbineData[globProc].FASTInputFileName.c_str()) ;
-    std::strcpy(CheckpointFileRoot[iTurb], globTurbineData[globProc].FASTRestartFileName.c_str() );
+    std::strcpy(FASTInputFileName[iTurb].data(), globTurbineData[globProc].FASTInputFileName.c_str()) ;
+    std::strcpy(CheckpointFileRoot[iTurb].data(), globTurbineData[globProc].FASTRestartFileName.c_str() );
     for(int i=0;i<3;i++) {
       TurbineBasePos[iTurb][i] = globTurbineData[globProc].TurbineBasePos[i];
     }
@@ -601,11 +600,11 @@ void FAST_cInterface::allocateMemory() {
    FAST_AllocateTurbines(&nTurbinesProc, &ErrStat, ErrMsg);
 
    // Allocate memory for OpFM Input types in FAST
-   cDriver_Input_from_FAST = new OpFM_InputType_t[nTurbinesProc] ;
-   cDriver_Output_to_FAST = new OpFM_OutputType_t[nTurbinesProc] ;
+   cDriver_Input_from_FAST.resize(nTurbinesProc) ;
+   cDriver_Output_to_FAST.resize(nTurbinesProc) ;
 
-   cDriverSC_Input_from_FAST = new SC_InputType_t[nTurbinesProc] ;
-   cDriverSC_Output_to_FAST = new SC_OutputType_t[nTurbinesProc] ;
+   cDriverSC_Input_from_FAST.resize(nTurbinesProc) ;
+   cDriverSC_Output_to_FAST.resize(nTurbinesProc) ;
 
 
   return;
@@ -632,30 +631,30 @@ void FAST_cInterface::end() {
     }
 
     for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
-      delete[] TurbineBasePos[iTurb];
-      delete[] FASTInputFileName[iTurb];
-      delete[] CheckpointFileRoot[iTurb];
+      TurbineBasePos[iTurb].clear();
+      FASTInputFileName[iTurb].clear();
+      CheckpointFileRoot[iTurb].clear();
     }
-    delete[] TurbineBasePos;
-    delete[] FASTInputFileName;
-    delete[] CheckpointFileRoot;
-    delete[] TurbID;
-    delete[] numBlades;
-    delete[] numVelPtsBlade;
-    delete[] numVelPtsTwr;
-    delete[] numForcePtsBlade;
-    delete[] numForcePtsTwr;
+    TurbineBasePos.clear();
+    FASTInputFileName.clear();
+    CheckpointFileRoot.clear();
+    TurbID.clear();
+    numBlades.clear();
+    numVelPtsBlade.clear();
+    numVelPtsTwr.clear();
+    numForcePtsBlade.clear();
+    numForcePtsTwr.clear();
     
     if ( !dryRun ) {
-      delete[] cDriver_Input_from_FAST;
-      delete[] cDriver_Output_to_FAST;
+      cDriver_Input_from_FAST.clear();
+      cDriver_Output_to_FAST.clear();
 
       if (scStatus) {
-	delete[] cDriverSC_Input_from_FAST;
-	delete[] cDriverSC_Output_to_FAST;
+	cDriverSC_Input_from_FAST.clear();
+	cDriverSC_Output_to_FAST.clear();
 	
-	delete2DArray(scInputsGlob);
-	delete2DArray(scOutputsGlob);
+	scInputsGlob.clear();
+	scOutputsGlob.clear();
 	
       }
 
@@ -721,14 +720,14 @@ void FAST_cInterface::loadSuperController(const fastInputs & fi) {
     numScOutputs = fi.numScOutputs;
 
     if ( (numScInputs > 0) && (numScOutputs > 0)) {
-      scOutputsGlob = create2DArray<double>(nTurbinesGlob, numScOutputs);
-      scInputsGlob = create2DArray<double>(nTurbinesGlob, numScInputs);
+      scOutputsGlob.resize(nTurbinesGlob*numScOutputs) ;
+      scInputsGlob.resize(nTurbinesGlob*numScInputs) ;
       for (int iTurb=0; iTurb < nTurbinesGlob; iTurb++) {
 	for(int iInput=0; iInput < numScInputs; iInput++) {
-	  scInputsGlob[iTurb][iInput] = 0.0 ; // Initialize to zero
+	  scInputsGlob[iTurb*numScInputs + iInput] = 0.0 ; // Initialize to zero
 	}
 	for(int iOutput=0; iOutput < numScOutputs; iOutput++) {
-	  scOutputsGlob[iTurb][iOutput] = 0.0 ; // Initialize to zero
+	  scOutputsGlob[iTurb*numScOutputs + iOutput] = 0.0 ; // Initialize to zero
 	}
       }
 
@@ -751,20 +750,20 @@ void FAST_cInterface::fillScInputsGlob() {
 
   for(int iTurb=0; iTurb < nTurbinesGlob; iTurb++) {
     for(int iInput=0; iInput < numScInputs; iInput++) {
-      scInputsGlob[iTurb][iInput] = 0.0; // Initialize to zero 
+      scInputsGlob[iTurb*numScInputs + iInput] = 0.0; // Initialize to zero 
     }
   }
   
   for(int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
     for(int iInput=0; iInput < numScInputs; iInput++) {
-      scInputsGlob[turbineMapProcToGlob[iTurb]][iInput] = cDriverSC_Input_from_FAST[iTurb].toSC[iInput] ;
+      scInputsGlob[turbineMapProcToGlob[iTurb]*numScInputs + iInput] = cDriverSC_Input_from_FAST[iTurb].toSC[iInput] ;
     }
   }
   
   
 #ifdef HAVE_MPI
   if (MPI_COMM_NULL != fastMPIComm) {
-    MPI_Allreduce(MPI_IN_PLACE, scInputsGlob[0], numScInputs*nTurbinesGlob, MPI_DOUBLE, MPI_SUM, fastMPIComm) ;
+    MPI_Allreduce(MPI_IN_PLACE, scInputsGlob.data(), numScInputs*nTurbinesGlob, MPI_DOUBLE, MPI_SUM, fastMPIComm) ;
   }
 #endif
   
@@ -778,7 +777,7 @@ void FAST_cInterface::fillScOutputsLoc() {
   
   for(int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
     for(int iOutput=0; iOutput < numScOutputs; iOutput++) {
-      cDriverSC_Output_to_FAST[iTurb].fromSC[iOutput] = scOutputsGlob[turbineMapProcToGlob[iTurb]][iOutput] ;
+      cDriverSC_Output_to_FAST[iTurb].fromSC[iOutput] = scOutputsGlob[turbineMapProcToGlob[iTurb]*numScOutputs + iOutput] ;
     }
   }
 
