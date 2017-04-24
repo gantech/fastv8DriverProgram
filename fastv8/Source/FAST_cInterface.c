@@ -1,31 +1,5 @@
 #include "FAST_cInterface.h"
 
-#ifndef Contiguous2DArrayHack
-#define Contiguous2DArrayHack
-
-// Neat hack from http://stackoverflow.com/questions/21943621/how-to-create-a-contiguous-2d-array-in-c to allocate and deallocate contiguous 2D arrays in C++
-
-  /* double **dPtr = create2DArray<double>(10,10); */
-  /* dPtr[0][0] = 10;  // for example */
-  /* delete2DArray(dPtr);  // free the memory */
-
-template <typename T> T** create2DArray(unsigned nrows, unsigned ncols) {
-
-  T** ptr = new T*[nrows];  // allocate pointers
-  T* pool = new T[nrows*ncols];  // allocate pool
-  for (unsigned i = 0; i < nrows; ++i, pool += ncols )
-    ptr[i] = pool;
-  return ptr;
-}
-
-template <typename T> void delete2DArray(T** arr) {
-
-  delete [] arr[0];  // remove the pool
-  delete [] arr;     // remove the pointers
-}
-
-#endif
-
 //Constructor 
 fastInputs::fastInputs():
 nTurbinesGlob(0),
@@ -277,7 +251,7 @@ void FAST_cInterface::setOutputsToFAST(OpFM_InputType_t cDriver_Input_from_FAST,
    return;
 }
 
-void FAST_cInterface::getHubPos(double *currentCoords, int iTurbGlob) {
+void FAST_cInterface::getHubPos(std::vector<double> & currentCoords, int iTurbGlob) {
 
   // Get hub position of Turbine 'iTurbGlob'
   currentCoords[0] = globTurbineData[iTurbGlob].TurbineHubPos[0] ;
@@ -286,7 +260,7 @@ void FAST_cInterface::getHubPos(double *currentCoords, int iTurbGlob) {
   
 }
 
-void FAST_cInterface::getVelNodeCoordinates(double *currentCoords, int iNode, int iTurbGlob) {
+void FAST_cInterface::getVelNodeCoordinates(std::vector<double> & currentCoords, int iNode, int iTurbGlob) {
 
   // Set coordinates at current node of current turbine 
   int iTurbLoc = get_localTurbNo(iTurbGlob);
@@ -297,7 +271,7 @@ void FAST_cInterface::getVelNodeCoordinates(double *currentCoords, int iNode, in
   
 }
 
-void FAST_cInterface::getForceNodeCoordinates(double *currentCoords, int iNode, int iTurbGlob) {
+void FAST_cInterface::getForceNodeCoordinates(std::vector<double> & currentCoords, int iNode, int iTurbGlob) {
 
   // Set coordinates at current node of current turbine 
   int iTurbLoc = get_localTurbNo(iTurbGlob);
@@ -307,7 +281,7 @@ void FAST_cInterface::getForceNodeCoordinates(double *currentCoords, int iNode, 
 
 }
 
-void FAST_cInterface::getForceNodeOrientation(double *currentOrientation, int iNode, int iTurbGlob) {
+void FAST_cInterface::getForceNodeOrientation(std::vector<double> & currentOrientation, int iNode, int iTurbGlob) {
 
   // Set orientation at current node of current turbine 
   int iTurbLoc = get_localTurbNo(iTurbGlob);
@@ -338,7 +312,7 @@ double FAST_cInterface::getChord(int iNode, int iTurbGlob) {
 
 }
 
-void FAST_cInterface::setVelocity(double * currentVelocity, int iNode, int iTurbGlob) {
+void FAST_cInterface::setVelocity(std::vector<double> & currentVelocity, int iNode, int iTurbGlob) {
 
   // Set velocity at current node of current turbine - 
   int iTurbLoc = get_localTurbNo(iTurbGlob);
@@ -441,7 +415,7 @@ void FAST_cInterface::interpolateVel_ForceToVelNodes() {
 
 
 
-void FAST_cInterface::computeTorqueThrust(int iTurbGlob, double * torque, double * thrust) {
+void FAST_cInterface::computeTorqueThrust(int iTurbGlob, std::vector<double> & torque, std::vector<double> & thrust) {
 
     //Compute the torque and thrust based on the forces at the actuator nodes
     double relLoc[] = {0.0,0.0,0.0} ;

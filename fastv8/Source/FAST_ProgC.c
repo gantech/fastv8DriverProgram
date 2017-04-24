@@ -83,8 +83,8 @@ int main() {
   int iErr;
   int nProcs;
   int rank;
-  double torque[] = {0.0,0.0,0.0};
-  double thrust[] = {0.0,0.0,0.0};  
+  std::vector<double> torque (3, 0.0);
+  std::vector<double> thrust (3, 0.0);  
 
   double tEnd ; // This doesn't belong in the FAST - C++ interface 
   int ntEnd ; // This doesn't belong in the FAST - C++ interface

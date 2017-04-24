@@ -154,15 +154,15 @@ class FAST_cInterface {
 
   void setTurbineProcNo(int iTurbGlob, int procNo) { turbineMapGlobToProc[iTurbGlob] = procNo; }
   void allocateTurbinesToProcsSimple();
-  void getHubPos(double *currentCoords, int iTurbGlob);
+  void getHubPos(std::vector<double> & currentCoords, int iTurbGlob);
 
   ActuatorNodeType getVelNodeType(int iTurbGlob, int iNode);
-  void getVelNodeCoordinates(double *currentCoords, int iNode, int iTurbGlob);
-  void setVelocity(double *velocity, int iNode, int iTurbGlob);
+  void getVelNodeCoordinates(std::vector<double> & currentCoords, int iNode, int iTurbGlob);
+  void setVelocity(std::vector<double> & velocity, int iNode, int iTurbGlob);
   void interpolateVel_ForceToVelNodes();
   ActuatorNodeType getForceNodeType(int iTurbGlob, int iNode);
-  void getForceNodeCoordinates(double *currentCoords, int iNode, int iTurbGlob);
-  void getForceNodeOrientation(double *currentOrientation, int iNode, int iTurbGlob);
+  void getForceNodeCoordinates(std::vector<double> & currentCoords, int iNode, int iTurbGlob);
+  void getForceNodeOrientation(std::vector<double> & currentOrientation, int iNode, int iTurbGlob);
   void getForce(std::vector<double> & force, int iNode, int iTurbGlob);
   double getChord(int iNode, int iTurbGlob);
 
@@ -182,7 +182,7 @@ class FAST_cInterface {
   int get_numForcePtsTwr(int iTurbGlob) { return get_numForcePtsTwrLoc(get_localTurbNo(iTurbGlob)); }
   int get_numForcePts(int iTurbGlob) { return get_numForcePtsLoc(get_localTurbNo(iTurbGlob)); }
 
-  void computeTorqueThrust(int iTurGlob, double * torque, double * thrust);
+  void computeTorqueThrust(int iTurGlob, std::vector<double> &  torque, std::vector<double> &  thrust);
 
  private:
 
