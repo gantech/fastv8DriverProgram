@@ -83,8 +83,8 @@ class FAST_cInterface {
   std::vector<std::vector<float> > TurbineBasePos;
   std::vector<std::vector<float> > TurbineHubPos;
   std::vector<int> TurbID;
-  std::vector<std::vector<char> > FASTInputFileName;
-  std::vector<std::vector<char> > CheckpointFileRoot;
+  std::vector<std::string > FASTInputFileName;
+  std::vector<std::string > CheckpointFileRoot;
   double tStart;
   int nt_global;           
   int ntStart;      // The time step to start the FAST simulation

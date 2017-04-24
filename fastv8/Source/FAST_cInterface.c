@@ -47,16 +47,11 @@ numScOutputs(0)
 
 //Constructor
 FAST_cInterface::FAST_cInterface():
-cDriver_Input_from_FAST(NULL),
-cDriver_Output_to_FAST(NULL),
-cDriverSC_Input_from_FAST(NULL),
-cDriverSC_Output_to_FAST(NULL),
 nTurbinesGlob(0),
 nTurbinesProc(0),
 scStatus(false),
 restart(false)
-{
-}
+{}
 
 inline bool FAST_cInterface::checkFileExists(const std::string& name) {
   struct stat buffer;   
@@ -192,7 +187,7 @@ void FAST_cInterface::step() {
   
    if ( (((nt_global - ntStart) % nEveryCheckPoint) == 0 )  && (nt_global != ntStart) ) {
      for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
-       sprintf(CheckpointFileRoot[iTurb].data(), " "); // if blank, it will use FAST convention <RootName>.nt_global
+       CheckpointFileRoot[iTurb] = " "; // if blank, it will use FAST convention <RootName>.nt_global
        FAST_CreateCheckpoint(&iTurb, CheckpointFileRoot[iTurb].data(), &ErrStat, ErrMsg);
        checkError(ErrStat, ErrMsg);
      }
@@ -576,13 +571,11 @@ void FAST_cInterface::allocateMemory() {
   for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
     
     TurbineBasePos[iTurb].resize(3);
-    FASTInputFileName[iTurb].resize(INTERFACE_STRING_LENGTH);
-    CheckpointFileRoot[iTurb].resize(INTERFACE_STRING_LENGTH);
 
     int globProc = turbineMapProcToGlob[iTurb];
     TurbID[iTurb] = globTurbineData[globProc].TurbID;
-    std::strcpy(FASTInputFileName[iTurb].data(), globTurbineData[globProc].FASTInputFileName.c_str()) ;
-    std::strcpy(CheckpointFileRoot[iTurb].data(), globTurbineData[globProc].FASTRestartFileName.c_str() );
+    FASTInputFileName[iTurb] = globTurbineData[globProc].FASTInputFileName ;
+    CheckpointFileRoot[iTurb] = globTurbineData[globProc].FASTRestartFileName ;
     for(int i=0;i<3;i++) {
       TurbineBasePos[iTurb][i] = globTurbineData[globProc].TurbineBasePos[i];
     }
@@ -628,12 +621,8 @@ void FAST_cInterface::end() {
 
     for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
       TurbineBasePos[iTurb].clear();
-      FASTInputFileName[iTurb].clear();
-      CheckpointFileRoot[iTurb].clear();
     }
     TurbineBasePos.clear();
-    FASTInputFileName.clear();
-    CheckpointFileRoot.clear();
     TurbID.clear();
     numBlades.clear();
     numVelPtsBlade.clear();
