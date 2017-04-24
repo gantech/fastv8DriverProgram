@@ -619,32 +619,6 @@ void FAST_cInterface::end() {
       }
     }
 
-    for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
-      TurbineBasePos[iTurb].clear();
-    }
-    TurbineBasePos.clear();
-    TurbID.clear();
-    numBlades.clear();
-    numVelPtsBlade.clear();
-    numVelPtsTwr.clear();
-    numForcePtsBlade.clear();
-    numForcePtsTwr.clear();
-    
-    if ( !dryRun ) {
-      cDriver_Input_from_FAST.clear();
-      cDriver_Output_to_FAST.clear();
-
-      if (scStatus) {
-	cDriverSC_Input_from_FAST.clear();
-	cDriverSC_Output_to_FAST.clear();
-	
-	scInputsGlob.clear();
-	scOutputsGlob.clear();
-	
-      }
-
-    }
-
 #ifdef HAVE_MPI
     if ( !dryRun) {
       MPI_Group_free(&fastMPIGroup);
