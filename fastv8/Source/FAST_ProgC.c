@@ -38,8 +38,8 @@ void readInputFile(fastInputs & fi, std::string cInterfaceInputFile, double * tE
 
     if (fi.nTurbinesGlob > 0) {
       
-      if(cDriverInp["dry_run"]) {
-	fi.dryRun = cDriverInp["dry_run"].as<bool>();
+      if(cDriverInp["dryRun"]) {
+	fi.dryRun = cDriverInp["dryRun"].as<bool>();
       } 
       
       if(cDriverInp["debug"]) {
@@ -110,12 +110,10 @@ int main() {
   FAST.allocateTurbinesToProcsSimple(); 
   // Or allocate turbines to procs by calling "setTurbineProcNo(iTurbGlob, procId)" for turbine.
 
-  if ( !FAST.isDryRun() ) {
-    FAST.init();
-    // Set velocity at the aerodyn nodes here if necessary
-    if (!FAST.isRestart()) {
-      FAST.solution0();
-    }
+  FAST.init();
+  // Set velocity at the aerodyn nodes here if necessary
+  if (!FAST.isRestart()) {
+    FAST.solution0();
   }
 
 

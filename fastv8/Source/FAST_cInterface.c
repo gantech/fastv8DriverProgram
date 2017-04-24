@@ -68,6 +68,7 @@ void FAST_cInterface::init() {
 
   allocateMemory();
 
+  if (!dryRun) {
    // If restart 
    if (restart == true) {
 
@@ -106,11 +107,13 @@ void FAST_cInterface::init() {
      }
      
    }
+  }
    
 }
 
 void FAST_cInterface::solution0() {
 
+  if (!dryRun) {
        // set wind speeds at initial locations
     for (int iTurb=0; iTurb < nTurbinesProc; iTurb++) {
         setOutputsToFAST(cDriver_Input_from_FAST[iTurb], cDriver_Output_to_FAST[iTurb]);
@@ -134,6 +137,7 @@ void FAST_cInterface::solution0() {
      if (scStatus) {
        fillScInputsGlob(); // Update inputs to super controller
      }
+  }
 
 }
 
@@ -533,11 +537,6 @@ void FAST_cInterface::allocateMemory() {
     }
     turbineSetProcs.insert(turbineMapGlobToProc[iTurb]);
   }
-#ifdef HAVE_MPI  
-  if ( dryRun ) {
-    MPI_Barrier(MPI_COMM_WORLD);  
-  }
-#endif
 
   int nProcsWithTurbines=0;
   turbineProcs.resize(turbineSetProcs.size());
@@ -550,9 +549,6 @@ void FAST_cInterface::allocateMemory() {
 	  std::cout << "Proc " << worldMPIRank << " loc iTurb " << iTurb << " glob iTurb " << turbineMapProcToGlob[iTurb] << std::endl ;
 	}
       }
-#ifdef HAVE_MPI
-      MPI_Barrier(MPI_COMM_WORLD);  
-#endif
     }
 
     nProcsWithTurbines++ ;
@@ -561,7 +557,7 @@ void FAST_cInterface::allocateMemory() {
 #ifdef HAVE_MPI
   // Construct a group containing all procs running atleast 1 turbine in FAST
   MPI_Group_incl(worldMPIGroup, nProcsWithTurbines, &turbineProcs[0], &fastMPIGroup) ;
-  int fastMPIcommTag = MPI_Comm_create(MPI_COMM_WORLD, fastMPIGroup, &fastMPIComm);
+  int fastMPIcommTag = MPI_Comm_create(mpiComm, fastMPIGroup, &fastMPIComm);
   if (MPI_COMM_NULL != fastMPIComm) {
     MPI_Comm_rank(fastMPIComm, &fastMPIRank);
   }
@@ -614,7 +610,7 @@ void FAST_cInterface::allocateTurbinesToProcsSimple() {
   
   // Allocate turbines to each processor - round robin fashion
   int nProcs ;
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcs);
+  MPI_Comm_size(mpiComm, &nProcs);
   for(int j = 0; j < nTurbinesGlob; j++)  turbineMapGlobToProc[j] = j % nProcs ;
   
 }
@@ -661,11 +657,13 @@ void FAST_cInterface::end() {
     }
 
 #ifdef HAVE_MPI
-    MPI_Group_free(&fastMPIGroup);
-    if (MPI_COMM_NULL != fastMPIComm) {
-      MPI_Comm_free(&fastMPIComm);
+    if ( !dryRun) {
+      MPI_Group_free(&fastMPIGroup);
+      if (MPI_COMM_NULL != fastMPIComm) {
+	MPI_Comm_free(&fastMPIComm);
+      }
+      MPI_Group_free(&worldMPIGroup);
     }
-    MPI_Group_free(&worldMPIGroup);
 #endif    
 
     if(scStatus) {
