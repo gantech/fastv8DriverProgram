@@ -242,6 +242,8 @@ int FAST_cInterface::setGlobalInputs(int nTsGlob, bool dRun, bool sController, s
     nEveryCheckPoint = nCheckpoint;
     
     //    loadSuperController(); - Super controller functionality disabled for now
+    numScInputs = 0;
+    numScOutputs = 0;
     dtFAST = timeStep ;
     if (restart == false) {
       ntStart = 0;
