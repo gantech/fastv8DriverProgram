@@ -1,22 +1,35 @@
 #ifndef FAST_cInterface_h
 #define FAST_cInterface_h
-
 #include "FAST_Library.h"
 #include "sys/stat.h"
 #include "math.h"
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <cstring>
-#include <malloc.h>
 #include <stdexcept>
-#include <set>
 #include <vector>
+#include <set>
 #include <map>
 #include "dlfcn.h"
-#ifdef HAVE_MPI
-  #include "mpi.h"
+#ifndef OMPI_SKIP_MPICXX
+ #define OMPI_SKIP_MPICXX
 #endif
+#ifndef MPICH_SKIP_MPICXX
+ #define MPICH_SKIP_MPICXX
+#endif
+#include "mpi.h"
 #include "SC.h"
+
+struct globTurbineDataType {
+  int TurbID;
+  std::string FASTInputFileName;
+  std::string FASTRestartFileName;
+  std::vector<double> TurbineBasePos;
+  std::vector<double> TurbineHubPos;
+  int numForcePtsBlade;
+  int numForcePtsTwr;
+};
 
 enum ActuatorNodeType {
   HUB = 0,
@@ -25,48 +38,94 @@ enum ActuatorNodeType {
   ActuatorNodeType_END
 };
 
+namespace fast {
+
+enum simStartType {
+  init = 0,
+  trueRestart = 1,
+  restartDriverInitFAST = 2,
+  simStartType_END    
+};
+
+class fastInputs {
+
+ public: 
+
+  MPI_Comm comm;
+  int nTurbinesGlob;  
+  bool dryRun;
+  bool debug; 
+  double tStart;
+  simStartType simStart;
+  int nEveryCheckPoint;  
+  double tMax;
+  double dtFAST;  
+
+  bool scStatus;
+  std::string scLibFile;
+  int numScInputs, numScOutputs;
+
+  std::vector<globTurbineDataType>  globTurbineData;
+
+  // Constructor 
+  fastInputs() ;
+ 
+  // Destructor
+  ~fastInputs() {} ;
+
+};
+
+}
+
 class FAST_cInterface {
 
  private:
 
+  MPI_Comm mpiComm;
   bool dryRun;        // If this is true, class will simply go through allocation and deallocation of turbine data
   bool debug;   // Write out extra information if this flags is turned on
-  bool timeZero; // Flag to determine whether the Solution0 function has to be called or not.
+  std::vector<globTurbineDataType> globTurbineData;
   int nTurbinesProc;
   int nTurbinesGlob;
-  bool restart;
+  fast::simStartType simStart;
+  bool timeZero;
   double dtFAST;
   double tMax;
-  float ** TurbinePos;
-  int * TurbID;
-  char ** FASTInputFileName;
-  char ** CheckpointFileRoot;
-  double tStart, tEnd;
+  std::vector<std::vector<float> > TurbineBasePos;
+  std::vector<std::vector<float> > TurbineHubPos;
+  std::vector<int> TurbID;
+  std::vector<std::string > FASTInputFileName;
+  std::vector<std::string > CheckpointFileRoot;
+  double tStart;
   int nt_global;           
-  int ntStart, ntEnd;      // The time step to start and end the FAST simulation
+  int ntStart;      // The time step to start the FAST simulation
   int nEveryCheckPoint;    // Check point files will be written every 'nEveryCheckPoint' time steps
-  int * numBlades;           // Number of blades
-  int * numForcePtsBlade;
-  int * numForcePtsTwr;
-  int * numVelPtsBlade;
-  int * numVelPtsTwr;
+  std::vector<int> numBlades;           // Number of blades
+  std::vector<int> numForcePtsBlade;
+  std::vector<int> numForcePtsTwr;
+  std::vector<int> numVelPtsBlade;
+  std::vector<int> numVelPtsTwr;
   int numScOutputs;  // # outputs from the supercontroller == # inputs to the controller == NumSC2Ctrl
   int numScInputs;   // # inputs to the supercontroller == # outputs from the controller == NumCtrl2SC
-  double ** scOutputsGlob;  // # outputs from the supercontroller for all turbines
-  double ** scInputsGlob;   // # inputs to the supercontroller for all turbines
-  
-  OpFM_InputType_t ** cDriver_Input_from_FAST;
-  OpFM_OutputType_t ** cDriver_Output_to_FAST;
+  std::vector<double> scOutputsGlob;  // # outputs from the supercontroller for all turbines
+  std::vector<double> scInputsGlob;   // # inputs to the supercontroller for all turbines
 
-  SC_InputType_t ** cDriverSC_Input_from_FAST;
-  SC_OutputType_t ** cDriverSC_Output_to_FAST;
+  std::vector<std::vector<std::vector<double> > > forceNodeVel; // Velocity at force nodes - Store temporarily to interpolate to the velocity nodes
+  std::vector<std::vector<double> > velNodeData; // Position and velocity data at the velocity (aerodyn) nodes - (nTurbines, nTimesteps * nPoints * 6)
+  hid_t velNodeDataFile; // HDF-5 tag of file containing velocity (aerodyn) node data file
+
+  std::vector<OpFM_InputType_t> cDriver_Input_from_FAST;
+  std::vector<OpFM_OutputType_t> cDriver_Output_to_FAST;
+
+  std::vector<SC_InputType_t> cDriverSC_Input_from_FAST;
+  std::vector<SC_OutputType_t> cDriverSC_Output_to_FAST;
 
   // Turbine Number is DIFFERENT from TurbID. Turbine Number simply runs from 0:n-1 locally and globally.
   std::map<int, int> turbineMapGlobToProc; // Mapping global turbine number to processor number
   std::map<int, int> turbineMapProcToGlob; // Mapping local to global turbine number
   std::map<int, int> reverseTurbineMapProcToGlob; // Reverse Mapping global turbine number to local turbine number
   std::set<int> turbineSetProcs; // Set of processors containing atleast one turbine 
-  int * turbineProcs; // Same as the turbineSetProcs, but as an integer array
+  std::vector<int> turbineProcs; // Same as the turbineSetProcs, but as an integer array
 
   //Supercontroller stuff
   bool scStatus;
@@ -79,7 +138,6 @@ class FAST_cInterface {
   destroy_sc_t * destroy_SuperController;
   SuperController * sc;
 
-#ifdef HAVE_MPI
   int fastMPIGroupSize;
   MPI_Group fastMPIGroup;
   MPI_Comm  fastMPIComm;
@@ -87,7 +145,6 @@ class FAST_cInterface {
 
   MPI_Group worldMPIGroup;
   int worldMPIRank;
-#endif
 
   int ErrStat;
   char ErrMsg[INTERFACE_STRING_LENGTH];  // make sure this is the same size as IntfStrLen in FAST_Library.f90
@@ -99,56 +156,81 @@ class FAST_cInterface {
   
   // Destructor
   ~FAST_cInterface() {} ;
-  
+
   int setGlobalInputs(int nTsGlob, bool dRun, bool sController, std::string sControlLib, bool rStart, double timeStart, int nTimeStepStart, double timeEnd, int nTimeStepEnd, double timeMax, double timeStep, int nCheckpoint, int nScOutputs, int nScInputs) ;
   void setTurbineData(int tid, std::string fastInpFile, std::string fastRstartFile, std::vector<double> tPos, int nActForcePtsBlade, int nActForcePtsTower);
-  void setRestart(const bool & isRestart);
-  void setTstart(const double & cfdTstart);
-  void setDt(const double & cfdDt);
-  void setTend(const double & cfdTend);
-  int init();
-  int solution0();
-  int step();
-  void getHubShaftDirection(double *hubShftVec);
-  void getVelNodeCoordinates(double *currentCoords, int iNode);
-  void getForceNodeCoordinates(double *currentCoords, int iNode);
-  void getForceNodeOrientation(double *currentOrientation, int iNode);
-  void getForce(std::vector<double> & force, int iNode);
-  double getChord(int iNode); // At force nodes
-  void setVelocity(std::vector<double> & velocity, int iNode);
+  void setInputs(const fast::fastInputs &);  
+
+  void init();
+  void solution0();
+  void step();
+  void stepNoWrite();
+  void end();
+
+  hid_t openVelocityDataFile(bool createFile);
+  void readVelocityData(int nTimesteps);
+  void writeVelocityData(hid_t h5file, int iTurb, int iTimestep, OpFM_InputType_t iData, OpFM_OutputType_t oData);
+  herr_t closeVelocityDataFile(int nt_global, hid_t velDataFile);
+
+  void setTurbineProcNo(int iTurbGlob, int procNo) { turbineMapGlobToProc[iTurbGlob] = procNo; }
+  void allocateTurbinesToProcsSimple();
+  void getApproxHubPos(std::vector<double> & currentCoords, int iTurbGlob);
+  void getHubPos(std::vector<double> & currentCoords, int iTurbGlob);
+  void getHubShftDir(std::vector<double> & hubShftVec, int iTurbGlob);
+
+  ActuatorNodeType getVelNodeType(int iTurbGlob, int iNode);
+  void getVelNodeCoordinates(std::vector<double> & currentCoords, int iNode, int iTurbGlob);
+  void setVelocity(std::vector<double> & velocity, int iNode, int iTurbGlob);
+  void setVelocityForceNode(std::vector<double> & velocity, int iNode, int iTurbGlob);
+  void interpolateVel_ForceToVelNodes();
+  ActuatorNodeType getForceNodeType(int iTurbGlob, int iNode);
+  void getForceNodeCoordinates(std::vector<double> & currentCoords, int iNode, int iTurbGlob);
+  void getForceNodeOrientation(std::vector<double> & currentOrientation, int iNode, int iTurbGlob);
+  void getForce(std::vector<double> & force, int iNode, int iTurbGlob);
+  double getChord(int iNode, int iTurbGlob);
+
   int get_ntStart() { return ntStart; }
-  int get_ntEnd() { return ntEnd; }
   bool isDryRun() { return dryRun; }
   bool isDebug() { return debug; }
+  fast::simStartType get_simStartType() { return simStart; }
   bool isTimeZero() { return timeZero; }
   int get_procNo(int iTurbGlob) { return turbineMapGlobToProc[iTurbGlob] ; } // Get processor number of a turbine with global id 'iTurbGlob'
   int get_localTurbNo(int iTurbGlob) { return reverseTurbineMapProcToGlob[iTurbGlob]; }
   int get_nTurbinesGlob() { return nTurbinesGlob; } 
-  int get_numBlades(int iTurbLoc) { return numBlades[iTurbLoc]; }
-  int get_numVelPtsBlade(int iTurbLoc) { return numVelPtsBlade[iTurbLoc]; }
-  int get_numVelPtsTwr(int iTurbLoc) { return numVelPtsTwr[iTurbLoc]; }
-  int get_numVelPts(int iTurbLoc) { return 1 + numBlades[iTurbLoc]*numVelPtsBlade[iTurbLoc] + numVelPtsTwr[iTurbLoc]; }
-  int get_numForcePtsBlade(int iTurbLoc) { return numForcePtsBlade[iTurbLoc]; }
-  int get_numForcePtsTwr(int iTurbLoc) { return numForcePtsTwr[iTurbLoc]; }
-  int get_numForcePts(int iTurbLoc) { return 1 + numBlades[iTurbLoc]*numForcePtsBlade[iTurbLoc] + numForcePtsTwr[iTurbLoc]; }
-  void computeTorqueThrust(int iTurGlob, double * torque, double * thrust);
-  ActuatorNodeType getForceNodeType(int iTurbGlob, int iNode);
-  void end();
+
+  int get_numBlades(int iTurbGlob) { return get_numBladesLoc(get_localTurbNo(iTurbGlob)); }
+  int get_numVelPtsBlade(int iTurbGlob) { return get_numVelPtsBladeLoc(get_localTurbNo(iTurbGlob)); }
+  int get_numVelPtsTwr(int iTurbGlob) { return get_numVelPtsTwrLoc(get_localTurbNo(iTurbGlob)); }
+  int get_numVelPts(int iTurbGlob) { return get_numVelPtsLoc(get_localTurbNo(iTurbGlob)); }
+  int get_numForcePtsBlade(int iTurbGlob) { return get_numForcePtsBladeLoc(get_localTurbNo(iTurbGlob)); }
+  int get_numForcePtsTwr(int iTurbGlob) { return get_numForcePtsTwrLoc(get_localTurbNo(iTurbGlob)); }
+  int get_numForcePts(int iTurbGlob) { return get_numForcePtsLoc(get_localTurbNo(iTurbGlob)); }
+
+  void computeTorqueThrust(int iTurGlob, std::vector<double> &  torque, std::vector<double> &  thrust);
 
  private:
 
   void checkError(const int ErrStat, const char * ErrMsg);
-  void setOutputsToFAST(OpFM_InputType_t* cDriver_Input_from_FAST, OpFM_OutputType_t* cDriver_Output_to_FAST) ;
-
-  int cDriverRestart();
   inline bool checkFileExists(const std::string& name);
 
-  void allocateInputData();
-  void allocateTurbinesToProcsSimple();
+  void allocateMemory();
   
-  /* void fillScInputsGlob() ; */
-  /* void fillScOutputsLoc() ; */
+  int get_numBladesLoc(int iTurbLoc) { return numBlades[iTurbLoc]; }
+  int get_numVelPtsBladeLoc(int iTurbLoc) { return numVelPtsBlade[iTurbLoc]; }
+  int get_numVelPtsTwrLoc(int iTurbLoc) { return numVelPtsTwr[iTurbLoc]; }
+  int get_numVelPtsLoc(int iTurbLoc) { return 1 + numBlades[iTurbLoc]*numVelPtsBlade[iTurbLoc] + numVelPtsTwr[iTurbLoc]; }
+  int get_numForcePtsBladeLoc(int iTurbLoc) { return numForcePtsBlade[iTurbLoc]; }
+  int get_numForcePtsTwrLoc(int iTurbLoc) { return numForcePtsTwr[iTurbLoc]; }
+  int get_numForcePtsLoc(int iTurbLoc) { return 1 + numBlades[iTurbLoc]*numForcePtsBlade[iTurbLoc] + numForcePtsTwr[iTurbLoc]; }
+
+  void loadSuperController(const fast::fastInputs & fi);
+  void fillScInputsGlob() ;
+  void fillScOutputsLoc() ;
+
+  void setOutputsToFAST(OpFM_InputType_t cDriver_Input_from_FAST, OpFM_OutputType_t cDriver_Output_to_FAST) ; // An example to set velocities at the Aerodyn nodes
+  void applyVelocityData(int iPrestart, int iTurb, OpFM_OutputType_t cDriver_Output_to_FAST, std::vector<double> & velData) ;
 
 };
+
 
 #endif

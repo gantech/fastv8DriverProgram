@@ -176,7 +176,7 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, initOut_AD, y_AD, 
    ! Allocate space for mapping data structures
    ALLOCATE( OpFM%m%ActForceLoads(OpFM%p%NMappings), OpFM%m%Line2_to_Line2_Loads(OpFM%p%NMappings), OpFM%m%Line2_to_Line2_Motions(OpFM%p%NMappings),STAT=ErrStat2)
    ALLOCATE( OpFM%m%ActForceLoadsPoints(OpFM%p%NMappings), OpFM%m%Line2_to_Point_Loads(OpFM%p%NMappings), OpFM%m%Line2_to_Point_Motions(OpFM%p%NMappings),STAT=ErrStat2)
-   
+
    do k=1,OpFM%p%NMappings
       call MeshCopy (  SrcMesh  = OpFM%m%ActForceMotions(k)  &
            , DestMesh = OpFM%m%ActForceLoads(k) &
@@ -205,7 +205,6 @@ SUBROUTINE Init_OpFM( InitInp, p_FAST, AirDens, u_AD14, u_AD, initOut_AD, y_AD, 
       ELSEIF (p_FAST%CompElast == Module_BD ) THEN
          !            call MeshMapCreate( BD%y(k)%BldMotion, OpFM%m%ActForceMotions(k), OpFM%m%Line2_to_Line2_Motions(k),  ErrStat2, ErrMsg2 );
       END IF
-      write(*,*) '(a1-d1).(d2-d1)', DOT_PRODUCT((y_AD%BladeLoad(k)%Position(:,1)-OpFM%m%ActForceLoads(k)%Position(:,1)),(OpFM%m%ActForceLoads(k)%Position(:,2) - OpFM%m%ActForceLoads(k)%Position(:,1)))
       call MeshMapCreate( y_AD%BladeLoad(k), OpFM%m%ActForceLoads(k), OpFM%m%Line2_to_Line2_Loads(k),  ErrStat2, ErrMsg2 );
 
       call MeshMapCreate( OpFM%m%ActForceMotions(k), OpFM%m%ActForceMotionsPoints(k), OpFM%m%Line2_to_Point_Motions(k),  ErrStat2, ErrMsg2 );
@@ -389,6 +388,7 @@ SUBROUTINE SetOpFMPositions(p_FAST, u_AD14, u_AD, y_ED, OpFM)
          !            call Transfer_Line2_to_Point( BD%y(k)%BldMotion, OpFM%m%ActForceMotions(k), OpFM%m%Line2_to_Line2_Motions(k), ErrStat2, ErrMsg2 )
       END IF
       call Transfer_Line2_to_Point( OpFM%m%ActForceMotions(k), OpFM%m%ActForceMotionsPoints(k), OpFM%m%Line2_to_Point_Motions(k), ErrStat2, ErrMsg2 )
+         
       
       DO J = 1, OpFM%p%NnodesForceBlade
          Node = Node + 1
@@ -452,10 +452,15 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
 
       ! Local variables:
    REAL(ReKi )                                     :: factor      ! scaling factor to get normalized forces for OpenFOAM
+   REAL(ReKi)                                      :: dRforceNodes ! Uniform distance between two consecutive blade force nodes
+   REAL(ReKi)                                      :: dHforceNodes ! Uniform distance between two consecutive tower force nodes
 
    INTEGER(IntKi)                                  :: J           ! Loops through nodes / elements
    INTEGER(IntKi)                                  :: K           ! Loops through blades.
    INTEGER(IntKi)                                  :: Node        ! Node number for blade/node on mesh
+#ifdef DEBUG_OPENFOAM   
+   INTEGER(IntKi)                                  :: actForcesFile, aerodynForcesFile ! Unit numbers for files containing actuator forces and aerodyn forces
+#endif
    INTEGER(IntKi)                                  :: ErrStat2    ! temporary Error status of the operation
    CHARACTER(ErrMsgLen)                            :: ErrMsg2     ! temporary Error message if ErrStat /= ErrID_None
 
@@ -473,23 +478,45 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
    !.......................
    ! blade nodes
    !.......................
+
+#ifdef DEBUG_OPENFOAM   
+   CALL GetNewUnit( aerodynForcesFile )
+   open(unit=aerodynForcesFile,file='fast_aerodyn_velocity_forces.csv')
+   write(aerodynForcesFile,*) '#x, y, z, fx, fy, fz'
+
+   CALL GetNewUnit( actForcesFile )
+   open(unit=actForcesFile,file='fast_actuator_forces.csv')
+   write(actForcesFile,*) '#x, y, z, fx, fy, fz'
+#endif
+
    DO K = 1,OpFM%p%NumBl
       
+#ifdef DEBUG_OPENFOAM   
+      DO J = 1,u_AD%BladeMotion(k)%NNodes
+        write(aerodynForcesFile,*) u_AD%BladeMotion(k)%TranslationDisp(1,j) + u_AD%BladeMotion(k)%Position(1,j), ', ', u_AD%BladeMotion(k)%TranslationDisp(2,j) + u_AD%BladeMotion(k)%Position(2,j), ', ', u_AD%BladeMotion(k)%TranslationDisp(3,j) + u_AD%BladeMotion(k)%Position(3,j), ', ', OpFM%y%u(1 + (k-1)*u_AD%BladeMotion(k)%NNodes + j), ', ', OpFM%y%v(1 + (k-1)*u_AD%BladeMotion(k)%NNodes + j), ', ', OpFM%y%w(1 + (k-1)*u_AD%BladeMotion(k)%NNodes + j), ', ', y_AD%BladeLoad(k)%Force(1,j), ', ', y_AD%BladeLoad(k)%Force(2,j), ', ', y_AD%BladeLoad(k)%Force(2,j)
+      END DO
+#endif
+
       call Transfer_Line2_to_Line2( y_AD%BladeLoad(k), OpFM%m%ActForceLoads(k), OpFM%m%Line2_to_Line2_Loads(k), ErrStat2, ErrMsg2, u_AD%BladeMotion(k), OpFM%m%ActForceMotions(k) )
       call Transfer_Line2_to_Point( OpFM%m%ActForceLoads(k), OpFM%m%ActForceLoadsPoints(k), OpFM%m%Line2_to_Point_Loads(k), ErrStat2, ErrMsg2, OpFM%m%ActForceMotions(k), OpFM%m%ActForceMotionsPoints(k) )
-     
+
       DO J = 1, OpFM%p%NnodesForceBlade
          Node = Node + 1
-         OpFM%u%fx(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(1,j) / OpFM%p%AirDens
-         OpFM%u%fy(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(2,j) / OpFM%p%AirDens
-         OpFM%u%fz(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(3,j) / OpFM%p%AirDens
-         OpFM%u%momentx(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(1,j) / OpFM%p%AirDens
-         OpFM%u%momenty(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(2,j) / OpFM%p%AirDens
-         OpFM%u%momentz(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(3,j) / OpFM%p%AirDens
+         OpFM%u%fx(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(1,j)
+         OpFM%u%fy(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(2,j)
+         OpFM%u%fz(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(3,j)
+         OpFM%u%momentx(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(1,j)
+         OpFM%u%momenty(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(2,j)
+         OpFM%u%momentz(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(3,j)
+
+#ifdef DEBUG_OPENFOAM   
+         write(actForcesFile,*) OpFM%u%pxForce(Node), ', ', OpFM%u%pyForce(Node), ', ', OpFM%u%pzForce(Node), ', ', OpFM%u%fx(Node), ', ', OpFM%u%fy(Node), ', ', OpFM%u%fz(Node), ', '
+#endif
+
       END DO 
 
    END DO !K = 1,OpFM%p%NumBl
-   
+
    !.......................
    ! tower nodes
    !.......................
@@ -497,18 +524,33 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
    ! mesh mapping from line2 mesh to point mesh
    k = SIZE(u_AD%BladeMotion) + 1
    
+#ifdef DEBUG_OPENFOAM   
+   DO J = 1,u_AD%TowerMotion%NNodes
+      write(aerodynForcesFile,*) u_AD%TowerMotion%TranslationDisp(1,j) + u_AD%TowerMotion%Position(1,j), ', ', u_AD%TowerMotion%TranslationDisp(2,j) + u_AD%TowerMotion%Position(2,j), ', ', u_AD%TowerMotion%TranslationDisp(3,j) + u_AD%TowerMotion%Position(3,j), ', ', OpFM%y%u(1 + OpFM%p%NumBl*u_AD%BladeMotion(k)%NNodes + j), ', ', OpFM%y%v(1 + OpFM%p%NumBl*u_AD%BladeMotion(k)%NNodes + j), ', ', OpFM%y%w(1 + OpFM%p%NumBl*u_AD%BladeMotion(k)%NNodes + j), ', ', y_AD%TowerLoad%Force(1,j), ', ', y_AD%TowerLoad%Force(2,j), ', ', y_AD%TowerLoad%Force(2,j)
+   END DO
+#endif
+
    call Transfer_Line2_to_Line2( y_AD%TowerLoad, OpFM%m%ActForceLoads(k), OpFM%m%Line2_to_Line2_Loads(k), ErrStat2, ErrMsg2, u_AD%TowerMotion, OpFM%m%ActForceMotions(k) )
    call Transfer_Line2_to_Point( OpFM%m%ActForceLoads(k), OpFM%m%ActForceLoadsPoints(k), OpFM%m%Line2_to_Point_Loads(k), ErrStat2, ErrMsg2, OpFM%m%ActForceMotions(k), OpFM%m%ActForceMotionsPoints(k) )
    
    DO J=1,OpFM%p%NnodesForceTower
       Node = Node + 1
-      OpFM%u%fx(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(1,j) / OpFM%p%AirDens
-      OpFM%u%fy(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(2,j) / OpFM%p%AirDens
-      OpFM%u%fz(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(3,j) / OpFM%p%AirDens
-      OpFM%u%momentx(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(1,j) / OpFM%p%AirDens
-      OpFM%u%momenty(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(2,j) / OpFM%p%AirDens
-      OpFM%u%momentz(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(3,j) / OpFM%p%AirDens
+      OpFM%u%fx(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(1,j)
+      OpFM%u%fy(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(2,j)
+      OpFM%u%fz(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(3,j)
+      OpFM%u%momentx(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(1,j)
+      OpFM%u%momenty(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(2,j)
+      OpFM%u%momentz(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(3,j)
+
+#ifdef DEBUG_OPENFOAM   
+      write(actForcesFile,*) OpFM%u%pxForce(Node), ', ', OpFM%u%pyForce(Node), ', ', OpFM%u%pzForce(Node), ', ', OpFM%u%fx(Node), ', ', OpFM%u%fy(Node), ', ', OpFM%u%fz(Node), ', '
+#endif
    END DO
+
+#ifdef DEBUG_OPENFOAM   
+   close(aerodynForcesFile)
+   close(actForcesFile)
+#endif
    
 END SUBROUTINE SetOpFMForces
 !----------------------------------------------------------------------------------------------------------------------------------
@@ -517,8 +559,7 @@ SUBROUTINE OpFM_SetWriteOutput( OpFM )
 
    TYPE(OpenFOAM_Data),            INTENT(INOUT)   :: OpFM        ! data for the OpenFOAM integration module
 
-
-      ! set the hub-height wind speeds
+   ! set the hub-height wind speeds
    IF ( ALLOCATED( OpFM%y%WriteOutput ) ) THEN
       IF ( ASSOCIATED( OpFM%y%u ) ) then
          OpFM%y%WriteOutput(1) = OpFM%y%u(1)
@@ -630,7 +671,6 @@ SUBROUTINE OpFM_CreateActForceMotionsMesh( p_FAST, y_ED, InitIn_OpFM, OpFM, ErrS
         call MeshCommit(OpFM%m%ActForceMotions(k), errStat2, errMsg2 )
         call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
         if (errStat >= AbortErrLev) return
-
         call MeshCommit(OpFM%m%ActForceMotionsPoints(k), errStat2, errMsg2 )
         call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
         if (errStat >= AbortErrLev) return
@@ -690,7 +730,6 @@ SUBROUTINE OpFM_CreateActForceMotionsMesh( p_FAST, y_ED, InitIn_OpFM, OpFM, ErrS
          call MeshCommit(OpFM%m%ActForceMotions(k), errStat2, errMsg2 )
             call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
             if (errStat >= AbortErrLev) return
-
          call MeshCommit(OpFM%m%ActForceMotionsPoints(k), errStat2, errMsg2 )
             call SetErrStat( errStat2, errMsg2, errStat, errMsg, RoutineName )
             if (errStat >= AbortErrLev) return
@@ -1054,11 +1093,13 @@ SUBROUTINE OpFM_CreateActForceBladeTowerNodes(p_OpFM, ErrStat, ErrMsg)
   CHARACTER(ErrMsgLen)                   :: ErrMsg2     ! temporary Error message if ErrStat /= ErrID_None
   
 
+  ! Line2 to Line2 mapping expects the destination mesh to be smaller than the source mesh for deformation mapping and larger than the source mesh for load mapping. This forces me to create nodes at the very ends of the blade.
+
   !Do the blade first
   allocate(p_OpFM%forceBldRnodes(p_OpFM%NnodesForceBlade), stat=errStat2)
   dRforceNodes = p_OpFM%BladeLength/(p_OpFM%NnodesForceBlade-1)
   do i=1,p_OpFM%NnodesForceBlade
-     p_OpFM%forceBldRnodes(i) = (i-1)*dRforceNodes
+     p_OpFM%forceBldRnodes(i) = (i-1)*dRforceNodes 
   end do
 
 
@@ -1099,10 +1140,10 @@ SUBROUTINE OpFM_InterpolateForceNodesChord(InitOut_AD, p_OpFM, u_OpFM, ErrStat, 
   do k = 1, p_OpFM%NumBl
      ! Calculate the chord at the force nodes based on interpolation
      nNodesBladeProps = SIZE(InitOut_AD%BladeProps(k)%BlChord)
-     DO I=1,p_OpFM%NnodesForceBlade 
+     DO I=1,p_OpFM%NnodesForceBlade
         Node = Node + 1
         jLower=1
-        do while ( ( (InitOut_AD%BladeProps(k)%BlSpn(jLower) - p_OpFM%forceBldRnodes(I))*(InitOut_AD%BladeProps(k)%BlSpn(jLower+1) - p_OpFM%forceBldRnodes(I)) .gt. 0 ) .and. (jLower .le. nNodesBladeProps) ) !Determine the closest two nodes at which the blade properties are specified
+        do while ( ( (InitOut_AD%BladeProps(k)%BlSpn(jLower) - p_OpFM%forceBldRnodes(I))*(InitOut_AD%BladeProps(k)%BlSpn(jLower+1) - p_OpFM%forceBldRnodes(I)) .gt. 0 ) .and. (jLower .le. nNodesBladeProps) )!Determine the closest two nodes at which the blade properties are specified
            jLower = jLower + 1
         end do
         if (jLower .lt. nNodesBladeProps) then
@@ -1112,6 +1153,8 @@ SUBROUTINE OpFM_InterpolateForceNodesChord(InitOut_AD, p_OpFM, u_OpFM, ErrStat, 
            u_OpFM%forceNodesChord(Node) = InitOut_AD%BladeProps(k)%BlChord(nNodesBladeProps) !Work around for when the last node of the actuator mesh is slightly outside of the Aerodyn blade properties. Surprisingly this is not an issue with the tower.
         end if
      END DO
+     
+     
   end do
      
 
