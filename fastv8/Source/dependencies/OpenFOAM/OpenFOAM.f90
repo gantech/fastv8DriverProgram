@@ -1102,7 +1102,7 @@ SUBROUTINE OpFM_InterpolateForceNodesChord(InitOut_AD, p_OpFM, u_OpFM, ErrStat, 
      DO I=1,p_OpFM%NnodesForceBlade 
         Node = Node + 1
         jLower=1
-        do while ( (InitOut_AD%BladeProps(k)%BlSpn(jLower) - p_OpFM%forceBldRnodes(I))*(InitOut_AD%BladeProps(k)%BlSpn(jLower+1) - p_OpFM%forceBldRnodes(I)) .gt. 0 ) !Determine the closest two nodes at which the blade properties are specified
+        do while ( ( (InitOut_AD%BladeProps(k)%BlSpn(jLower) - p_OpFM%forceBldRnodes(I))*(InitOut_AD%BladeProps(k)%BlSpn(jLower+1) - p_OpFM%forceBldRnodes(I)) .gt. 0 ) .and. (jLower .le. nNodesBladeProps) ) !Determine the closest two nodes at which the blade properties are specified
            jLower = jLower + 1
         end do
         if (jLower .lt. nNodesBladeProps) then
