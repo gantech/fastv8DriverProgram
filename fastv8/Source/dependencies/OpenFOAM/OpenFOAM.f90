@@ -502,17 +502,12 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
 
       DO J = 1, OpFM%p%NnodesForceBlade
          Node = Node + 1
-         OpFM%u%fx(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(1,j)
-         OpFM%u%fy(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(2,j)
-         OpFM%u%fz(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(3,j)
-         OpFM%u%momentx(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(1,j)
-         OpFM%u%momenty(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(2,j)
-         OpFM%u%momentz(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(3,j)
-
-#ifdef DEBUG_OPENFOAM   
-         write(actForcesFile,*) OpFM%u%pxForce(Node), ', ', OpFM%u%pyForce(Node), ', ', OpFM%u%pzForce(Node), ', ', OpFM%u%fx(Node), ', ', OpFM%u%fy(Node), ', ', OpFM%u%fz(Node), ', '
-#endif
-
+         OpFM%u%fx(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(1,j) / OpFM%p%AirDens
+         OpFM%u%fy(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(2,j) / OpFM%p%AirDens
+         OpFM%u%fz(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(3,j) / OpFM%p%AirDens
+         OpFM%u%momentx(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(1,j) / OpFM%p%AirDens
+         OpFM%u%momenty(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(2,j) / OpFM%p%AirDens
+         OpFM%u%momentz(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(3,j) / OpFM%p%AirDens
       END DO 
 
    END DO !K = 1,OpFM%p%NumBl
@@ -535,16 +530,12 @@ SUBROUTINE SetOpFMForces(p_FAST, p_AD14, u_AD14, y_AD14, u_AD, y_AD, y_ED, OpFM,
    
    DO J=1,OpFM%p%NnodesForceTower
       Node = Node + 1
-      OpFM%u%fx(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(1,j)
-      OpFM%u%fy(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(2,j)
-      OpFM%u%fz(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(3,j)
-      OpFM%u%momentx(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(1,j)
-      OpFM%u%momenty(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(2,j)
-      OpFM%u%momentz(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(3,j)
-
-#ifdef DEBUG_OPENFOAM   
-      write(actForcesFile,*) OpFM%u%pxForce(Node), ', ', OpFM%u%pyForce(Node), ', ', OpFM%u%pzForce(Node), ', ', OpFM%u%fx(Node), ', ', OpFM%u%fy(Node), ', ', OpFM%u%fz(Node), ', '
-#endif
+      OpFM%u%fx(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(1,j) / OpFM%p%AirDens
+      OpFM%u%fy(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(2,j) / OpFM%p%AirDens
+      OpFM%u%fz(Node) = OpFM%m%ActForceLoadsPoints(k)%Force(3,j) / OpFM%p%AirDens
+      OpFM%u%momentx(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(1,j) / OpFM%p%AirDens
+      OpFM%u%momenty(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(2,j) / OpFM%p%AirDens
+      OpFM%u%momentz(Node) = OpFM%m%ActForceLoadsPoints(k)%Moment(3,j) / OpFM%p%AirDens
    END DO
 
 #ifdef DEBUG_OPENFOAM   
